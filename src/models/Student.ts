@@ -184,8 +184,6 @@ const StudentSchema = new Schema<IStudent>(
 );
 
 // Indexes
-StudentSchema.index({ studentId: 1 });
-StudentSchema.index({ lrn: 1 });
 StudentSchema.index({ "personalInfo.lastName": 1, "personalInfo.firstName": 1 });
 StudentSchema.index({ parentUserId: 1 });
 StudentSchema.index({ currentGradeLevel: 1 });
