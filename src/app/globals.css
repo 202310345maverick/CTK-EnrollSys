@@ -87,4 +87,40 @@
   .ctk-input {
     @apply h-11 rounded-lg border-input bg-white/95;
   }
+
+  .ctk-page-title {
+    @apply text-4xl font-extrabold tracking-tight text-foreground;
+  }
+
+  .ctk-page-subtitle {
+    @apply mt-1 text-sm text-muted-foreground;
+  }
+
+  .ctk-table {
+    @apply w-full overflow-hidden rounded-xl border border-border bg-card;
+  }
+
+  .ctk-table thead tr {
+    @apply border-b bg-muted/50;
+  }
+
+  .ctk-table th {
+    @apply px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground;
+  }
+
+  .ctk-table td {
+    @apply px-4 py-3 text-sm;
+  }
+
+  .ctk-table tbody tr {
+    @apply border-b last:border-0 hover:bg-muted/30;
+  }
+
+  .ctk-section-title {
+    @apply text-xl font-bold text-foreground;
+  }
+
+  .ctk-danger-button {
+    @apply bg-primary text-primary-foreground hover:bg-primary/90;
+  }
 }

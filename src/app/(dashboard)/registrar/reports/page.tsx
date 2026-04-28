@@ -1,5 +1,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { PageHeader } from "@/components/shared/page-header";
+import { Input } from "@/components/ui/input";
 import { FileText, Download, Users, CreditCard, ClipboardList } from "lucide-react";
 
 export default function ReportsPage() {
@@ -32,73 +34,80 @@ export default function ReportsPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold tracking-tight">Reports</h2>
-        <p className="text-muted-foreground">
-          Generate and download school reports
-        </p>
-      </div>
+      <PageHeader title="Report Generation" description="Generate and export various reports" />
 
-      <div className="grid gap-4 md:grid-cols-2">
-        {reports.map((report) => {
-          const Icon = report.icon;
-          return (
-            <Card key={report.type}>
-              <CardHeader>
-                <div className="flex items-start gap-4">
-                  <div className="p-2 bg-primary/10 rounded-lg">
-                    <Icon className="h-6 w-6 text-primary" />
+      <div className="grid gap-4 lg:grid-cols-[1fr_360px]">
+        <div className="space-y-4">
+          <Card className="ctk-panel">
+            <CardHeader>
+              <CardTitle className="ctk-section-title">Select Report Type</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {reports.map((report) => {
+                const Icon = report.icon;
+                return (
+                  <div key={report.type} className="rounded-xl border bg-background p-4">
+                    <div className="flex items-start gap-3">
+                      <Icon className="mt-0.5 h-4 w-4 text-primary" />
+                      <div>
+                        <p className="font-semibold">{report.title}</p>
+                        <p className="text-sm text-muted-foreground">{report.description}</p>
+                      </div>
+                    </div>
                   </div>
-                  <div className="flex-1">
-                    <CardTitle className="text-lg">{report.title}</CardTitle>
-                    <CardDescription>{report.description}</CardDescription>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="flex gap-2">
-                  <Button variant="outline" className="flex-1">
-                    <FileText className="mr-2 h-4 w-4" />
-                    Preview
-                  </Button>
-                  <Button className="flex-1">
-                    <Download className="mr-2 h-4 w-4" />
-                    Download
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          );
-        })}
-      </div>
+                );
+              })}
+            </CardContent>
+          </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Custom Reports</CardTitle>
-          <CardDescription>Generate reports with custom date ranges and filters</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid gap-4 md:grid-cols-3">
-            <div>
-              <label className="text-sm font-medium">Report Type</label>
-              <select className="mt-1 w-full border rounded-md px-3 py-2 text-sm">
-                <option>Enrollment Report</option>
-                <option>Payment Report</option>
-                <option>Student List</option>
+          <Card className="ctk-panel">
+            <CardHeader>
+              <CardTitle className="ctk-section-title">Report Filters</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="grid gap-3 md:grid-cols-2">
+                <Input type="date" className="ctk-input" />
+                <Input type="date" className="ctk-input" />
+              </div>
+              <select className="ctk-input w-full border px-3 text-sm">
+                <option>All Grade Levels</option>
               </select>
-            </div>
-            <div>
-              <label className="text-sm font-medium">From Date</label>
-              <input type="date" className="mt-1 w-full border rounded-md px-3 py-2 text-sm" />
-            </div>
-            <div>
-              <label className="text-sm font-medium">To Date</label>
-              <input type="date" className="mt-1 w-full border rounded-md px-3 py-2 text-sm" />
-            </div>
-          </div>
-          <Button className="mt-4">Generate Report</Button>
-        </CardContent>
-      </Card>
+              <Button className="h-11 w-full ctk-danger-button">
+                <FileText className="mr-2 h-4 w-4" />
+                Generate Report Preview
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="space-y-4">
+          <Card className="ctk-panel">
+            <CardHeader>
+              <CardTitle className="text-lg font-bold">Export Options</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3 text-sm">
+              <Button variant="outline" className="w-full justify-start">
+                <Download className="mr-2 h-4 w-4" />
+                PDF Document
+              </Button>
+              <Button variant="outline" className="w-full justify-start">
+                <Download className="mr-2 h-4 w-4" />
+                CSV Spreadsheet
+              </Button>
+            </CardContent>
+          </Card>
+
+          <Card className="ctk-panel border-amber-300 bg-amber-50/40">
+            <CardHeader>
+              <CardTitle className="text-base font-bold text-primary">DepEd Reporting</CardTitle>
+            </CardHeader>
+            <CardContent className="text-sm text-muted-foreground">
+              Student data reports are formatted according to DepEd requirements.
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+
     </div>
   );
 }

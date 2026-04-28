@@ -32,11 +32,13 @@ import {
 interface Enrollment {
   _id: string;
   enrollmentNumber: string;
-  gradeLevel: string;
-  enrollmentType: string;
+  gradeLevel?: string;
+  enrollmentType?: string;
   status: string;
+  isDraft?: boolean;
+  updatedAt?: string;
   createdAt: string;
-  studentId: {
+  studentId?: {
     personalInfo: {
       firstName: string;
       lastName: string;
@@ -45,6 +47,11 @@ interface Enrollment {
 }
 
 const statusConfig: Record<string, { icon: React.ReactNode; color: string; label: string }> = {
+  draft: {
+    icon: <FileText className="h-4 w-4" />,
+    color: "bg-slate-100 text-slate-800 border-slate-200",
+    label: "Draft",
+  },
   pending: { 
     icon: <Clock className="h-4 w-4" />, 
     color: "bg-yellow-100 text-yellow-800 border-yellow-200", 
@@ -91,7 +98,7 @@ export default function ParentEnrollmentsPage() {
 
   const fetchEnrollments = async () => {
     try {
-      const response = await fetch("/api/enrollments");
+      const response = await fetch("/api/enrollments?includeDrafts=1&limit=100");
       if (response.ok) {
         const data = await response.json();
         setEnrollments(data.enrollments || []);
@@ -189,7 +196,14 @@ export default function ParentEnrollmentsPage() {
         <div className="grid gap-4">
           {enrollments.map((enrollment) => {
             const status = statusConfig[enrollment.status] || statusConfig.pending;
-            const canDelete = enrollment.status === "pending";
+            const canDelete = enrollment.status === "pending" || enrollment.status === "draft";
+            const isDraft = enrollment.status === "draft" || enrollment.isDraft;
+            const studentName = enrollment.studentId?.personalInfo
+              ? `${enrollment.studentId.personalInfo.firstName} ${enrollment.studentId.personalInfo.lastName}`
+              : "Draft application";
+            const displayDate = formatDate(
+              isDraft && enrollment.updatedAt ? enrollment.updatedAt : enrollment.createdAt
+            );
 
             return (
               <Card key={enrollment._id} className="hover:shadow-md transition-shadow">
@@ -198,8 +212,7 @@ export default function ParentEnrollmentsPage() {
                     <div className="space-y-1">
                       <div className="flex items-center gap-3">
                         <h3 className="font-semibold text-lg">
-                          {enrollment.studentId?.personalInfo?.firstName}{" "}
-                          {enrollment.studentId?.personalInfo?.lastName}
+                          {studentName}
                         </h3>
                         <span className={`px-3 py-1 text-xs rounded-full border flex items-center gap-1 ${status.color}`}>
                           {status.icon}
@@ -209,24 +222,43 @@ export default function ParentEnrollmentsPage() {
                       <div className="flex items-center gap-4 text-sm text-muted-foreground">
                         <span>{enrollment.enrollmentNumber}</span>
                         <span>•</span>
-                        <span className="capitalize">{enrollment.enrollmentType} Student</span>
-                        <span>•</span>
-                        <span>{enrollment.gradeLevel}</span>
+                        <span className="capitalize">
+                          {enrollment.enrollmentType
+                            ? `${enrollment.enrollmentType} Student`
+                            : "Incomplete"}
+                        </span>
+                        {enrollment.gradeLevel ? (
+                          <>
+                            <span>•</span>
+                            <span>{enrollment.gradeLevel}</span>
+                          </>
+                        ) : null}
                       </div>
                       <p className="text-sm text-muted-foreground">
-                        Submitted: {formatDate(enrollment.createdAt)}
+                        {isDraft ? "Last saved" : "Submitted"}: {displayDate}
                       </p>
                     </div>
 
                     <div className="flex items-center gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => router.push(`/parent/enrollments/${enrollment._id}`)}
-                      >
-                        <Eye className="mr-2 h-4 w-4" />
-                        View Details
-                      </Button>
+                      {isDraft ? (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => router.push(`/parent/enrollment/new?draft=${enrollment._id}`)}
+                        >
+                          <FileText className="mr-2 h-4 w-4" />
+                          Continue Draft
+                        </Button>
+                      ) : (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => router.push(`/parent/enrollments/${enrollment._id}`)}
+                        >
+                          <Eye className="mr-2 h-4 w-4" />
+                          View Details
+                        </Button>
+                      )}
                       
                       {canDelete && (
                         <Button

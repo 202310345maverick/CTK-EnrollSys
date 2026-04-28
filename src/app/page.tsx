@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Cross, Users, FileText, Shield, BookOpen, Clock, CheckCircle } from "lucide-react";
+import Image from "next/image";
+import { Users, FileText, Shield, Clock } from "lucide-react";
 
 export default function HomePage() {
   return (
@@ -10,9 +11,7 @@ export default function HomePage() {
         <div className="container mx-auto px-4 py-4">
           <nav className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gold rounded-full flex items-center justify-center">
-                <Cross className="h-6 w-6 text-maroon-dark" />
-              </div>
+              <Image src="/images/ctk.png" alt="CTK Logo" width={40} height={40} className="h-10 w-10 rounded-full bg-white object-contain p-1" />
               <div>
                 <span className="text-lg font-bold block leading-tight">CTK EnrollSys</span>
                 <span className="text-gold text-xs">Christ the King Catholic School</span>
@@ -39,7 +38,7 @@ export default function HomePage() {
         <div className="container mx-auto px-4">
           <div className="max-w-4xl mx-auto text-center">
             <div className="w-20 h-20 bg-gold rounded-full flex items-center justify-center mx-auto mb-6">
-              <Cross className="h-12 w-12 text-maroon-dark" />
+              <Image src="/images/ctk.png" alt="CTK Logo" width={64} height={64} className="h-16 w-16 rounded-full bg-white object-contain p-1" />
             </div>
             <h1 className="text-4xl md:text-5xl font-bold mb-4">
               Christ the King Catholic School
@@ -168,9 +167,7 @@ export default function HomePage() {
         <div className="container mx-auto px-4">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gold rounded-full flex items-center justify-center">
-                <Cross className="h-6 w-6 text-maroon-dark" />
-              </div>
+              <Image src="/images/ctk.png" alt="CTK Logo" width={40} height={40} className="h-10 w-10 rounded-full bg-white object-contain p-1" />
               <div>
                 <p className="font-bold">Christ the King Catholic School</p>
                 <p className="text-gold text-sm">Olongapo City</p>

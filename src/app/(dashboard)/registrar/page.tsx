@@ -2,6 +2,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { ClipboardList, Clock, CheckCircle, XCircle, Users, FileText } from "lucide-react";
 import Link from "next/link";
+import { PageHeader } from "@/components/shared/page-header";
+import { StatsGrid } from "@/components/shared/stats-grid";
 
 export default function RegistrarDashboard() {
   const stats = [
@@ -45,13 +47,10 @@ export default function RegistrarDashboard() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold tracking-tight">Registrar Dashboard</h2>
-          <p className="text-muted-foreground">
-            Process enrollments and manage student records
-          </p>
-        </div>
+      <PageHeader
+        title="Registrar Dashboard"
+        description="Enrollment and records management overview"
+        actions={
         <div className="flex gap-2">
           <Link href="/registrar/students">
             <Button variant="outline">
@@ -66,35 +65,24 @@ export default function RegistrarDashboard() {
             </Button>
           </Link>
         </div>
-      </div>
+        }
+      />
 
-      {/* Stats Grid */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {stats.map((stat) => {
-          const Icon = stat.icon;
-          return (
-            <Card key={stat.title}>
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  {stat.title}
-                </CardTitle>
-                <div className={`p-2 rounded-lg ${stat.bg}`}>
-                  <Icon className={`h-4 w-4 ${stat.color}`} />
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stat.value}</div>
-              </CardContent>
-            </Card>
-          );
-        })}
-      </div>
+      <StatsGrid
+        items={stats.map((stat) => ({
+          title: stat.title,
+          value: stat.value,
+          icon: stat.icon,
+          iconClassName: stat.color,
+          iconBgClassName: stat.bg,
+        }))}
+      />
 
       {/* Pending Enrollments */}
-      <Card>
+      <Card className="ctk-panel">
         <CardHeader className="flex flex-row items-center justify-between">
           <div>
-            <CardTitle>Pending Enrollments</CardTitle>
+            <CardTitle className="ctk-section-title">Pending Enrollments</CardTitle>
             <CardDescription>Applications awaiting your review</CardDescription>
           </div>
           <Link href="/registrar/enrollments">

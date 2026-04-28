@@ -3,6 +3,11 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import dbConnect from "@/lib/db/connection";
 import User from "@/models/User";
+import {
+  ACCOUNT_LOCKOUT_MINUTES,
+  MAX_FAILED_LOGIN_ATTEMPTS,
+  SESSION_MAX_AGE_SECONDS,
+} from "@/lib/auth/constants";
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -17,9 +22,11 @@ export const authOptions: NextAuthOptions = {
           throw new Error("Email and password are required");
         }
 
+        const normalizedEmail = credentials.email.toLowerCase().trim();
+
         await dbConnect();
 
-        const user = await User.findOne({ email: credentials.email.toLowerCase() });
+        const user = await User.findOne({ email: normalizedEmail });
 
         if (!user) {
           throw new Error("Invalid email or password");
@@ -29,20 +36,58 @@ export const authOptions: NextAuthOptions = {
           throw new Error("Your account has been deactivated. Please contact the administrator.");
         }
 
+        const now = new Date();
+        if (user.lockoutUntil && user.lockoutUntil > now) {
+          throw new Error(
+            `Too many failed login attempts. Your account is locked for ${ACCOUNT_LOCKOUT_MINUTES} minutes.`
+          );
+        }
+
+        if (user.role === "parent" && !user.isEmailVerified) {
+          throw new Error("Please verify your email address before signing in.");
+        }
+
         const isPasswordValid = await bcrypt.compare(credentials.password, user.password);
 
         if (!isPasswordValid) {
+          const nextFailedAttempts = (user.failedLoginAttempts ?? 0) + 1;
+
+          if (nextFailedAttempts >= MAX_FAILED_LOGIN_ATTEMPTS) {
+            await User.findByIdAndUpdate(user._id, {
+              $set: {
+                failedLoginAttempts: 0,
+                lockoutUntil: new Date(Date.now() + ACCOUNT_LOCKOUT_MINUTES * 60 * 1000),
+              },
+            });
+
+            throw new Error(
+              `Too many failed login attempts. Your account is locked for ${ACCOUNT_LOCKOUT_MINUTES} minutes.`
+            );
+          }
+
+          await User.findByIdAndUpdate(user._id, {
+            $set: { failedLoginAttempts: nextFailedAttempts },
+          });
+
           throw new Error("Invalid email or password");
         }
 
-        // Update last login
-        await User.findByIdAndUpdate(user._id, { lastLogin: new Date() });
+        await User.findByIdAndUpdate(user._id, {
+          $set: {
+            lastLogin: new Date(),
+            failedLoginAttempts: 0,
+          },
+          $unset: {
+            lockoutUntil: 1,
+          },
+        });
 
         return {
           id: user._id.toString(),
           email: user.email,
           name: `${user.profile.firstName} ${user.profile.lastName}`,
           role: user.role,
+          isEmailVerified: user.isEmailVerified,
         };
       },
     }),
@@ -52,6 +97,7 @@ export const authOptions: NextAuthOptions = {
       if (user) {
         token.id = user.id;
         token.role = user.role;
+        token.isEmailVerified = user.isEmailVerified;
       }
       return token;
     },
@@ -59,6 +105,7 @@ export const authOptions: NextAuthOptions = {
       if (session.user) {
         session.user.id = token.id as string;
         session.user.role = token.role as string;
+        session.user.isEmailVerified = token.isEmailVerified as boolean;
       }
       return session;
     },
@@ -69,7 +116,7 @@ export const authOptions: NextAuthOptions = {
   },
   session: {
     strategy: "jwt",
-    maxAge: 30 * 24 * 60 * 60, // 30 days
+    maxAge: SESSION_MAX_AGE_SECONDS,
   },
   secret: process.env.NEXTAUTH_SECRET,
 };

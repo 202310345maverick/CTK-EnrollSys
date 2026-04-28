@@ -4,7 +4,11 @@ import dbConnect from "@/lib/db/connection";
 import Student from "@/models/Student";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge, type BadgeProps } from "@/components/ui/badge";
+import { PageHeader } from "@/components/shared/page-header";
 import { Search, Filter, Eye, Plus, Users } from "lucide-react";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 async function getStudentRows() {
   await dbConnect();
@@ -14,7 +18,22 @@ async function getStudentRows() {
     .sort({ createdAt: -1 })
     .lean();
 
-  return students as Array<{
+  return students.map((student) => ({
+    _id: String(student._id),
+    studentId: student.studentId,
+    currentGradeLevel: student.currentGradeLevel,
+    status: student.status,
+    personalInfo: {
+      firstName: student.personalInfo?.firstName,
+      lastName: student.personalInfo?.lastName,
+    },
+    parentUserId:
+      student.parentUserId &&
+      typeof student.parentUserId === "object" &&
+      "email" in student.parentUserId
+        ? { email: (student.parentUserId as { email?: string }).email }
+        : undefined,
+  })) as Array<{
     _id: string;
     studentId?: string;
     currentGradeLevel?: string;
@@ -41,11 +60,11 @@ async function getSummary() {
   return { total, active, graduated };
 }
 
-function statusPill(status?: string) {
-  if (status === "active") return "bg-green-100 text-green-800";
-  if (status === "graduated") return "bg-orange-100 text-orange-800";
-  if (status === "transferred") return "bg-yellow-100 text-yellow-800";
-  return "bg-slate-100 text-slate-700";
+function statusVariant(status?: string): NonNullable<BadgeProps["variant"]> {
+  if (status === "active") return "success";
+  if (status === "graduated") return "warning";
+  if (status === "transferred") return "pending";
+  return "neutral";
 }
 
 export default async function AdminStudentsPage() {
@@ -59,23 +78,23 @@ export default async function AdminStudentsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold tracking-tight">Student Records Management</h2>
-          <p className="text-muted-foreground">Search, view, and manage student records</p>
-        </div>
-        <Button className="h-11 rounded-xl px-5">
+      <PageHeader
+        title="Student Records Management"
+        description="Search, view, and manage student records"
+        actions={
+        <Button className="h-11 rounded-xl px-5 ctk-danger-button">
           <Plus className="mr-2 h-4 w-4" />
           Create New Record
         </Button>
-      </div>
+        }
+      />
 
       <Card className="ctk-panel">
         <CardContent className="space-y-4 pt-6">
           <div className="grid gap-3 md:grid-cols-3">
             <div className="relative md:col-span-1">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <input
+              <Input
                 type="text"
                 placeholder="Search by name or student ID..."
                 className="ctk-input w-full border px-10"
@@ -116,7 +135,7 @@ export default async function AdminStudentsPage() {
 
       <Card className="ctk-panel">
         <CardHeader>
-          <CardTitle className="text-base">All Student Records</CardTitle>
+          <CardTitle className="ctk-section-title">All Student Records</CardTitle>
           <CardDescription>{students.length} records found</CardDescription>
         </CardHeader>
         <CardContent>
@@ -126,43 +145,41 @@ export default async function AdminStudentsPage() {
               No student records found.
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    <th className="px-4 py-3">Student ID</th>
-                    <th className="px-4 py-3">Name</th>
-                    <th className="px-4 py-3">Grade</th>
-                    <th className="px-4 py-3">Status</th>
-                    <th className="px-4 py-3">Parent Email</th>
-                    <th className="px-4 py-3 text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
+            <Table className="ctk-table">
+              <TableHeader>
+                <TableRow className="bg-muted/50">
+                  <TableHead>Student ID</TableHead>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Grade</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Parent Email</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                   {students.map((student) => (
-                    <tr key={student._id} className="border-b last:border-0 hover:bg-slate-50/80">
-                      <td className="px-4 py-3 font-semibold text-primary">{student.studentId || "—"}</td>
-                      <td className="px-4 py-3 font-medium text-slate-900">
+                    <TableRow key={student._id}>
+                      <TableCell className="font-semibold text-primary">{student.studentId || "—"}</TableCell>
+                      <TableCell className="font-medium text-slate-900">
                         {student.personalInfo?.firstName || ""} {student.personalInfo?.lastName || ""}
-                      </td>
-                      <td className="px-4 py-3 text-slate-700">{student.currentGradeLevel || "—"}</td>
-                      <td className="px-4 py-3">
-                        <span className={`rounded-full px-3 py-1 text-xs font-semibold capitalize ${statusPill(student.status)}`}>
+                      </TableCell>
+                      <TableCell className="text-slate-700">{student.currentGradeLevel || "—"}</TableCell>
+                      <TableCell>
+                        <Badge variant={statusVariant(student.status)}>
                           {student.status || "unknown"}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-slate-600">{student.parentUserId?.email || "—"}</td>
-                      <td className="px-4 py-3 text-right">
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-slate-600">{student.parentUserId?.email || "—"}</TableCell>
+                      <TableCell className="text-right">
                         <Button variant="outline" size="sm" className="h-8">
                           <Eye className="mr-1 h-4 w-4" />
                           View
                         </Button>
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                   ))}
-                </tbody>
-              </table>
-            </div>
+              </TableBody>
+            </Table>
           )}
         </CardContent>
       </Card>

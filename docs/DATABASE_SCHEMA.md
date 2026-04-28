@@ -41,7 +41,11 @@ interface IUser {
   };
   isActive: boolean;                // Soft delete flag
   isEmailVerified: boolean;
+  emailVerificationToken?: string;
+  emailVerificationExpires?: Date;
   lastLogin?: Date;
+  failedLoginAttempts: number;
+  lockoutUntil?: Date;
   passwordResetToken?: string;
   passwordResetExpires?: Date;
   createdAt: Date;
@@ -66,6 +70,7 @@ interface IUser {
   },
   "isActive": true,
   "isEmailVerified": true,
+  "failedLoginAttempts": 0,
   "lastLogin": "2024-03-15T08:30:00Z",
   "createdAt": "2024-01-10T10:00:00Z",
   "updatedAt": "2024-03-15T08:30:00Z"

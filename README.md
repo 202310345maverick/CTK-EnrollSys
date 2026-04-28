@@ -19,6 +19,7 @@ A web-based enrollment and records management system developed as a capstone pro
 - [Environment Variables](#environment-variables)
 - [Database Schema](#database-schema)
 - [User Roles](#user-roles)
+- [Feature and QA Tracker](#feature-and-qa-tracker)
 - [Deployment](#deployment)
 - [Testing](#testing)
 - [Contributors](#contributors)
@@ -114,7 +115,7 @@ CTK EnrollSys addresses these challenges by providing:
           ┌───────────────────────┼───────────────────────┐
           ▼                       ▼                       ▼
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│  MongoDB Atlas  │    │   Cloudinary    │    │    Resend       │
+│  MongoDB Atlas  │    │   Cloudinary    │    │      SMTP       │
 │   (Database)    │    │ (File Storage)  │    │    (Email)      │
 │                 │    │                 │    │                 │
 │ • users         │    │ • Documents     │    │ • Notifications │
@@ -135,7 +136,7 @@ CTK EnrollSys addresses these challenges by providing:
 | **Application** | Page Routing, API Handlers, Middleware | Next.js 14 App Router |
 | **Business Logic** | Services, Validation, Computations | TypeScript |
 | **Data Access** | Database Models, Queries | Mongoose ODM |
-| **External Services** | File Storage, Email | Cloudinary, Resend |
+| **External Services** | File Storage, Email | Cloudinary, SMTP |
 | **Infrastructure** | Hosting, Database, CDN | Vercel, MongoDB Atlas |
 
 ## 🛠️ Tech Stack
@@ -150,7 +151,7 @@ CTK EnrollSys addresses these challenges by providing:
 | **UI Components** | shadcn/ui | Accessible, customizable components |
 | **Authentication** | NextAuth.js | Secure session management, multiple providers |
 | **File Upload** | Cloudinary | Free tier, image optimization, secure URLs |
-| **Email** | Resend | Developer-friendly, free tier (100 emails/day) |
+| **Email** | SMTP (Nodemailer) | Works with Gmail/Outlook and other SMTP providers |
 | **Forms** | React Hook Form + Zod | Performance, validation |
 | **Deployment** | Vercel | Zero-config, free tier, edge functions |
 
@@ -162,7 +163,7 @@ CTK EnrollSys addresses these challenges by providing:
 - npm or yarn
 - MongoDB Atlas account (free tier)
 - Cloudinary account (free tier)
-- Resend account (free tier)
+- SMTP email account (Gmail/Outlook)
 
 ### Installation
 
@@ -215,9 +216,20 @@ CLOUDINARY_CLOUD_NAME=your-cloud-name
 CLOUDINARY_API_KEY=your-api-key
 CLOUDINARY_API_SECRET=your-api-secret
 
-# Resend (Email)
-RESEND_API_KEY=re_your-api-key
-EMAIL_FROM=CTK EnrollSys <noreply@ctkschool.edu.ph>
+# SMTP Email (Gmail/Outlook/Any SMTP)
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_SECURE=false
+SMTP_USER=your-email@gmail.com
+SMTP_PASS=your-app-password
+EMAIL_FROM=CTK EnrollSys <your-email@gmail.com>
+
+# Authentication Security
+NEXT_PUBLIC_SESSION_IDLE_TIMEOUT_MINUTES=30
+AUTH_MAX_FAILED_LOGIN_ATTEMPTS=5
+AUTH_LOCKOUT_MINUTES=15
+AUTH_PASSWORD_RESET_TOKEN_TTL_MINUTES=60
+AUTH_EMAIL_VERIFICATION_TOKEN_TTL_MINUTES=1440
 
 # Optional: School Configuration
 SCHOOL_NAME=Christ the King Catholic School
@@ -253,6 +265,12 @@ See [docs/DATABASE_SCHEMA.md](docs/DATABASE_SCHEMA.md) for detailed schema speci
 | **Admin** | Full system access | User management, configuration, reports |
 | **Registrar** | Student & enrollment management | Process enrollments, manage records |
 | **Parent** | Limited to own children | Submit enrollment, view status |
+
+## ✅ Feature and QA Tracker
+
+Use the master tracker document for feature coverage, QA execution, and daily progress logging:
+
+- [Feature Checklist and QA Tracker](docs/FEATURES_QA_TRACKER.md)
 
 ## 📁 Project Structure
 
@@ -324,6 +342,7 @@ npm run test:coverage
 ## 📖 Documentation
 
 - [Database Schema](docs/DATABASE_SCHEMA.md)
+- [Feature Checklist and QA Tracker](docs/FEATURES_QA_TRACKER.md)
 - [API Reference](docs/API_REFERENCE.md)
 - [User Guide - Admin](docs/USER_GUIDE_ADMIN.md)
 - [User Guide - Registrar](docs/USER_GUIDE_REGISTRAR.md)

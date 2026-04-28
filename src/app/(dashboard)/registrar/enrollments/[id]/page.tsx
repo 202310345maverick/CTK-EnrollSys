@@ -2,6 +2,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth/options";
 import dbConnect from "@/lib/db/connection";
 import Enrollment from "@/models/Enrollment";
+import "@/models/Student";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, CheckCircle, XCircle, Clock, User, FileText, Calendar } from "lucide-react";
