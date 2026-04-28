@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth/options";
 import { writeFile, mkdir } from "fs/promises";
 import path from "path";
 import { existsSync } from "fs";
+import { ENROLLMENT_DOCUMENT_TYPES } from "@/lib/enrollment/constants";
 
 export async function POST(request: NextRequest) {
   try {
@@ -18,6 +19,13 @@ export async function POST(request: NextRequest) {
 
     if (!file) {
       return NextResponse.json({ error: "No file provided" }, { status: 400 });
+    }
+
+    if (!documentType || !ENROLLMENT_DOCUMENT_TYPES.includes(documentType as (typeof ENROLLMENT_DOCUMENT_TYPES)[number])) {
+      return NextResponse.json(
+        { error: "Invalid document type" },
+        { status: 400 }
+      );
     }
 
     // Validate file type
@@ -62,6 +70,7 @@ export async function POST(request: NextRequest) {
       message: "File uploaded successfully",
       url: publicUrl,
       filename,
+      originalName: file.name,
       documentType,
       size: file.size,
       mimeType: file.type,

@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth/options";
 import dbConnect from "@/lib/db/connection";
 import Payment from "@/models/Payment";
+import Student from "@/models/Student";
 import { generateId } from "@/lib/utils";
 
 export async function GET(request: NextRequest) {
@@ -22,7 +23,40 @@ export async function GET(request: NextRequest) {
 
     const query: Record<string, unknown> = { isVoided: false };
 
-    if (studentId) query.studentId = studentId;
+    if (session.user.role === "parent") {
+      const students = await Student.find({ parentUserId: session.user.id })
+        .select("_id")
+        .lean();
+      const parentStudentIds = students.map((student) => student._id.toString());
+
+      if (parentStudentIds.length === 0) {
+        return NextResponse.json({
+          payments: [],
+          pagination: {
+            page,
+            limit,
+            total: 0,
+            pages: 0,
+          },
+        });
+      }
+
+      if (studentId && !parentStudentIds.includes(studentId)) {
+        return NextResponse.json({
+          payments: [],
+          pagination: {
+            page,
+            limit,
+            total: 0,
+            pages: 0,
+          },
+        });
+      }
+
+      query.studentId = studentId ? studentId : { $in: parentStudentIds };
+    }
+
+    if (studentId && session.user.role !== "parent") query.studentId = studentId;
     if (enrollmentId) query.enrollmentId = enrollmentId;
 
     const skip = (page - 1) * limit;

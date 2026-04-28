@@ -192,7 +192,7 @@ This document outlines key testing scenarios to validate the system against the 
 |---------|----------|-------|-----------------|----------|
 | INT-01 | Database connection | Start application | MongoDB Atlas connected | Critical |
 | INT-02 | Cloudinary integration | Upload document | File stored in Cloudinary | Critical |
-| INT-03 | Email service (Resend) | Trigger notification | Email sent and received | High |
+| INT-03 | Email service (SMTP) | Trigger notification | Email sent and received | High |
 | INT-04 | NextAuth session | Login, perform actions | Session maintained correctly | Critical |
 | INT-05 | Vercel deployment | Deploy to Vercel | Application accessible | Critical |
 | INT-06 | Environment variables | Deploy with production env | All services connect correctly | Critical |

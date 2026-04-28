@@ -1,5 +1,8 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Users, ClipboardList, CreditCard, TrendingUp, UserCheck, Clock } from "lucide-react";
+import { PageHeader } from "@/components/shared/page-header";
+import { StatsGrid } from "@/components/shared/stats-grid";
+import { Badge } from "@/components/ui/badge";
 
 export default function AdminDashboard() {
   const stats = [
@@ -39,43 +42,24 @@ export default function AdminDashboard() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold tracking-tight">Admin Dashboard</h2>
-        <p className="text-muted-foreground">
-          Overview of the school enrollment system
-        </p>
-      </div>
+      <PageHeader title="Admin Dashboard" description="System overview and management" />
 
-      {/* Stats Grid */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {stats.map((stat) => {
-          const Icon = stat.icon;
-          return (
-            <Card key={stat.title}>
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  {stat.title}
-                </CardTitle>
-                <div className={`p-2 rounded-lg ${stat.bg}`}>
-                  <Icon className={`h-4 w-4 ${stat.color}`} />
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stat.value}</div>
-                <p className="text-xs text-muted-foreground">
-                  <span className="text-green-600">{stat.change}</span> from last month
-                </p>
-              </CardContent>
-            </Card>
-          );
-        })}
-      </div>
+      <StatsGrid
+        items={stats.map((stat) => ({
+          title: stat.title,
+          value: stat.value,
+          icon: stat.icon,
+          change: `${stat.change} from last month`,
+          iconClassName: stat.color,
+          iconBgClassName: stat.bg,
+        }))}
+      />
 
       {/* Recent Activity */}
       <div className="grid gap-4 md:grid-cols-2">
-        <Card>
+        <Card className="ctk-panel">
           <CardHeader>
-            <CardTitle>Recent Enrollments</CardTitle>
+            <CardTitle className="ctk-section-title">Recent Enrollments</CardTitle>
             <CardDescription>Latest enrollment applications</CardDescription>
           </CardHeader>
           <CardContent>
@@ -86,18 +70,16 @@ export default function AdminDashboard() {
                     <p className="font-medium">Maria Santos Dela Cruz</p>
                     <p className="text-sm text-muted-foreground">Grade 3 - New Student</p>
                   </div>
-                  <span className="px-2 py-1 text-xs rounded-full bg-yellow-100 text-yellow-800">
-                    Pending
-                  </span>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+                    <Badge variant="pending">Pending</Badge>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
 
-        <Card>
+        <Card className="ctk-panel">
           <CardHeader>
-            <CardTitle>Recent Payments</CardTitle>
+            <CardTitle className="ctk-section-title">Recent Payments</CardTitle>
             <CardDescription>Latest payment transactions</CardDescription>
           </CardHeader>
           <CardContent>

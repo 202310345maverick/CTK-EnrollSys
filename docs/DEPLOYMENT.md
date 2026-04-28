@@ -11,7 +11,7 @@ This guide covers deploying CTK EnrollSys using free tiers of Vercel and MongoDB
 1. [Prerequisites](#prerequisites)
 2. [MongoDB Atlas Setup](#mongodb-atlas-setup)
 3. [Cloudinary Setup](#cloudinary-setup)
-4. [Resend Email Setup](#resend-email-setup)
+4. [SMTP Email Setup](#smtp-email-setup)
 5. [Vercel Deployment](#vercel-deployment)
 6. [Environment Configuration](#environment-configuration)
 7. [Post-Deployment Verification](#post-deployment-verification)
@@ -29,7 +29,7 @@ Before deployment, ensure you have:
 - [ ] Vercel account (free tier)
 - [ ] MongoDB Atlas account (free tier)
 - [ ] Cloudinary account (free tier)
-- [ ] Resend account (free tier)
+- [ ] SMTP email account (Gmail or Outlook)
 - [ ] Project code pushed to GitHub
 
 ---
@@ -110,30 +110,28 @@ mongodb+srv://ctk_admin:<password>@ctk-cluster.xxxxx.mongodb.net/ctk-enrollsys?r
 
 ---
 
-## Resend Email Setup
+## SMTP Email Setup
 
 ### Step 1: Create Account
 
-1. Go to [resend.com](https://resend.com)
-2. Sign up with email
-3. Verify your email address
+1. Use an email account you control (recommended: Gmail).
+2. Enable 2-Step Verification on that account.
+3. Generate an App Password for SMTP.
 
-### Step 2: Get API Key
+### Step 2: SMTP Configuration
 
-1. Go to API Keys section
-2. Create new API key
-3. Name: `CTK EnrollSys Production`
-4. Copy the key (starts with `re_`)
+Use these values (Gmail):
 
-### Step 3: Domain Setup (Optional but Recommended)
+| Variable | Value |
+|----------|-------|
+| `SMTP_HOST` | `smtp.gmail.com` |
+| `SMTP_PORT` | `587` |
+| `SMTP_SECURE` | `false` |
+| `SMTP_USER` | your Gmail address |
+| `SMTP_PASS` | your App Password |
+| `EMAIL_FROM` | `CTK EnrollSys <your-email@gmail.com>` |
 
-For production, add your domain:
-1. Go to Domains
-2. Add domain: `ctkschool.edu.ph` (or your domain)
-3. Add DNS records as instructed
-4. Verify domain
-
-**Note:** For development/capstone, you can use Resend's test mode with `delivered@resend.dev`
+**Note:** This works without owning a custom domain. For school-wide production volume, use a managed domain SMTP account later.
 
 ---
 
@@ -168,8 +166,12 @@ Click "Environment Variables" and add:
 | `CLOUDINARY_CLOUD_NAME` | your-cloud-name | All |
 | `CLOUDINARY_API_KEY` | your-api-key | All |
 | `CLOUDINARY_API_SECRET` | your-api-secret | All |
-| `RESEND_API_KEY` | re_your-key | All |
-| `EMAIL_FROM` | CTK EnrollSys <noreply@ctkschool.edu.ph> | All |
+| `SMTP_HOST` | smtp.gmail.com | All |
+| `SMTP_PORT` | 587 | All |
+| `SMTP_SECURE` | false | All |
+| `SMTP_USER` | your-email@gmail.com | All |
+| `SMTP_PASS` | your-app-password | All |
+| `EMAIL_FROM` | CTK EnrollSys <your-email@gmail.com> | All |
 | `NEXT_PUBLIC_APP_URL` | https://your-app.vercel.app | Production |
 
 ### Step 4: Deploy
@@ -205,9 +207,13 @@ CLOUDINARY_CLOUD_NAME=your-cloud-name
 CLOUDINARY_API_KEY=123456789012345
 CLOUDINARY_API_SECRET=your-api-secret
 
-# Resend Email
-RESEND_API_KEY=re_your-api-key
-EMAIL_FROM=CTK EnrollSys <noreply@ctkschool.edu.ph>
+# SMTP Email
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_SECURE=false
+SMTP_USER=your-email@gmail.com
+SMTP_PASS=your-app-password
+EMAIL_FROM=CTK EnrollSys <your-email@gmail.com>
 
 # School Configuration
 SCHOOL_NAME=Christ the King Catholic School
@@ -305,15 +311,15 @@ export async function GET() {
 
 **Recommendation:** Enable automatic compression; 25GB storage is ample for document uploads.
 
-### Resend Free
+### SMTP (Gmail Free)
 
 | Resource | Limit |
 |----------|-------|
-| Emails | 100/day |
-| Domains | 1 |
-| API Calls | Unlimited |
+| Emails | ~500/day (personal Gmail, subject to provider policy) |
+| Domains | Not required |
+| API Calls | No app-level limit in this project |
 
-**Recommendation:** 100 emails/day is sufficient for enrollment notifications; batch similar notifications.
+**Recommendation:** Good for capstone/demo traffic. For larger real deployment, switch to a school-managed SMTP/domain sender.
 
 ---
 
@@ -357,11 +363,12 @@ export async function GET() {
 
 #### 5. Email Not Sending
 
-**Cause:** Resend API key invalid or domain not verified
+**Cause:** SMTP credentials invalid or app password not configured
 **Solution:**
-1. Use Resend test email for development: `delivered@resend.dev`
-2. Verify domain for production emails
-3. Check Resend dashboard for error logs
+1. Confirm `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS` are correct
+2. For Gmail, use App Password (not your normal account password)
+3. Confirm `EMAIL_FROM` matches your SMTP sender account
+4. Check Vercel function logs for SMTP auth errors
 
 ### Viewing Logs
 
@@ -392,7 +399,7 @@ If the school decides to continue using the system:
 | MongoDB Atlas | M2 → M10 | $9 → $57/month |
 | Vercel | Pro | $20/month |
 | Cloudinary | Plus | $89/month |
-| Resend | Pro | $20/month |
+| Email Provider | School SMTP / Managed SMTP | Depends on provider |
 
 ---
 

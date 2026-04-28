@@ -11,10 +11,11 @@ This document outlines the training program for school staff who will use the CT
 1. [Training Overview](#training-overview)
 2. [Admin User Training](#admin-user-training)
 3. [Registrar User Training](#registrar-user-training)
-4. [Training Schedule](#training-schedule)
-5. [Training Materials](#training-materials)
-6. [Assessment & Certification](#assessment--certification)
-7. [Post-Training Support](#post-training-support)
+4. [Parent User Training](#parent-user-training)
+5. [Training Schedule](#training-schedule)
+6. [Training Materials](#training-materials)
+7. [Assessment & Certification](#assessment--certification)
+8. [Post-Training Support](#post-training-support)
 
 ---
 
@@ -35,6 +36,12 @@ By the end of training, users will be able to:
    - Manage student records
    - Log and track payments
    - Generate DepEd-compliant reports
+
+3. **Parent Users:**
+   - Create and manage student enrollment applications
+   - Upload required enrollment documents correctly
+   - Track enrollment status and respond to registrar requests
+   - View balances and payment history
 
 ### Training Approach
 
@@ -424,6 +431,83 @@ By the end of training, users will be able to:
 
 ---
 
+## Parent User Training
+
+### Module P1: Parent Portal Basics (30 minutes)
+
+**Objectives:**
+- Access the parent portal securely
+- Navigate enrollment-related pages
+- Manage parent profile details
+
+**Topics Covered:**
+
+| Topic | Duration | Activities |
+|-------|----------|------------|
+| Login and account setup | 10 min | Demo + Practice |
+| Parent dashboard overview | 10 min | Guided tour |
+| Profile and contact updates | 10 min | Hands-on |
+
+---
+
+### Module P2: Enrollment Submission (60 minutes)
+
+**Objectives:**
+- Create a new enrollment application
+- Enter accurate student information
+- Upload complete and readable documents
+- Submit and track application status
+
+**Topics Covered:**
+
+| Topic | Duration | Activities |
+|-------|----------|------------|
+| Starting a new enrollment | 15 min | Demo |
+| Student information entry | 15 min | Hands-on |
+| Document upload requirements | 20 min | Practice |
+| Submission and status tracking | 10 min | Demo + Practice |
+
+**Step-by-Step: Submitting an Enrollment Application**
+
+```
+1. Go to Parent Dashboard → Enrollment → New Application
+2. Select school year and grade level
+3. Enter student information completely
+4. Upload required documents:
+   - Birth Certificate
+   - Report Card / Form 138
+   - ID Photo
+5. Review all entries for accuracy
+6. Click "Submit Application"
+7. Note the application reference number
+8. Monitor status in Parent Dashboard → Enrollments
+```
+
+---
+
+### Module P3: Payments and Follow-Up Actions (30 minutes)
+
+**Objectives:**
+- View assessed fees and outstanding balance
+- Submit proof of payment when applicable
+- Respond to document correction or re-upload requests
+
+**Topics Covered:**
+
+| Topic | Duration | Activities |
+|-------|----------|------------|
+| Viewing assessment and balance | 10 min | Hands-on |
+| Payment and receipt confirmation | 10 min | Demo |
+| Responding to registrar requests | 10 min | Practice |
+
+**Practice Exercise:**
+- Submit 1 sample enrollment application
+- Upload all required test documents
+- Check status after registrar feedback
+- Confirm assessed fees and payment status
+
+---
+
 ## Training Schedule
 
 ### Recommended Schedule
@@ -434,7 +518,9 @@ By the end of training, users will be able to:
 | Day 1 (Afternoon) | 1:00 PM - 3:30 PM | Admin | A4, A5 |
 | Day 2 (Morning) | 9:00 AM - 12:00 PM | Registrar | R1, R2 |
 | Day 2 (Afternoon) | 1:00 PM - 4:00 PM | Registrar | R3, R4, R5 |
-| Day 3 | 9:00 AM - 12:00 PM | All Users | Practice, Q&A |
+| Day 3 (Morning) | 9:00 AM - 12:00 PM | Parent | P1, P2 |
+| Day 3 (Afternoon) | 1:00 PM - 3:00 PM | Parent | P3 + Guided Practice |
+| Day 4 | 9:00 AM - 12:00 PM | All Users | Integrated Practice, Q&A |
 
 ### Training Timeline
 
@@ -476,6 +562,7 @@ By the end of training, users will be able to:
 |----------|--------|---------|
 | User Manual - Admin | PDF | Reference guide |
 | User Manual - Registrar | PDF | Reference guide |
+| User Manual - Parent | PDF | Reference guide |
 | Quick Reference Cards | Printed | Desk reference |
 | Video Tutorials | MP4/Online | Self-paced learning |
 | Practice Exercises | PDF | Hands-on practice |
@@ -531,6 +618,13 @@ After training, users complete practical assessment:
 - [ ] Update student contact information
 - [ ] Log 2 payments (cash and check)
 - [ ] Generate class list report
+
+**Parent Assessment Tasks:**
+- [ ] Create and submit 1 complete enrollment application
+- [ ] Upload all required supporting documents
+- [ ] Check application status and interpret feedback
+- [ ] Respond to a request for document re-upload
+- [ ] View assessed fees and payment status
 
 ### Passing Criteria
 

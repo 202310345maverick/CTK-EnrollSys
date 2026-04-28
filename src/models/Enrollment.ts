@@ -3,17 +3,19 @@ import mongoose, { Schema, Document, Model } from "mongoose";
 export interface IEnrollment extends Document {
   _id: mongoose.Types.ObjectId;
   enrollmentNumber: string;
-  studentId: mongoose.Types.ObjectId;
-  schoolYearId: mongoose.Types.ObjectId;
-  enrollmentType: "new" | "old" | "transferee" | "returning";
-  gradeLevel: string;
+  studentId?: mongoose.Types.ObjectId;
+  schoolYearId?: mongoose.Types.ObjectId;
+  enrollmentType?: "new" | "old" | "transferee" | "returning";
+  gradeLevel?: string;
   previousSchool?: {
     name: string;
     address: string;
     lastGradeCompleted: string;
     schoolYear: string;
   };
-  status: "pending" | "under_review" | "approved" | "rejected" | "waitlisted" | "enrolled";
+  status: "draft" | "pending" | "under_review" | "approved" | "rejected" | "waitlisted" | "enrolled";
+  isDraft: boolean;
+  draftData?: Record<string, unknown>;
   statusHistory: {
     status: string;
     changedBy: mongoose.Types.ObjectId;
@@ -35,6 +37,7 @@ export interface IEnrollment extends Document {
     }[];
   };
   submittedBy: mongoose.Types.ObjectId;
+  submittedAt?: Date;
   processedBy?: mongoose.Types.ObjectId;
   enrollmentDate?: Date;
   remarks?: string;
@@ -52,21 +55,17 @@ const EnrollmentSchema = new Schema<IEnrollment>(
     studentId: {
       type: Schema.Types.ObjectId,
       ref: "Student",
-      required: true,
     },
     schoolYearId: {
       type: Schema.Types.ObjectId,
       ref: "SchoolYear",
-      required: true,
     },
     enrollmentType: {
       type: String,
       enum: ["new", "old", "transferee", "returning"],
-      required: true,
     },
     gradeLevel: {
       type: String,
-      required: true,
     },
     previousSchool: {
       name: String,
@@ -76,8 +75,15 @@ const EnrollmentSchema = new Schema<IEnrollment>(
     },
     status: {
       type: String,
-      enum: ["pending", "under_review", "approved", "rejected", "waitlisted", "enrolled"],
+      enum: ["draft", "pending", "under_review", "approved", "rejected", "waitlisted", "enrolled"],
       default: "pending",
+    },
+    isDraft: {
+      type: Boolean,
+      default: false,
+    },
+    draftData: {
+      type: Schema.Types.Mixed,
     },
     statusHistory: [
       {
@@ -126,6 +132,7 @@ const EnrollmentSchema = new Schema<IEnrollment>(
       ref: "User",
       required: true,
     },
+    submittedAt: Date,
     processedBy: {
       type: Schema.Types.ObjectId,
       ref: "User",
@@ -144,6 +151,7 @@ EnrollmentSchema.index({ studentId: 1 });
 EnrollmentSchema.index({ schoolYearId: 1 });
 EnrollmentSchema.index({ status: 1 });
 EnrollmentSchema.index({ submittedBy: 1 });
+EnrollmentSchema.index({ isDraft: 1 });
 EnrollmentSchema.index({ gradeLevel: 1 });
 EnrollmentSchema.index({ createdAt: -1 });
 

@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import Link from "next/link";
-import { Cross, Loader2 } from "lucide-react";
+import Image from "next/image";
+import { Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -46,7 +47,7 @@ export default function RegisterPage() {
 
       toast({
         title: "Registration Successful",
-        description: "Your account has been created. Please login.",
+        description: result.message || "Your account has been created.",
       });
       router.push("/login");
     } catch (error) {
@@ -61,14 +62,12 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen flex">
+    <div className="h-screen overflow-hidden flex">
       {/* Left Panel - Branding (hidden on mobile) */}
-      <div className="hidden lg:flex lg:w-2/5 bg-gradient-to-br from-maroon to-maroon-dark p-12 flex-col justify-between">
+      <div className="hidden lg:flex lg:w-2/5 bg-gradient-to-br from-maroon to-maroon-dark p-8 flex-col justify-between">
         <div>
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 bg-gold rounded-full flex items-center justify-center">
-              <Cross className="h-7 w-7 text-maroon-dark" />
-            </div>
+            <Image src="/images/ctk.png" alt="CTK Logo" width={48} height={48} className="h-12 w-12 rounded-full bg-white object-contain p-1" />
             <div>
               <h1 className="text-2xl font-bold text-white">Christ the King</h1>
               <p className="text-gold text-sm">Catholic School</p>
@@ -76,14 +75,14 @@ export default function RegisterPage() {
           </div>
         </div>
         
-        <div className="space-y-6">
-          <h2 className="text-3xl font-bold text-white leading-tight">
+        <div className="space-y-4">
+          <h2 className="text-2xl font-bold text-white leading-tight">
             Join Our<br />School Community
           </h2>
           <p className="text-white/80 max-w-sm">
             Create your parent account to start the enrollment process for your children.
           </p>
-          <div className="space-y-3 pt-4">
+          <div className="space-y-2 pt-2">
             <div className="flex items-center gap-3 text-white/80">
               <div className="w-6 h-6 bg-gold/20 rounded-full flex items-center justify-center">
                 <span className="text-gold text-xs">✓</span>
@@ -111,26 +110,24 @@ export default function RegisterPage() {
       </div>
 
       {/* Right Panel - Register Form */}
-      <div className="flex-1 flex items-center justify-center p-8 bg-gradient-to-br from-gray-50 to-gray-100">
-        <Card className="w-full max-w-lg shadow-xl border-t-4 border-t-maroon">
-          <CardHeader className="text-center pb-2">
+      <div className="flex-1 flex items-center justify-center p-4 lg:p-6 bg-gradient-to-br from-gray-50 to-gray-100">
+        <Card className="w-full max-w-3xl shadow-xl border-t-4 border-t-maroon">
+          <CardHeader className="text-center pb-1">
             <div className="lg:hidden flex justify-center mb-4">
-              <div className="w-16 h-16 bg-maroon rounded-full flex items-center justify-center">
-                <Cross className="h-9 w-9 text-gold" />
-              </div>
+              <Image src="/images/ctk.png" alt="CTK Logo" width={64} height={64} className="h-16 w-16 rounded-full bg-white object-contain p-1 shadow" />
             </div>
-            <CardTitle className="text-2xl text-maroon">Create Account</CardTitle>
+            <CardTitle className="text-xl text-maroon">Create Account</CardTitle>
             <CardDescription>Register for a parent account to enroll your children</CardDescription>
           </CardHeader>
-          <CardContent className="pt-4">
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+          <CardContent className="pt-2">
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-3">
+              <div className="grid gap-3 md:grid-cols-3">
                 <div className="space-y-2">
                   <Label htmlFor="firstName">First Name *</Label>
                   <Input
                     id="firstName"
                     placeholder="Juan"
-                    className="h-11"
+                    className="h-10"
                     {...register("firstName")}
                     disabled={isLoading}
                   />
@@ -143,7 +140,7 @@ export default function RegisterPage() {
                   <Input
                     id="lastName"
                     placeholder="Dela Cruz"
-                    className="h-11"
+                    className="h-10"
                     {...register("lastName")}
                     disabled={isLoading}
                   />
@@ -158,20 +155,20 @@ export default function RegisterPage() {
                 <Input
                   id="middleName"
                   placeholder="Santos (Optional)"
-                  className="h-11"
+                  className="h-10"
                   {...register("middleName")}
                   disabled={isLoading}
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid gap-3 md:grid-cols-2">
                 <div className="space-y-2">
                   <Label htmlFor="email">Email *</Label>
                   <Input
                     id="email"
                     type="email"
                     placeholder="juan@email.com"
-                    className="h-11"
+                    className="h-10"
                     {...register("email")}
                     disabled={isLoading}
                   />
@@ -184,7 +181,7 @@ export default function RegisterPage() {
                   <Input
                     id="contactNumber"
                     placeholder="09171234567"
-                    className="h-11"
+                    className="h-10"
                     {...register("contactNumber")}
                     disabled={isLoading}
                   />
@@ -199,20 +196,20 @@ export default function RegisterPage() {
                 <Input
                   id="address"
                   placeholder="123 Rizal St., Olongapo City (Optional)"
-                  className="h-11"
+                  className="h-10"
                   {...register("address")}
                   disabled={isLoading}
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid gap-3 md:grid-cols-2">
                 <div className="space-y-2">
                   <Label htmlFor="password">Password *</Label>
                   <Input
                     id="password"
                     type="password"
                     placeholder="At least 8 characters"
-                    className="h-11"
+                    className="h-10"
                     {...register("password")}
                     disabled={isLoading}
                   />
@@ -226,7 +223,7 @@ export default function RegisterPage() {
                     id="confirmPassword"
                     type="password"
                     placeholder="Re-enter password"
-                    className="h-11"
+                    className="h-10"
                     {...register("confirmPassword")}
                     disabled={isLoading}
                   />
@@ -238,7 +235,7 @@ export default function RegisterPage() {
 
               <Button 
                 type="submit" 
-                className="w-full h-11 bg-maroon hover:bg-maroon-dark text-white font-medium mt-2" 
+                className="w-full h-10 bg-maroon hover:bg-maroon-dark text-white font-medium mt-1" 
                 disabled={isLoading}
               >
                 {isLoading ? (
@@ -252,7 +249,7 @@ export default function RegisterPage() {
               </Button>
             </form>
 
-            <div className="mt-6 pt-6 border-t text-center">
+            <div className="mt-4 pt-4 border-t text-center">
               <p className="text-muted-foreground text-sm">
                 Already have an account?{" "}
                 <Link href="/login" className="text-maroon hover:underline font-medium">

@@ -5,6 +5,7 @@ import { authOptions } from "@/lib/auth/options";
 import dbConnect from "@/lib/db/connection";
 import Enrollment from "@/models/Enrollment";
 import Student from "@/models/Student";
+import Document from "@/models/Document";
 
 export async function GET(
   request: NextRequest,
@@ -21,6 +22,8 @@ export async function GET(
     const enrollment = await Enrollment.findById(params.id)
       .populate("studentId")
       .populate("schoolYearId", "name")
+      .populate("statusHistory.changedBy", "profile.firstName profile.lastName email role")
+      .populate("documents.documentId", "secureUrl originalName fileName createdAt")
       .lean();
 
     if (!enrollment) {
@@ -66,8 +69,7 @@ export async function PUT(
 
     const body = await request.json();
 
-    // Parents can only update if status is pending
-    if (isOwner && enrollment.status !== "pending") {
+    if (isOwner && !enrollment.isDraft && enrollment.status !== "pending") {
       return NextResponse.json(
         { error: "Cannot modify enrollment after it has been reviewed" },
         { status: 400 }
@@ -90,6 +92,13 @@ export async function PUT(
           section: body.section,
         });
       }
+    }
+
+    if (isOwner && enrollment.isDraft && body.draftData) {
+      enrollment.draftData = body.draftData;
+      enrollment.enrollmentType = body.draftData?.enrollmentType || enrollment.enrollmentType;
+      enrollment.gradeLevel = body.draftData?.gradeLevel || enrollment.gradeLevel;
+      enrollment.status = "draft";
     }
 
     // Update documents if provided
@@ -134,31 +143,29 @@ export async function DELETE(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    // Parents can only delete pending enrollments
-    if (isOwner && enrollment.status !== "pending") {
+    if (isOwner && !enrollment.isDraft && enrollment.status !== "pending") {
       return NextResponse.json(
         { error: "Cannot delete enrollment after it has been reviewed" },
         { status: 400 }
       );
     }
 
-    // Get the student ID before deleting enrollment
-    const studentId = enrollment.studentId;
+    const studentId = enrollment.studentId ? enrollment.studentId.toString() : null;
 
-    // Delete the enrollment
+    await Document.deleteMany({ enrollmentId: params.id });
+
     await Enrollment.findByIdAndDelete(params.id);
 
-    // Check if student has other enrollments
-    const otherEnrollments = await Enrollment.countDocuments({ studentId });
-    
-    // If no other enrollments, delete the student record too
-    if (otherEnrollments === 0) {
-      await Student.findByIdAndDelete(studentId);
-    } else {
-      // Just remove this enrollment from student's history
-      await Student.findByIdAndUpdate(studentId, {
-        $pull: { enrollmentHistory: params.id },
-      });
+    if (studentId) {
+      const otherEnrollments = await Enrollment.countDocuments({ studentId });
+
+      if (otherEnrollments === 0) {
+        await Student.findByIdAndDelete(studentId);
+      } else {
+        await Student.findByIdAndUpdate(studentId, {
+          $pull: { enrollmentHistory: params.id },
+        });
+      }
     }
 
     return NextResponse.json({ message: "Enrollment deleted successfully" });

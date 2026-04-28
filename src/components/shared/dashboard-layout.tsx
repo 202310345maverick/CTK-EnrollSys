@@ -1,17 +1,16 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
 import {
-  X,
   LayoutDashboard,
   Users,
   FileText,
   CreditCard,
   UserCog,
   LogOut,
-  Plus,
   ClipboardList,
   CircleDollarSign,
 } from "lucide-react";
@@ -77,10 +76,11 @@ export default function DashboardLayout({
     <div className="min-h-screen bg-[#efeff1] text-slate-900">
       {/* Sidebar */}
       <aside className="fixed inset-y-0 left-0 z-50 hidden w-[218px] overflow-hidden border-r border-black/10 bg-gradient-to-b from-[#8d1215] to-[#7a1114] text-white md:block">
-        <div className="flex h-24 items-center px-5">
+        <div className="flex h-24 items-center gap-3 px-5">
+          <Image src="/images/ctk.png" alt="CTK Logo" width={50} height={50} className="h-12 w-12 rounded-full bg-white object-contain p-1" />
           <div>
-            <p className="text-[35px] font-extrabold leading-none">CTK EnrollSys</p>
-            <p className="mt-2 text-xs font-medium text-amber-300">● Paperless Enrollment</p>
+            <p className="text-2xl font-extrabold leading-none">CTK EnrollSys</p>
+            <p className="mt-1 text-xs font-medium text-amber-300">● Paperless Enrollment</p>
           </div>
         </div>
 
@@ -116,9 +116,7 @@ export default function DashboardLayout({
       <div className="pl-0 md:pl-[218px]">
         {/* Header */}
         <header className="sticky top-0 z-40 flex h-16 items-center justify-between border-b border-black/10 bg-[#f6f6f7] px-6">
-          <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full text-slate-700">
-            <X className="h-4 w-4" />
-          </Button>
+          <div />
 
           <div className="flex items-center gap-3">
             <div className="text-right">
