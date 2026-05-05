@@ -94,6 +94,22 @@ export async function PUT(
       }
     }
 
+    // Admin/registrar can update assessed fees
+    if (isAdmin && body.assessedFees) {
+      enrollment.assessedFees = body.assessedFees;
+    }
+
+    // Admin/registrar can update individual document status
+    if (isAdmin && body.documentUpdate) {
+      const { documentType, status: docStatus, remarks: docRemarks } = body.documentUpdate;
+      const docIndex = enrollment.documents.findIndex((d: any) => d.type === documentType);
+      if (docIndex !== -1) {
+        enrollment.documents[docIndex].status = docStatus;
+        if (docRemarks) enrollment.documents[docIndex].remarks = docRemarks;
+        enrollment.markModified("documents");
+      }
+    }
+
     if (isOwner && enrollment.isDraft && body.draftData) {
       enrollment.draftData = body.draftData;
       enrollment.enrollmentType = body.draftData?.enrollmentType || enrollment.enrollmentType;

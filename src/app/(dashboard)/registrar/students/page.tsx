@@ -1,129 +1,157 @@
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth/options";
-import dbConnect from "@/lib/db/connection";
-import Student from "@/models/Student";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+"use client";
+
+import { useState, useEffect, useCallback } from "react";
+import Link from "next/link";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge, type BadgeProps } from "@/components/ui/badge";
-import { Search, Filter, Eye, UserPlus } from "lucide-react";
-import Link from "next/link";
-import ExportDemo from "@/components/ExportDemo";
+import { Badge } from "@/components/ui/badge";
 import { PageHeader } from "@/components/shared/page-header";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+} from "@/components/ui/table";
+import { Search, Eye, Loader2, Users } from "lucide-react";
 
-async function getStudents() {
-  await dbConnect();
-  const students = await Student.find()
-    .sort({ createdAt: -1 })
-    .lean();
-  return students;
-}
+const GRADE_LEVELS = ["Grade 1","Grade 2","Grade 3","Grade 4","Grade 5","Grade 6","Grade 7","Grade 8","Grade 9","Grade 10","Grade 11","Grade 12"];
+const STATUS_OPTIONS = ["active","inactive","graduated","transferred"];
 
-export default async function StudentsPage() {
-  await getServerSession(authOptions);
-  const students = await getStudents();
+const STATUS_COLORS: Record<string, string> = {
+  active: "bg-emerald-100 text-emerald-800 border border-emerald-200",
+  inactive: "bg-slate-100 text-slate-600 border border-slate-200",
+  graduated: "bg-blue-100 text-blue-800 border border-blue-200",
+  transferred: "bg-amber-100 text-amber-800 border border-amber-200",
+};
 
-  const getStatusVariant = (status: string): NonNullable<BadgeProps["variant"]> => {
-    switch (status) {
-      case "active": return "success";
-      case "inactive": return "neutral";
-      case "graduated": return "warning";
-      case "transferred": return "pending";
-      default: return "neutral";
+export default function StudentsPage() {
+  const [students, setStudents] = useState<any[]>([]);
+  const [total, setTotal] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+  const [gradeFilter, setGradeFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(search), 350);
+    return () => clearTimeout(t);
+  }, [search]);
+
+  const fetchStudents = useCallback(async () => {
+    setLoading(true);
+    try {
+      const params = new URLSearchParams({ limit: "100" });
+      if (debouncedSearch) params.set("search", debouncedSearch);
+      if (gradeFilter) params.set("gradeLevel", gradeFilter);
+      if (statusFilter) params.set("status", statusFilter);
+      const res = await fetch(`/api/students?${params}`);
+      const data = await res.json();
+      setStudents(data.students || []);
+      setTotal(data.pagination?.total || 0);
+    } finally {
+      setLoading(false);
     }
-  };
+  }, [debouncedSearch, gradeFilter, statusFilter]);
+
+  useEffect(() => { fetchStudents(); }, [fetchStudents]);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <PageHeader
-        title="Student Records Management"
-        description="Search, view, and manage student records"
-        actions={
-        <div className="flex items-center gap-2">
-          <Button className="ctk-danger-button">
-            <UserPlus className="mr-2 h-4 w-4" />
-            Add Student
-          </Button>
-          <ExportDemo reportKey="Student Records" />
-        </div>
-        }
+        title="Student Records"
+        description="Search and view student records"
       />
 
       <Card className="ctk-panel">
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="ctk-section-title">All Students</CardTitle>
-              <CardDescription>{students.length} total students</CardDescription>
+        <CardHeader className="pb-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="relative flex-1 min-w-[200px]">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+              <Input
+                placeholder="Search by name, ID, or LRN..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="pl-8 h-8 text-sm"
+              />
             </div>
-            <div className="flex items-center gap-2">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  type="text"
-                  placeholder="Search students..."
-                  className="ctk-input w-64 pl-9"
-                />
-              </div>
-              <Button variant="outline" size="sm">
-                <Filter className="mr-2 h-4 w-4" />
-                Filter
-              </Button>
-            </div>
+            <select
+              value={gradeFilter}
+              onChange={(e) => setGradeFilter(e.target.value)}
+              className="h-8 rounded-md border border-input bg-background px-2.5 text-sm"
+            >
+              <option value="">All Grades</option>
+              {GRADE_LEVELS.map((g) => <option key={g} value={g}>{g}</option>)}
+            </select>
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="h-8 rounded-md border border-input bg-background px-2.5 text-sm"
+            >
+              <option value="">All Status</option>
+              {STATUS_OPTIONS.map((s) => (
+                <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>
+              ))}
+            </select>
+            <CardTitle className="text-xs text-muted-foreground ml-auto">
+              {total} student{total !== 1 ? "s" : ""}
+            </CardTitle>
           </div>
         </CardHeader>
-        <CardContent>
-          {students.length === 0 ? (
-            <p className="text-muted-foreground text-center py-8">No students found</p>
+        <CardContent className="p-0">
+          {loading ? (
+            <div className="flex justify-center py-10">
+              <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+            </div>
+          ) : students.length === 0 ? (
+            <div className="text-center py-10">
+              <Users className="mx-auto h-8 w-8 text-muted-foreground mb-2" />
+              <p className="text-sm text-muted-foreground">No students found</p>
+            </div>
           ) : (
-            <Table className="ctk-table">
+            <Table>
               <TableHeader>
-                <TableRow className="bg-muted/50">
-                  <TableHead>Student</TableHead>
-                  <TableHead>LRN</TableHead>
-                  <TableHead>Grade Level</TableHead>
-                  <TableHead>Section</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
+                <TableRow className="bg-muted/40">
+                  <TableHead className="text-xs">Student</TableHead>
+                  <TableHead className="text-xs">LRN</TableHead>
+                  <TableHead className="text-xs">Grade Level</TableHead>
+                  <TableHead className="text-xs">Section</TableHead>
+                  <TableHead className="text-xs">Status</TableHead>
+                  <TableHead className="text-xs text-right">Action</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                  {students.map((student: any) => (
-                    <TableRow key={student._id}>
-                      <TableCell>
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
-                            <span className="text-primary font-semibold text-sm">
-                              {student.personalInfo?.firstName?.charAt(0) || "?"}
-                            </span>
-                          </div>
-                          <div>
-                            <p className="font-medium">
-                              {student.personalInfo?.firstName} {student.personalInfo?.lastName}
-                            </p>
-                            <p className="text-xs text-muted-foreground">{student.studentId || "—"}</p>
-                          </div>
+                {students.map((student: any) => (
+                  <TableRow key={student._id} className="text-sm">
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs font-bold">
+                          {student.personalInfo?.firstName?.charAt(0) || "?"}
                         </div>
-                      </TableCell>
-                      <TableCell className="text-muted-foreground">{student.lrn || "—"}</TableCell>
-                      <TableCell>{student.currentGradeLevel || "—"}</TableCell>
-                      <TableCell>{student.section || "—"}</TableCell>
-                      <TableCell>
-                        <Badge variant={getStatusVariant(student.status)}>
-                          {student.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Link href={`/registrar/students/${student._id}`}>
-                          <Button variant="outline" size="sm">
-                            <Eye className="mr-2 h-4 w-4" />
-                            View
-                          </Button>
-                        </Link>
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                        <div>
+                          <p className="font-medium text-sm">
+                            {student.personalInfo?.lastName}, {student.personalInfo?.firstName}
+                          </p>
+                          <p className="text-xs text-muted-foreground">{student.studentId || "—"}</p>
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-xs text-muted-foreground font-mono">{student.lrn || "—"}</TableCell>
+                    <TableCell className="text-xs">{student.currentGradeLevel || "—"}</TableCell>
+                    <TableCell className="text-xs">{student.section || "—"}</TableCell>
+                    <TableCell>
+                      <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_COLORS[student.status] || "bg-slate-100 text-slate-600"}`}>
+                        {student.status || "—"}
+                      </span>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Link href={`/registrar/students/${student._id}`}>
+                        <Button variant="outline" size="sm" className="h-6 text-xs px-2">
+                          <Eye className="h-3 w-3 mr-1" />
+                          View
+                        </Button>
+                      </Link>
+                    </TableCell>
+                  </TableRow>
+                ))}
               </TableBody>
             </Table>
           )}
