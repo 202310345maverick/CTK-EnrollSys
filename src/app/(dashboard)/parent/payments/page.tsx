@@ -5,7 +5,7 @@ import Payment from "@/models/Payment";
 import Student from "@/models/Student";
 import Enrollment from "@/models/Enrollment";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { CreditCard, Receipt, Wallet, AlertCircle } from "lucide-react";
+import { CreditCard, Receipt, Wallet, AlertCircle, Users } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 
@@ -136,84 +136,83 @@ export default async function ParentPaymentsPage() {
     await getParentPaymentsData(userId);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 pb-8">
       <div>
-        <h2 className="text-2xl font-bold tracking-tight">Payment History</h2>
-        <p className="text-muted-foreground">
-          Live payment records and balance summary for your enrolled children.
-        </p>
+        <h1 className="text-xl font-bold text-slate-900">Fee &amp; Payment</h1>
+        <p className="text-xs text-slate-500">Payment records and balance summary for your enrolled children</p>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-4">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Total Assessed
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(totalAssessed)}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Total Paid
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-emerald-600">
-              {formatCurrency(totalPaid)}
+      {/* Stats */}
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <Card className="border-l-4 border-l-blue-500">
+          <CardContent className="flex items-center justify-between p-3">
+            <div>
+              <p className="text-xs text-muted-foreground">Total Assessed</p>
+              <p className="text-sm font-bold">{formatCurrency(totalAssessed)}</p>
             </div>
+            <Receipt className="h-4 w-4 text-blue-500" />
           </CardContent>
         </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Remaining Balance
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-amber-700">
-              {formatCurrency(totalBalance)}
+        <Card className="border-l-4 border-l-emerald-500">
+          <CardContent className="flex items-center justify-between p-3">
+            <div>
+              <p className="text-xs text-muted-foreground">Total Paid</p>
+              <p className="text-sm font-bold text-emerald-600">{formatCurrency(totalPaid)}</p>
             </div>
+            <Wallet className="h-4 w-4 text-emerald-500" />
           </CardContent>
         </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Transactions
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{payments.length}</div>
+        <Card className="border-l-4 border-l-amber-500">
+          <CardContent className="flex items-center justify-between p-3">
+            <div>
+              <p className="text-xs text-muted-foreground">Remaining Balance</p>
+              <p className="text-sm font-bold text-amber-700">{formatCurrency(totalBalance)}</p>
+            </div>
+            <AlertCircle className="h-4 w-4 text-amber-500" />
+          </CardContent>
+        </Card>
+        <Card className="border-l-4 border-l-primary">
+          <CardContent className="flex items-center justify-between p-3">
+            <div>
+              <p className="text-xs text-muted-foreground">Transactions</p>
+              <p className="text-sm font-bold">{payments.length}</p>
+            </div>
+            <CreditCard className="h-4 w-4 text-primary" />
           </CardContent>
         </Card>
       </div>
 
-      <Card className="ctk-panel">
-        <CardHeader>
-          <CardTitle className="ctk-section-title">Per-Child Balance Summary</CardTitle>
+      {/* Per-Child Summary */}
+      <Card>
+        <CardHeader className="pb-2 pt-4 px-4">
+          <CardTitle className="flex items-center gap-1.5 text-sm font-semibold">
+            <Users className="h-4 w-4 text-primary" />
+            Per-Child Balance Summary
+          </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-3">
+        <CardContent className="px-4 pb-4 space-y-2">
           {studentSummaries.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No child records found.</p>
+            <p className="py-4 text-center text-xs text-muted-foreground">No child records found.</p>
           ) : (
             studentSummaries.map((summary) => (
               <div
                 key={summary.id}
-                className="flex flex-wrap items-center justify-between gap-3 rounded-lg border p-3"
+                className="flex flex-col gap-2 rounded-lg border bg-slate-50/50 p-3 sm:flex-row sm:items-center sm:justify-between"
               >
                 <div>
-                  <p className="font-semibold">{summary.name || "Unnamed student"}</p>
+                  <p className="text-sm font-semibold">{summary.name || "Unnamed student"}</p>
                   <p className="text-xs text-muted-foreground">
-                    {summary.transactions} payment transaction(s)
+                    {summary.transactions} {summary.transactions === 1 ? "transaction" : "transactions"}
                   </p>
                 </div>
-                <div className="flex flex-wrap items-center gap-2 text-sm">
-                  <Badge variant="info">Assessed: {formatCurrency(summary.assessed)}</Badge>
-                  <Badge variant="success">Paid: {formatCurrency(summary.paid)}</Badge>
-                  <Badge variant={summary.balance > 0 ? "warning" : "success"}>
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <Badge variant="info" className="text-xs px-2 py-0.5">
+                    Assessed: {formatCurrency(summary.assessed)}
+                  </Badge>
+                  <Badge variant="success" className="text-xs px-2 py-0.5">
+                    Paid: {formatCurrency(summary.paid)}
+                  </Badge>
+                  <Badge variant={summary.balance > 0 ? "warning" : "success"} className="text-xs px-2 py-0.5 font-semibold">
                     Balance: {formatCurrency(summary.balance)}
                   </Badge>
                 </div>
@@ -223,62 +222,56 @@ export default async function ParentPaymentsPage() {
         </CardContent>
       </Card>
 
+      {/* Transactions */}
       <Card>
-        <CardHeader>
-          <CardTitle>Payment Transactions</CardTitle>
+        <CardHeader className="pb-2 pt-4 px-4">
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-1.5 text-sm font-semibold">
+              <Receipt className="h-4 w-4 text-primary" />
+              Payment Transactions
+            </CardTitle>
+            <span className="text-xs text-muted-foreground">{payments.length} {payments.length === 1 ? "transaction" : "transactions"}</span>
+          </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="px-4 pb-4">
           {payments.length === 0 ? (
-            <div className="text-center py-12">
-              <Receipt className="mx-auto h-12 w-12 text-muted-foreground" />
-              <h3 className="mt-4 text-lg font-semibold">No payments yet</h3>
-              <p className="text-muted-foreground">
-                Payment transactions will appear here once posted by the registrar.
-              </p>
+            <div className="flex flex-col items-center justify-center py-8 text-center">
+              <Receipt className="mb-2 h-7 w-7 text-muted-foreground" />
+              <p className="text-sm font-medium">No Payments Yet</p>
+              <p className="text-xs text-muted-foreground">Transactions will appear here once posted by the registrar</p>
             </div>
           ) : (
-            <div className="space-y-4">
+            <div className="space-y-2">
               {payments.map((payment: any) => (
                 <div
                   key={payment._id}
-                  className="flex flex-wrap items-start justify-between gap-3 rounded-lg border p-4"
+                  className="flex flex-col gap-2 rounded-lg border bg-white p-3 sm:flex-row sm:items-center sm:justify-between"
                 >
-                  <div className="flex items-start gap-3">
-                    <div className="rounded-full bg-emerald-100 p-2">
-                      {payment.amount > 0 ? (
-                        <Wallet className="h-4 w-4 text-emerald-700" />
-                      ) : (
-                        <AlertCircle className="h-4 w-4 text-amber-700" />
-                      )}
+                  <div className="flex items-start gap-2">
+                    <div className="rounded-full bg-emerald-100 p-1.5 mt-0.5">
+                      <Wallet className="h-3.5 w-3.5 text-emerald-700" />
                     </div>
                     <div>
-                      <p className="font-medium">{payment.description}</p>
-                      <p className="text-sm text-muted-foreground">
+                      <p className="text-xs font-semibold leading-tight">{payment.description}</p>
+                      <p className="text-xs text-muted-foreground">
                         {payment.studentId?.personalInfo?.firstName}{" "}
                         {payment.studentId?.personalInfo?.lastName}
                       </p>
-                      <p className="text-xs text-muted-foreground">
-                        Receipt: {payment.receiptNumber} •{" "}
-                        {getPaymentMethodLabel(payment.paymentMethod)}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        Enrollment: {payment.enrollmentId?.enrollmentNumber || "—"}
-                      </p>
+                      <div className="flex flex-wrap items-center gap-x-2 text-xs text-muted-foreground">
+                        <span className="font-mono">#{payment.receiptNumber}</span>
+                        <span>•</span>
+                        <span>{getPaymentMethodLabel(payment.paymentMethod)}</span>
+                        <span>•</span>
+                        <span>{payment.enrollmentId?.enrollmentNumber || "—"}</span>
+                      </div>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <p className="font-semibold text-emerald-700">
-                      {formatCurrency(payment.amount)}
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      {formatDate(payment.paymentDate)}
-                    </p>
-                    <div className="mt-1">
-                      <Badge variant="neutral">
-                        <CreditCard className="mr-1 h-3 w-3" />
-                        {payment.paymentType}
-                      </Badge>
-                    </div>
+                  <div className="flex items-center gap-3 sm:flex-col sm:items-end sm:gap-0.5">
+                    <p className="text-sm font-bold text-emerald-700">{formatCurrency(payment.amount)}</p>
+                    <p className="text-xs text-muted-foreground">{formatDate(payment.paymentDate)}</p>
+                    <Badge variant="neutral" className="text-xs px-1.5 py-0">
+                      {payment.paymentType}
+                    </Badge>
                   </div>
                 </div>
               ))}

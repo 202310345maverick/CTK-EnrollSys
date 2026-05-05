@@ -13,10 +13,16 @@ import {
   LogOut,
   ClipboardList,
   CircleDollarSign,
+  ChevronDown,
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const adminNavItems = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
@@ -80,7 +86,6 @@ export default function DashboardLayout({
           <Image src="/images/ctk.png" alt="CTK Logo" width={50} height={50} className="h-12 w-12 rounded-full bg-white object-contain p-1" />
           <div>
             <p className="text-2xl font-extrabold leading-none">CTK EnrollSys</p>
-            <p className="mt-1 text-xs font-medium text-amber-300">● Paperless Enrollment</p>
           </div>
         </div>
 
@@ -105,11 +110,6 @@ export default function DashboardLayout({
             );
           })}
         </nav>
-
-        <div className="border-t border-white/10 px-5 py-4 text-xs text-amber-200/90">
-          <p>Replaces physical filing cabinets</p>
-          <p>All records digitally backed up</p>
-        </div>
       </aside>
 
       {/* Main Content */}
@@ -119,30 +119,29 @@ export default function DashboardLayout({
           <div />
 
           <div className="flex items-center gap-3">
-            <div className="text-right">
-              <p className="text-sm font-semibold leading-none text-slate-900">{session?.user?.name || "User"}</p>
-              <p className="mt-1 hidden text-xs text-slate-500 sm:block">{session?.user?.email || ""}</p>
-            </div>
-            <div className="flex h-9 w-9 items-center justify-center rounded-full border-2 border-amber-400 bg-[#bf000f] text-xs font-bold text-white">
-              {getInitials(session?.user?.name)}
-            </div>
-            <span
-              className={cn(
-                "rounded-full px-3 py-1 text-xs font-bold uppercase tracking-wide",
-                roleBadgeStyles[role] || "bg-slate-600 text-white"
-              )}
-            >
-              {role}
-            </span>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => signOut({ callbackUrl: "/login" })}
-              className="h-9 w-9 rounded-full text-primary hover:bg-primary/10 hover:text-primary"
-              aria-label="Sign out"
-            >
-              <LogOut className="h-5 w-5" />
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="flex items-center gap-2 rounded-full px-2 py-1 transition-colors hover:bg-slate-100 focus:outline-none">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-amber-400 bg-[#bf000f] text-xs font-bold text-white">
+                    {getInitials(session?.user?.name)}
+                  </div>
+                  <div className="hidden text-right sm:block">
+                    <p className="text-sm font-semibold leading-none text-slate-900">{session?.user?.name || "User"}</p>
+                    <p className="mt-0.5 text-xs text-slate-500">{session?.user?.email || ""}</p>
+                  </div>
+                  <ChevronDown className="h-4 w-4 text-slate-400" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-40">
+                <DropdownMenuItem
+                  className="cursor-pointer text-destructive focus:bg-destructive/10 focus:text-destructive"
+                  onClick={() => signOut({ callbackUrl: "/login" })}
+                >
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Sign out
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </header>
 

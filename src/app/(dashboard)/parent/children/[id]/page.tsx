@@ -55,6 +55,8 @@ export default async function ChildDetailPage({ params }: { params: { id: string
     });
   };
 
+  const address = (student as any).contactInfo?.address;
+
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">
@@ -105,7 +107,7 @@ export default async function ChildDetailPage({ params }: { params: { id: string
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Date of Birth</p>
-                <p className="font-medium">{formatDate((student as any).personalInfo?.dateOfBirth)}</p>
+                <p className="font-medium">{formatDate((student as any).personalInfo?.birthDate)}</p>
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">LRN</p>
@@ -139,7 +141,7 @@ export default async function ChildDetailPage({ params }: { params: { id: string
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">School Year</p>
-                <p className="font-medium">{(student as any).currentSchoolYear || "—"}</p>
+                <p className="font-medium">{(student as any).enrollmentHistory?.length ? "On file" : "—"}</p>
               </div>
             </div>
           </CardContent>
@@ -156,7 +158,9 @@ export default async function ChildDetailPage({ params }: { params: { id: string
           <CardContent className="space-y-4">
             <div>
               <p className="text-sm text-muted-foreground">Contact Number</p>
-              <p className="font-medium">{(student as any).contactInfo?.phone || "—"}</p>
+              <p className="font-medium">
+                {(student as any).contactInfo?.contactNumber || "—"}
+              </p>
             </div>
             <div>
               <p className="text-sm text-muted-foreground">Email</p>
@@ -175,8 +179,8 @@ export default async function ChildDetailPage({ params }: { params: { id: string
           </CardHeader>
           <CardContent>
             <p className="font-medium">
-              {(student as any).address?.street || ""} {(student as any).address?.barangay || ""}<br />
-              {(student as any).address?.city || ""}, {(student as any).address?.province || ""} {(student as any).address?.zipCode || ""}
+              {address?.street || ""} {address?.barangay || ""}<br />
+              {address?.city || ""}, {address?.province || ""} {address?.zipCode || ""}
             </p>
           </CardContent>
         </Card>

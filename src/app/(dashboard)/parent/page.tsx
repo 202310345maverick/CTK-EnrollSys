@@ -1,13 +1,7 @@
 import Link from "next/link";
 import { getServerSession } from "next-auth";
 import {
-  CheckCircle2,
-  CircleAlert,
-  Clock3,
-  CreditCard,
   FileText,
-  Mail,
-  Phone,
   PlusCircle,
 } from "lucide-react";
 
@@ -15,16 +9,14 @@ import { authOptions } from "@/lib/auth/options";
 import dbConnect from "@/lib/db/connection";
 import Enrollment from "@/models/Enrollment";
 import Student from "@/models/Student";
-import Payment from "@/models/Payment";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { StatsGrid } from "@/components/shared/stats-grid";
-import { formatCurrency } from "@/lib/utils";
 import {
   ENROLLMENT_DOCUMENT_LABELS,
   getRequiredDocumentTypes,
 } from "@/lib/enrollment/constants";
+import ParentDashboardDocuments from "@/components/shared/parent-dashboard-documents";
 
 async function getParentDashboardData(userId: string) {
   await dbConnect();
@@ -33,290 +25,279 @@ async function getParentDashboardData(userId: string) {
     Student.find({ parentUserId: userId })
       .select("_id personalInfo currentGradeLevel")
       .lean(),
-    Enrollment.find({ submittedBy: userId }).sort({ updatedAt: -1 }).lean(),
+    Enrollment.find({ submittedBy: userId, isDraft: { $ne: true } })
+      .sort({ createdAt: -1 })
+      .populate("studentId", "personalInfo")
+      .populate("documents.documentId", "secureUrl originalName fileName createdAt")
+      .lean(),
   ]);
 
-  const studentIds = students.map((student) => student._id);
-  const payments =
-    studentIds.length > 0
-      ? await Payment.find({
-          studentId: { $in: studentIds },
-          isVoided: false,
-        })
-          .select("amount paymentDate")
-          .lean()
-      : [];
-
-  const nonDraftEnrollments = enrollments.filter((enrollment) => !enrollment.isDraft);
-  const drafts = enrollments.filter((enrollment) => enrollment.isDraft);
-  const latestEnrollment = nonDraftEnrollments[0] || null;
-  const totalPaid = payments.reduce((sum, payment) => sum + payment.amount, 0);
+  const latestEnrollment = enrollments[0] || null;
 
   return {
     studentsCount: students.length,
-    draftsCount: drafts.length,
-    pendingCount: nonDraftEnrollments.filter((enrollment) =>
-      ["pending", "under_review"].includes(enrollment.status)
-    ).length,
-    approvedCount: nonDraftEnrollments.filter((enrollment) =>
-      ["approved", "enrolled"].includes(enrollment.status)
-    ).length,
-    rejectedCount: nonDraftEnrollments.filter((enrollment) => enrollment.status === "rejected")
-      .length,
-    totalPaid,
     latestEnrollment,
+    allEnrollments: enrollments,
   };
 }
 
 function getStatusLabel(status: string) {
   switch (status) {
-    case "under_review":
-      return "Under Review";
-    case "approved":
-      return "Approved";
-    case "rejected":
-      return "Rejected";
-    case "enrolled":
-      return "Enrolled";
-    case "pending":
-      return "Pending";
-    default:
-      return status;
+    case "under_review": return "Under Review";
+    case "approved": return "Approved";
+    case "rejected": return "Rejected";
+    case "enrolled": return "Enrolled";
+    case "pending": return "Pending";
+    case "waitlisted": return "Waitlisted";
+    default: return status;
   }
 }
 
-function getStatusBadgeVariant(status: string): "warning" | "success" | "danger" | "info" {
+function getStatusBadgeVariant(status: string): "warning" | "success" | "danger" | "info" | "neutral" {
   switch (status) {
     case "approved":
-    case "enrolled":
-      return "success";
-    case "rejected":
-      return "danger";
-    case "under_review":
-      return "info";
-    default:
-      return "warning";
+    case "enrolled": return "success";
+    case "rejected": return "danger";
+    case "under_review": return "info";
+    case "waitlisted": return "neutral";
+    default: return "warning";
   }
 }
+
+function formatDocumentTypeLabel(documentType: string) {
+  return (
+    ENROLLMENT_DOCUMENT_LABELS[documentType as keyof typeof ENROLLMENT_DOCUMENT_LABELS] ||
+    documentType
+      .split("_")
+      .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+      .join(" ")
+  );
+}
+
+const STATUS_DESCRIPTIONS = [
+  { status: "Pending", description: "Your enrollment application has been received and is waiting to be reviewed by the registrar." },
+  { status: "Under Review", description: "The registrar is currently reviewing your application and submitted documents." },
+  { status: "Approved", description: "Your enrollment has been approved. Please proceed to the finance office for payment." },
+  { status: "Enrolled", description: "Payment confirmed. Your child is officially enrolled for the school year." },
+  { status: "Rejected", description: "Your application was not approved. Please contact the registrar's office for details." },
+  { status: "Waitlisted", description: "Your application is on the waitlist. You will be notified if a slot becomes available." },
+];
 
 export default async function ParentDashboard() {
   const session = await getServerSession(authOptions);
   const userId = session?.user?.id;
 
-  if (!userId) {
-    return null;
-  }
+  if (!userId) return null;
 
   const data = await getParentDashboardData(userId);
   const currentEnrollment = data.latestEnrollment;
+
   const requiredDocs = currentEnrollment?.enrollmentType
     ? getRequiredDocumentTypes(currentEnrollment.enrollmentType as "new" | "returning" | "transferee")
     : [];
+
   const uploadedDocs = new Map(
     (currentEnrollment?.documents || []).map((document) => [document.type, document])
   );
 
+  const latestStudent = currentEnrollment?.studentId as
+    | { personalInfo?: { firstName?: string; lastName?: string } }
+    | undefined;
+
+  const documentRows = requiredDocs.map((documentType) => {
+    const uploadedDocument = uploadedDocs.get(documentType);
+    return {
+      type: documentType,
+      label: formatDocumentTypeLabel(documentType),
+      status: (uploadedDocument?.status || "missing") as "pending" | "verified" | "rejected" | "missing",
+      uploadedAt:
+        uploadedDocument?.documentId && typeof uploadedDocument.documentId === "object"
+          ? (uploadedDocument.documentId as { createdAt?: string | Date }).createdAt || null
+          : null,
+      downloadUrl:
+        uploadedDocument?.documentId && typeof uploadedDocument.documentId === "object"
+          ? (uploadedDocument.documentId as { secureUrl?: string }).secureUrl || null
+          : null,
+    };
+  });
+
+  const submittedDocumentRows = (currentEnrollment?.documents || []).map((document) => {
+    const documentType = String(document.type);
+    const documentId = document.documentId as
+      | { secureUrl?: string; originalName?: string; fileName?: string; createdAt?: string | Date }
+      | undefined;
+    return {
+      type: documentType,
+      label: formatDocumentTypeLabel(documentType),
+      status: (document.status || "pending") as "pending" | "verified" | "rejected" | "missing",
+      uploadedAt: documentId?.createdAt || null,
+      downloadUrl: documentId?.secureUrl || null,
+      filename: documentId?.originalName || documentId?.fileName || null,
+    };
+  });
+
+  const latestStatusRemark = currentEnrollment?.statusHistory?.length
+    ? currentEnrollment.statusHistory[currentEnrollment.statusHistory.length - 1]?.remarks
+    : null;
+
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="ctk-page-title">Parent Dashboard</h1>
-          <p className="ctk-page-subtitle">
-            Track enrollment progress, required documents, and payment updates.
-          </p>
-        </div>
-        <Link href="/parent/enrollment/new">
-          <Button className="ctk-danger-button">
-            <PlusCircle className="mr-2 h-4 w-4" />
-            New Enrollment
-          </Button>
-        </Link>
+    <div className="space-y-4 pb-8">
+      {/* Page Header */}
+      <div>
+        <h1 className="text-xl font-bold text-slate-900">Parent Dashboard</h1>
+        <p className="text-xs text-slate-500">Track your child&apos;s enrollment journey and important updates.</p>
       </div>
 
-      <StatsGrid
-        items={[
-          {
-            title: "Children",
-            value: data.studentsCount,
-            icon: FileText,
-          },
-          {
-            title: "Active Applications",
-            value: data.pendingCount,
-            icon: Clock3,
-            iconBgClassName: "bg-amber-100",
-            iconClassName: "text-amber-700",
-          },
-          {
-            title: "Drafts",
-            value: data.draftsCount,
-            icon: FileText,
-            iconBgClassName: "bg-slate-100",
-            iconClassName: "text-slate-700",
-          },
-          {
-            title: "Total Paid",
-            value: formatCurrency(data.totalPaid),
-            icon: CreditCard,
-            iconBgClassName: "bg-emerald-100",
-            iconClassName: "text-emerald-700",
-          },
-        ]}
-      />
-
+      {/* Current Enrollment Banner */}
       {currentEnrollment ? (
-        <section className="rounded-xl border border-amber-400 bg-[#b2000f] px-6 py-5 text-white shadow-sm">
-          <div className="mb-4 flex items-start justify-between gap-4">
-            <h2 className="text-3xl font-extrabold leading-none tracking-tight">
-              Current Enrollment Status
-            </h2>
-            <Badge className="border-0" variant={getStatusBadgeVariant(currentEnrollment.status)}>
+        <section className="overflow-hidden rounded-lg border border-red-200 bg-[#b4040d] text-white shadow-sm">
+          <div className="flex flex-wrap items-start justify-between gap-2 px-4 py-3">
+            <div className="space-y-0.5">
+              <h2 className="text-sm font-semibold">Current Enrollment Status</h2>
+              <p className="text-xs text-red-100/90">
+                {latestStatusRemark || currentEnrollment.remarks || "No remarks yet from the registrar."}
+              </p>
+            </div>
+            <Badge className="border-0 bg-white/20 px-2 py-0.5 text-xs font-medium text-white" variant="neutral">
               {getStatusLabel(currentEnrollment.status)}
             </Badge>
           </div>
-
-          <div className="grid gap-4 border-b border-amber-500/80 pb-4 md:grid-cols-4">
-            <div>
-              <p className="text-sm font-medium text-amber-100">Enrollment ID</p>
-              <p className="text-xl font-bold leading-none">{currentEnrollment.enrollmentNumber}</p>
-            </div>
-            <div>
-              <p className="text-sm font-medium text-amber-100">Grade Level</p>
-              <p className="text-xl font-bold leading-none">{currentEnrollment.gradeLevel || "—"}</p>
-            </div>
-            <div>
-              <p className="text-sm font-medium text-amber-100">Type</p>
-              <p className="text-xl font-bold leading-none capitalize">
-                {currentEnrollment.enrollmentType || "—"}
-              </p>
-            </div>
-            <div>
-              <p className="text-sm font-medium text-amber-100">Submitted Date</p>
-              <p className="text-xl font-bold leading-none">
-                {currentEnrollment.submittedAt
-                  ? new Date(currentEnrollment.submittedAt).toLocaleDateString("en-PH")
-                  : new Date(currentEnrollment.createdAt).toLocaleDateString("en-PH")}
-              </p>
-            </div>
+          <div className="grid grid-cols-2 gap-3 border-t border-white/20 bg-black/10 px-4 py-3 md:grid-cols-4">
+            {[
+              { label: "Enrollment ID", value: currentEnrollment.enrollmentNumber },
+              {
+                label: "Student Name",
+                value: `${latestStudent?.personalInfo?.firstName || ""} ${latestStudent?.personalInfo?.lastName || ""}`.trim() || "—",
+              },
+              { label: "Grade Level", value: currentEnrollment.gradeLevel || "—" },
+              {
+                label: "Submitted",
+                value: new Date(currentEnrollment.submittedAt || currentEnrollment.createdAt).toLocaleDateString("en-PH", {
+                  year: "numeric", month: "short", day: "numeric",
+                }),
+              },
+            ].map((item) => (
+              <div key={item.label} className="space-y-0.5">
+                <p className="text-xs text-red-100/80">{item.label}</p>
+                <p className="text-xs font-semibold">{item.value}</p>
+              </div>
+            ))}
           </div>
-
-          <p className="pt-4 text-sm text-amber-50">
-            Latest status update:{" "}
-            {currentEnrollment.statusHistory?.[0]?.remarks || "No remarks yet."}
-          </p>
         </section>
       ) : (
-        <Card className="ctk-panel">
-          <CardContent className="py-12 text-center">
-            <FileText className="mx-auto h-10 w-10 text-muted-foreground" />
-            <h3 className="mt-3 text-lg font-semibold">No submitted enrollments yet</h3>
-            <p className="text-sm text-muted-foreground">
-              Start your first enrollment application to track status updates here.
-            </p>
+        <Card className="border border-dashed">
+          <CardContent className="flex flex-col items-center justify-center py-10 text-center">
+            <FileText className="mb-2 h-8 w-8 text-muted-foreground" />
+            <p className="text-sm font-medium">No Enrollments Yet</p>
+            <p className="mt-1 text-xs text-muted-foreground">Start your first enrollment application.</p>
+            <Button asChild size="sm" className="mt-3">
+              <Link href="/parent/enrollment/new">
+                <PlusCircle className="mr-1.5 h-4 w-4" />
+                Start New Enrollment
+              </Link>
+            </Button>
           </CardContent>
         </Card>
       )}
 
-      <div className="grid gap-4 lg:grid-cols-[1fr_380px]">
-        <Card className="ctk-panel">
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <CardTitle className="ctk-section-title">Document Checklist</CardTitle>
-              <FileText className="h-4 w-4 text-muted-foreground" />
-            </div>
+      {/* Main Grid */}
+      <div className="grid gap-4 xl:grid-cols-[1fr_1fr]">
+        {/* Required Documents */}
+        <Card>
+          <CardHeader className="pb-2 pt-4 px-4">
+            <CardTitle className="flex items-center gap-1.5 text-sm font-semibold">
+              <FileText className="h-4 w-4 text-primary" />
+              Required Documents
+            </CardTitle>
+            <p className="text-xs text-muted-foreground">Upload missing documents below</p>
           </CardHeader>
-          <CardContent className="space-y-3">
+          <CardContent className="px-4 pb-4">
             {requiredDocs.length === 0 ? (
-              <p className="text-sm text-muted-foreground">
-                Submit an enrollment to view document status.
+              <p className="py-6 text-center text-xs text-muted-foreground">
+                Submit an enrollment to view required documents.
               </p>
             ) : (
-              requiredDocs.map((documentType) => {
-                const uploadedDocument = uploadedDocs.get(documentType);
-                const status = uploadedDocument?.status || "missing";
-                const isComplete = status === "verified" || status === "pending";
-
-                return (
-                  <div
-                    key={documentType}
-                    className="flex items-center justify-between rounded-xl border bg-muted/30 p-4"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div
-                        className={`rounded-full p-2 ${
-                          isComplete ? "bg-emerald-100" : "bg-amber-100"
-                        }`}
-                      >
-                        {isComplete ? (
-                          <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-                        ) : (
-                          <CircleAlert className="h-4 w-4 text-amber-600" />
-                        )}
-                      </div>
-                      <div>
-                        <p className="font-semibold">{ENROLLMENT_DOCUMENT_LABELS[documentType]}</p>
-                        <p className="text-xs text-muted-foreground capitalize">
-                          {status === "missing" ? "Not uploaded yet" : status.replace("_", " ")}
-                        </p>
-                      </div>
-                    </div>
-                    <Badge variant={isComplete ? "success" : "warning"}>
-                      {isComplete ? "Uploaded" : "Pending"}
-                    </Badge>
-                  </div>
-                );
-              })
+              <ParentDashboardDocuments
+                enrollmentId={String(currentEnrollment?._id || "")}
+                documents={submittedDocumentRows.length > 0 ? submittedDocumentRows : documentRows}
+              />
             )}
           </CardContent>
         </Card>
 
+        {/* Right Column */}
         <div className="space-y-4">
-          <Card className="ctk-panel">
-            <CardHeader>
-              <CardTitle className="ctk-section-title">Enrollment Summary</CardTitle>
+          {/* Enrollment Status Description */}
+          <Card>
+            <CardHeader className="pb-2 pt-4 px-4">
+              <CardTitle className="text-sm font-semibold">Enrollment Status Description</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-3 text-sm">
-              <div className="flex items-center justify-between">
-                <span>Approved / Enrolled</span>
-                <span className="font-semibold text-emerald-700">{data.approvedCount}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span>Pending / Under Review</span>
-                <span className="font-semibold text-amber-700">{data.pendingCount}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span>Rejected</span>
-                <span className="font-semibold text-red-700">{data.rejectedCount}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span>Draft Applications</span>
-                <span className="font-semibold text-slate-700">{data.draftsCount}</span>
-              </div>
+            <CardContent className="px-4 pb-4">
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className="border-b">
+                    <th className="pb-1.5 text-left font-semibold text-slate-700 w-28">Status</th>
+                    <th className="pb-1.5 text-left font-semibold text-slate-700">Description</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y">
+                  {STATUS_DESCRIPTIONS.map((row) => (
+                    <tr key={row.status}>
+                      <td className="py-1.5 pr-3 align-top">
+                        <Badge variant={getStatusBadgeVariant(row.status.toLowerCase().replace(" ", "_"))} className="text-xs">
+                          {row.status}
+                        </Badge>
+                      </td>
+                      <td className="py-1.5 text-slate-600 align-top">{row.description}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </CardContent>
           </Card>
 
-          <Card className="ctk-panel border-amber-300 bg-amber-50/40">
-            <CardHeader>
-              <CardTitle className="text-2xl font-extrabold text-primary leading-none">
-                Need Help?
-              </CardTitle>
-              <p className="text-sm text-primary/90">
-                Contact the registrar&apos;s office for enrollment concerns.
-              </p>
+          {/* Enrollment History */}
+          <Card>
+            <CardHeader className="pb-2 pt-4 px-4">
+              <CardTitle className="text-sm font-semibold">Enrollment History</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-2 text-sm">
-              <p className="flex items-center gap-2 text-primary/90">
-                <Phone className="h-4 w-4" />
-                Phone: (+63) 921-816-2137
-              </p>
-              <p className="flex items-center gap-2 text-primary/90">
-                <Mail className="h-4 w-4" />
-                Email: registrar@ctk.edu
-              </p>
-              <p className="flex items-center gap-2 text-primary/90">
-                <Clock3 className="h-4 w-4" />
-                Hours: Mon-Fri, 8AM-5PM
-              </p>
+            <CardContent className="px-4 pb-4">
+              {data.allEnrollments.length === 0 ? (
+                <p className="py-4 text-center text-xs text-muted-foreground">No enrollment history yet.</p>
+              ) : (
+                <table className="w-full text-xs">
+                  <thead>
+                    <tr className="border-b">
+                      <th className="pb-1.5 text-left font-semibold text-slate-700">ID</th>
+                      <th className="pb-1.5 text-left font-semibold text-slate-700">Grade</th>
+                      <th className="pb-1.5 text-left font-semibold text-slate-700">Date</th>
+                      <th className="pb-1.5 text-left font-semibold text-slate-700">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y">
+                    {data.allEnrollments.map((enrollment) => (
+                      <tr key={String(enrollment._id)}>
+                        <td className="py-1.5 pr-2 font-mono text-slate-700">
+                          <Link href={`/parent/enrollments/${enrollment._id}`} className="hover:underline text-primary">
+                            {enrollment.enrollmentNumber}
+                          </Link>
+                        </td>
+                        <td className="py-1.5 pr-2 text-slate-600">{enrollment.gradeLevel || "—"}</td>
+                        <td className="py-1.5 pr-2 text-slate-500">
+                          {new Date(enrollment.createdAt).toLocaleDateString("en-PH", {
+                            month: "short", day: "numeric", year: "numeric",
+                          })}
+                        </td>
+                        <td className="py-1.5">
+                          <Badge variant={getStatusBadgeVariant(enrollment.status)} className="text-xs">
+                            {getStatusLabel(enrollment.status)}
+                          </Badge>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
             </CardContent>
           </Card>
         </div>

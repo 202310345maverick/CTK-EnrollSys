@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/components/ui/use-toast";
 import {
@@ -91,6 +92,8 @@ export default function ParentEnrollmentsPage() {
   const [loading, setLoading] = useState(true);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
 
   useEffect(() => {
     fetchEnrollments();
@@ -151,50 +154,100 @@ export default function ParentEnrollmentsPage() {
     });
   };
 
+  const filteredEnrollments = enrollments.filter((enrollment) => {
+    const matchesSearch = enrollment.enrollmentNumber
+      .toLowerCase()
+      .includes(searchQuery.toLowerCase()) ||
+      (enrollment.studentId?.personalInfo?.firstName || "")
+        .toLowerCase()
+        .includes(searchQuery.toLowerCase()) ||
+      (enrollment.studentId?.personalInfo?.lastName || "")
+        .toLowerCase()
+        .includes(searchQuery.toLowerCase());
+    
+    const matchesStatus = statusFilter === "all" || enrollment.status === statusFilter;
+    
+    return matchesSearch && matchesStatus;
+  });
+
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      <div className="flex min-h-[300px] items-center justify-center">
+        <div className="text-center space-y-2">
+          <Loader2 className="mx-auto h-6 w-6 animate-spin text-primary" />
+          <p className="text-xs text-muted-foreground">Loading enrollments...</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-4 pb-8">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight">My Enrollment Applications</h2>
-          <p className="text-muted-foreground">
-            View and manage your enrollment applications
+          <h1 className="text-xl font-bold text-slate-900">My Enrollment Applications</h1>
+          <p className="text-xs text-slate-500">
+            {filteredEnrollments.length} {filteredEnrollments.length === 1 ? "application" : "applications"}
           </p>
         </div>
         <Link href="/parent/enrollment/new">
-          <Button className="bg-maroon hover:bg-maroon-dark">
-            <PlusCircle className="mr-2 h-4 w-4" />
+          <Button size="sm" className="bg-[#b4040d] hover:bg-[#b4040d]/90">
+            <PlusCircle className="mr-1.5 h-4 w-4" />
             New Enrollment
           </Button>
         </Link>
       </div>
 
-      {enrollments.length === 0 ? (
-        <Card>
-          <CardContent className="flex flex-col items-center justify-center py-12">
-            <FileText className="h-12 w-12 text-muted-foreground mb-4" />
-            <h3 className="text-lg font-semibold mb-2">No Enrollment Applications</h3>
-            <p className="text-muted-foreground text-center mb-4">
-              You haven&apos;t submitted any enrollment applications yet.
-            </p>
+      {/* Filters */}
+      <div className="flex flex-col gap-2 sm:flex-row">
+        <div className="flex-1">
+          <Input
+            placeholder="Search by enrollment number or student name..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="h-8 text-xs"
+          />
+        </div>
+        <select
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value)}
+          className="h-8 rounded-md border border-input bg-background px-2 text-xs"
+        >
+          <option value="all">All Status</option>
+          <option value="draft">Draft</option>
+          <option value="pending">Pending</option>
+          <option value="under_review">Under Review</option>
+          <option value="approved">Approved</option>
+          <option value="enrolled">Enrolled</option>
+          <option value="rejected">Rejected</option>
+        </select>
+      </div>
+
+      {filteredEnrollments.length === 0 && enrollments.length === 0 ? (
+        <Card className="border border-dashed">
+          <CardContent className="flex flex-col items-center justify-center py-10 text-center">
+            <FileText className="mb-2 h-7 w-7 text-muted-foreground" />
+            <p className="text-sm font-medium">No Enrollment Applications</p>
+            <p className="mt-1 text-xs text-muted-foreground">Start your first enrollment to begin the process.</p>
             <Link href="/parent/enrollment/new">
-              <Button className="bg-maroon hover:bg-maroon-dark">
-                <PlusCircle className="mr-2 h-4 w-4" />
-                Start Enrollment
+              <Button size="sm" className="mt-3 bg-[#b4040d] hover:bg-[#b4040d]/90">
+                <PlusCircle className="mr-1.5 h-3.5 w-3.5" />
+                Start New Enrollment
               </Button>
             </Link>
           </CardContent>
         </Card>
+      ) : filteredEnrollments.length === 0 ? (
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center py-8 text-center">
+            <AlertCircle className="mb-2 h-6 w-6 text-muted-foreground" />
+            <p className="text-sm font-medium">No matching enrollments</p>
+            <p className="text-xs text-muted-foreground">Try adjusting your search or filter</p>
+          </CardContent>
+        </Card>
       ) : (
-        <div className="grid gap-4">
-          {enrollments.map((enrollment) => {
+        <div className="grid gap-3">
+          {filteredEnrollments.map((enrollment) => {
             const status = statusConfig[enrollment.status] || statusConfig.pending;
             const canDelete = enrollment.status === "pending" || enrollment.status === "draft";
             const isDraft = enrollment.status === "draft" || enrollment.isDraft;
@@ -206,37 +259,33 @@ export default function ParentEnrollmentsPage() {
             );
 
             return (
-              <Card key={enrollment._id} className="hover:shadow-md transition-shadow">
-                <CardContent className="p-6">
-                  <div className="flex items-start justify-between">
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-3">
-                        <h3 className="font-semibold text-lg">
+              <Card key={enrollment._id} className="ctk-card-interactive group">
+                <CardContent className="p-4">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="flex-1 space-y-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h3 className="text-sm font-semibold text-slate-900 group-hover:text-primary transition-colors">
                           {studentName}
                         </h3>
-                        <span className={`px-3 py-1 text-xs rounded-full border flex items-center gap-1 ${status.color}`}>
-                          {status.icon}
+                        <span className={`flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium ${status.color}`}>
                           {status.label}
                         </span>
                       </div>
-                      <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                        <span>{enrollment.enrollmentNumber}</span>
+                      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                        <span className="font-mono font-medium text-slate-700">{enrollment.enrollmentNumber}</span>
                         <span>•</span>
                         <span className="capitalize">
-                          {enrollment.enrollmentType
-                            ? `${enrollment.enrollmentType} Student`
-                            : "Incomplete"}
+                          {enrollment.enrollmentType ? `${enrollment.enrollmentType} Student` : "Incomplete"}
                         </span>
-                        {enrollment.gradeLevel ? (
+                        {enrollment.gradeLevel && (
                           <>
                             <span>•</span>
                             <span>{enrollment.gradeLevel}</span>
                           </>
-                        ) : null}
+                        )}
+                        <span>•</span>
+                        <span>{isDraft ? "Saved" : "Submitted"}: {displayDate}</span>
                       </div>
-                      <p className="text-sm text-muted-foreground">
-                        {isDraft ? "Last saved" : "Submitted"}: {displayDate}
-                      </p>
                     </div>
 
                     <div className="flex items-center gap-2">
@@ -244,31 +293,31 @@ export default function ParentEnrollmentsPage() {
                         <Button
                           variant="outline"
                           size="sm"
+                          className="h-7 px-2 text-xs"
                           onClick={() => router.push(`/parent/enrollment/new?draft=${enrollment._id}`)}
                         >
-                          <FileText className="mr-2 h-4 w-4" />
+                          <FileText className="mr-1 h-3.5 w-3.5" />
                           Continue Draft
                         </Button>
                       ) : (
                         <Button
                           variant="outline"
                           size="sm"
+                          className="h-7 px-2 text-xs"
                           onClick={() => router.push(`/parent/enrollments/${enrollment._id}`)}
                         >
-                          <Eye className="mr-2 h-4 w-4" />
-                          View Details
+                          <Eye className="mr-1 h-3.5 w-3.5" />
+                          View
                         </Button>
                       )}
-                      
                       {canDelete && (
                         <Button
                           variant="outline"
                           size="sm"
-                          className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                          className="h-7 px-2 text-xs text-destructive hover:bg-destructive/10 hover:text-destructive"
                           onClick={() => setDeleteId(enrollment._id)}
                         >
-                          <Trash2 className="mr-2 h-4 w-4" />
-                          Delete
+                          <Trash2 className="h-3.5 w-3.5" />
                         </Button>
                       )}
                     </div>

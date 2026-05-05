@@ -146,7 +146,6 @@ const EnrollmentSchema = new Schema<IEnrollment>(
 );
 
 // Indexes
-EnrollmentSchema.index({ enrollmentNumber: 1 });
 EnrollmentSchema.index({ studentId: 1 });
 EnrollmentSchema.index({ schoolYearId: 1 });
 EnrollmentSchema.index({ status: 1 });

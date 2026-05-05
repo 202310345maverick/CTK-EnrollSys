@@ -40,19 +40,19 @@ Use this during development, testing, and deployment review.
 
 | ID | Feature | Priority | Status | Owner | Target Date | Notes |
 |---|---|---|---|---|---|---|
-| PAR-001 | Parent dashboard with enrollment summary | Must | In Progress |  |  | Dashboard is mostly static |
-| PAR-002 | Multi-step enrollment form | Must | In Progress |  |  | Core form works, full wizard flow pending |
-| PAR-003 | Enrollment types: new, returning, transferee | Must | In Progress |  |  | Type exists; returning flow needs prefill |
-| PAR-004 | Save draft enrollment | Should | Not Started |  |  | Resume unfinished applications |
-| PAR-005 | Document upload inside enrollment flow | Must | In Progress |  |  | Upload API exists; full UI linkage pending |
-| PAR-006 | Document checklist and upload status | Must | In Progress |  |  | Parent view currently mock-heavy |
+| PAR-001 | Parent dashboard with enrollment summary | Must | Done |  |  | Live summary, draft resume, and latest status surface on dashboard |
+| PAR-002 | Multi-step enrollment form | Must | Done |  |  | Full wizard flow with step validation and submission |
+| PAR-003 | Enrollment types: new, returning, transferee | Must | Done |  |  | Returning prefill and transferee rules are implemented |
+| PAR-004 | Save draft enrollment | Should | Done |  |  | Draft save and resume flow available |
+| PAR-005 | Document upload inside enrollment flow | Must | Done |  |  | Uploads are wired into the enrollment wizard |
+| PAR-006 | Document checklist and upload status | Must | Done |  |  | Parent checklist reflects live upload state |
 | PAR-007 | Submit enrollment with validation | Must | Done |  |  | Validation and create flow available |
 | PAR-008 | View all enrollments and statuses | Must | Done |  |  | Parent list page available |
 | PAR-009 | Delete pending enrollment | Should | Done |  |  | API supports deletion |
 | PAR-010 | View children list | Must | Done |  |  | Child list page available |
 | PAR-011 | View child detail profile | Must | Done |  |  | Detail page available |
-| PAR-012 | Parent payment history | Must | In Progress |  |  | Page exists, needs stronger live data wiring |
-| PAR-013 | Enrollment status timeline with remarks | Should | In Progress |  |  | Status history model exists |
+| PAR-012 | Parent payment history | Must | Done |  |  | Live balances and payment transactions are wired |
+| PAR-013 | Enrollment status timeline with remarks | Should | Done |  |  | Timeline and remarks are shown in enrollment detail |
 
 ### A3. Registrar Portal
 
@@ -283,5 +283,5 @@ Reference scenarios in [docs/TESTING_SCENARIOS.md](docs/TESTING_SCENARIOS.md).
 
 ## Last Updated
 
-- Date: 2026-04-27
+- Date: 2026-04-30
 - Updated By: Project Team
