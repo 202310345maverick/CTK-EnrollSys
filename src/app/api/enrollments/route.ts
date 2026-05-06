@@ -102,11 +102,6 @@ function getMissingRequiredFields(payload: EnrollmentPayload): string[] {
     "birthPlace",
     "gender",
     "gradeLevel",
-    "street",
-    "barangay",
-    "city",
-    "province",
-    "zipCode",
   ] as const;
 
   return required.filter((field) => {
@@ -287,23 +282,21 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const activeSchoolYear = await SchoolYear.findOne({ isActive: true });
+    // Find or create active school year
+    let activeSchoolYear = await SchoolYear.findOne({ isActive: true });
     if (!activeSchoolYear) {
-      return NextResponse.json(
-        { error: "No active school year found" },
-        { status: 400 }
-      );
-    }
-
-    const now = new Date();
-    if (
-      now < activeSchoolYear.enrollmentPeriod.start ||
-      now > activeSchoolYear.enrollmentPeriod.end
-    ) {
-      return NextResponse.json(
-        { error: "Enrollment period is not open" },
-        { status: 400 }
-      );
+      // Auto-create an active school year if none exists
+      const currentYear = new Date().getFullYear();
+      activeSchoolYear = await SchoolYear.create({
+        name: `${currentYear}-${currentYear + 1}`,
+        startDate: new Date(`${currentYear}-06-01`),
+        endDate: new Date(`${currentYear + 1}-03-31`),
+        enrollmentPeriod: {
+          start: new Date(`${currentYear}-01-01`),
+          end: new Date(`${currentYear + 1}-12-31`),
+        },
+        isActive: true,
+      });
     }
 
     let student =
@@ -341,11 +334,11 @@ export async function POST(request: NextRequest) {
         },
         contactInfo: {
           address: {
-            street: formData.street,
-            barangay: formData.barangay,
-            city: formData.city,
-            province: formData.province,
-            zipCode: formData.zipCode,
+            street: formData.street || formData.city || "N/A",
+            barangay: formData.barangay || "N/A",
+            city: formData.city || "N/A",
+            province: formData.province || "N/A",
+            zipCode: formData.zipCode || "0000",
           },
         },
         guardianInfo: {

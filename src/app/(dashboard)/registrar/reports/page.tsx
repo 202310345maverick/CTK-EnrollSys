@@ -19,12 +19,32 @@ type PaymentStats = {
   byMethod: { method: string; amount: number }[];
 };
 
+const BRAND_RED: [number, number, number] = [180, 4, 13]; // #b4040d
+const SCHOOL_NAME = "Christ the King Catholic School";
+const SCHOOL_SUBTITLE = "Enrollment Management System";
+
+async function getLogoBase64(): Promise<string | null> {
+  try {
+    const res = await fetch("/images/ctk.png");
+    const blob = await res.blob();
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.onerror = () => resolve(null);
+      reader.readAsDataURL(blob);
+    });
+  } catch {
+    return null;
+  }
+}
+
 export default function ReportsPage() {
   const [enrollmentStats, setEnrollmentStats] = useState<EnrollmentStats | null>(null);
   const [paymentStats, setPaymentStats] = useState<PaymentStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedType, setSelectedType] = useState("enrollment");
-  const [downloading, setDownloading] = useState(false);
+  const [downloadingCsv, setDownloadingCsv] = useState(false);
+  const [downloadingPdf, setDownloadingPdf] = useState(false);
 
   useEffect(() => {
     const loadStats = async () => {
@@ -40,7 +60,6 @@ export default function ReportsPage() {
         const enrollments: any[] = eData.enrollments || [];
         const payments: any[] = pData.payments || [];
 
-        // Enrollment stats
         const gradeMap: Record<string, number> = {};
         const statusMap: Record<string, number> = {};
         enrollments.forEach((e) => {
@@ -55,7 +74,6 @@ export default function ReportsPage() {
           byStatus: Object.entries(statusMap).map(([status, count]) => ({ status, count })),
         });
 
-        // Payment stats
         const methodMap: Record<string, number> = {};
         let totalAmt = 0;
         payments.forEach((p) => {
@@ -75,32 +93,187 @@ export default function ReportsPage() {
     loadStats();
   }, []);
 
+  // ── CSV Export ──────────────────────────────────────────────────────────────
   const downloadCSV = async () => {
-    setDownloading(true);
+    setDownloadingCsv(true);
     try {
-      const res = await fetch(`/api/enrollments?limit=1000`);
-      const data = await res.json();
-      const enrollments: any[] = data.enrollments || [];
+      const isPayment = selectedType === "payment";
+      const reportDate = new Date().toLocaleDateString("en-PH", { year: "numeric", month: "long", day: "numeric" });
 
-      const headers = ["Student Name","Grade Level","Status","Enrollment Type","Submitted At"];
-      const rows = enrollments.map((e) => [
-        `"${e.studentName || ""}"`,
-        e.gradeLevel || "",
-        e.status || "",
-        e.enrollmentType || "",
-        e.createdAt ? new Date(e.createdAt).toLocaleDateString("en-PH") : "",
-      ]);
+      if (isPayment) {
+        const res = await fetch("/api/payments?limit=1000");
+        const data = await res.json();
+        const payments: any[] = data.payments || [];
 
-      const csv = [headers.join(","), ...rows.map(r => r.join(","))].join("\n");
-      const blob = new Blob([csv], { type: "text/csv" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `enrollment-report-${new Date().toISOString().split("T")[0]}.csv`;
-      a.click();
-      URL.revokeObjectURL(url);
+        const metaRows = [
+          [`${SCHOOL_NAME} — ${SCHOOL_SUBTITLE}`],
+          ["Payment Report"],
+          [`Generated: ${reportDate}`],
+          [],
+          ["Receipt #", "Student Name", "Student ID", "Description", "Payment Type", "Method", "Amount", "Date"],
+        ];
+        const rows = payments.map((p) => [
+          p.receiptNumber || "",
+          `${p.studentId?.personalInfo?.lastName || ""}, ${p.studentId?.personalInfo?.firstName || ""}`,
+          p.studentId?.studentId || "",
+          p.description || "",
+          p.paymentType || "",
+          (p.paymentMethod || "").replace("_", " "),
+          p.amount?.toFixed(2) || "0.00",
+          p.paymentDate ? new Date(p.paymentDate).toLocaleDateString("en-PH") : "",
+        ]);
+        const csv = [...metaRows, ...rows].map((r) => r.map((c) => `"${c}"`).join(",")).join("\n");
+        triggerCSVDownload(csv, "payment-report");
+      } else {
+        const res = await fetch("/api/enrollments?limit=1000");
+        const data = await res.json();
+        const enrollments: any[] = data.enrollments || [];
+
+        const metaRows = [
+          [`${SCHOOL_NAME} — ${SCHOOL_SUBTITLE}`],
+          ["Enrollment Report"],
+          [`Generated: ${reportDate}`],
+          [],
+          ["Student Name", "Grade Level", "Status", "Enrollment Type", "Submitted At"],
+        ];
+        const rows = enrollments.map((e) => [
+          e.studentName || "",
+          e.gradeLevel || "",
+          (e.status || "").replace("_", " "),
+          e.enrollmentType || "",
+          e.createdAt ? new Date(e.createdAt).toLocaleDateString("en-PH") : "",
+        ]);
+        const csv = [...metaRows, ...rows].map((r) => r.map((c) => `"${c}"`).join(",")).join("\n");
+        triggerCSVDownload(csv, "enrollment-report");
+      }
     } finally {
-      setDownloading(false);
+      setDownloadingCsv(false);
+    }
+  };
+
+  const triggerCSVDownload = (csv: string, name: string) => {
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${name}-${new Date().toISOString().split("T")[0]}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  // ── PDF Export ──────────────────────────────────────────────────────────────
+  const downloadPDF = async () => {
+    setDownloadingPdf(true);
+    try {
+      const { default: jsPDF } = await import("jspdf");
+      const { default: autoTable } = await import("jspdf-autotable");
+
+      const isPayment = selectedType === "payment";
+      const reportDate = new Date().toLocaleDateString("en-PH", {
+        year: "numeric", month: "long", day: "numeric",
+      });
+
+      const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
+      const pageW = doc.internal.pageSize.getWidth();
+      const pageH = doc.internal.pageSize.getHeight();
+
+      const logoBase64 = await getLogoBase64();
+
+      // ── Header ──
+      doc.setFillColor(...BRAND_RED);
+      doc.rect(0, 0, pageW, 22, "F");
+
+      if (logoBase64) {
+        try { doc.addImage(logoBase64, "PNG", 6, 2, 18, 18); } catch { /* skip */ }
+      }
+
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(13);
+      doc.setFont("helvetica", "bold");
+      doc.text(SCHOOL_NAME, logoBase64 ? 28 : 10, 10);
+      doc.setFontSize(8);
+      doc.setFont("helvetica", "normal");
+      doc.text(SCHOOL_SUBTITLE, logoBase64 ? 28 : 10, 16);
+
+      // Report title + date (right side)
+      doc.setFontSize(9);
+      doc.setFont("helvetica", "bold");
+      doc.text(isPayment ? "Payment Report" : "Enrollment Report", pageW - 8, 10, { align: "right" });
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(7);
+      doc.text(`Generated: ${reportDate}`, pageW - 8, 16, { align: "right" });
+
+      // ── Table ──
+      let head: string[][];
+      let body: (string | number)[][];
+
+      if (isPayment) {
+        const res = await fetch("/api/payments?limit=1000");
+        const data = await res.json();
+        const payments: any[] = data.payments || [];
+        head = [["Receipt #", "Student Name", "Student ID", "Description", "Payment Type", "Method", "Amount (₱)", "Date"]];
+        body = payments.map((p) => [
+          p.receiptNumber || "—",
+          `${p.studentId?.personalInfo?.lastName || ""}, ${p.studentId?.personalInfo?.firstName || ""}`,
+          p.studentId?.studentId || "—",
+          p.description || "",
+          p.paymentType || "",
+          (p.paymentMethod || "").replace("_", " "),
+          p.amount?.toFixed(2) || "0.00",
+          p.paymentDate ? new Date(p.paymentDate).toLocaleDateString("en-PH") : "",
+        ]);
+      } else {
+        const res = await fetch("/api/enrollments?limit=1000");
+        const data = await res.json();
+        const enrollments: any[] = data.enrollments || [];
+        head = [["Student Name", "Grade Level", "Status", "Enrollment Type", "Submitted At"]];
+        body = enrollments.map((e) => [
+          e.studentName || "—",
+          e.gradeLevel || "—",
+          (e.status || "").replace("_", " "),
+          e.enrollmentType || "—",
+          e.createdAt ? new Date(e.createdAt).toLocaleDateString("en-PH") : "—",
+        ]);
+      }
+
+      autoTable(doc, {
+        head,
+        body,
+        startY: 26,
+        styles: { fontSize: 8, cellPadding: 2.5 },
+        headStyles: {
+          fillColor: BRAND_RED,
+          textColor: [255, 255, 255],
+          fontStyle: "bold",
+          fontSize: 8,
+        },
+        alternateRowStyles: { fillColor: [253, 240, 240] },
+        margin: { left: 8, right: 8 },
+        didDrawPage: (hookData: any) => {
+          // ── Footer on every page ──
+          doc.setFillColor(...BRAND_RED);
+          doc.rect(0, pageH - 10, pageW, 10, "F");
+          doc.setTextColor(255, 255, 255);
+          doc.setFontSize(7);
+          doc.setFont("helvetica", "normal");
+          doc.text(
+            `${SCHOOL_NAME} · Enrollment Management System`,
+            pageW / 2,
+            pageH - 4,
+            { align: "center" }
+          );
+          doc.text(
+            `Page ${hookData.pageNumber}`,
+            pageW - 8,
+            pageH - 4,
+            { align: "right" }
+          );
+        },
+      });
+
+      doc.save(`${isPayment ? "payment" : "enrollment"}-report-${new Date().toISOString().split("T")[0]}.pdf`);
+    } finally {
+      setDownloadingPdf(false);
     }
   };
 
@@ -120,6 +293,8 @@ export default function ReportsPage() {
     draft: "bg-slate-100 text-slate-600",
     waitlisted: "bg-orange-100 text-orange-800",
   };
+
+  const canExport = selectedType === "enrollment" || selectedType === "payment";
 
   return (
     <div className="space-y-4">
@@ -171,7 +346,6 @@ export default function ReportsPage() {
               ) : selectedType === "enrollment" && enrollmentStats ? (
                 <div className="space-y-4">
                   <p className="text-xs text-muted-foreground">Total: <span className="font-semibold text-foreground">{enrollmentStats.total}</span> enrollments</p>
-
                   <div>
                     <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">By Status</p>
                     <div className="flex flex-wrap gap-2">
@@ -182,7 +356,6 @@ export default function ReportsPage() {
                       ))}
                     </div>
                   </div>
-
                   <div>
                     <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">By Grade Level</p>
                     <div className="space-y-1.5">
@@ -243,15 +416,24 @@ export default function ReportsPage() {
                 size="sm"
                 className="w-full justify-start h-8 text-xs"
                 onClick={downloadCSV}
-                disabled={downloading}
+                disabled={downloadingCsv || !canExport}
               >
-                {downloading ? <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" /> : <Download className="mr-2 h-3.5 w-3.5" />}
+                {downloadingCsv ? <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" /> : <Download className="mr-2 h-3.5 w-3.5" />}
                 Download CSV
               </Button>
-              <Button variant="outline" size="sm" className="w-full justify-start h-8 text-xs" disabled>
-                <Download className="mr-2 h-3.5 w-3.5" />
-                PDF Document (coming soon)
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full justify-start h-8 text-xs"
+                onClick={downloadPDF}
+                disabled={downloadingPdf || !canExport}
+              >
+                {downloadingPdf ? <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" /> : <Download className="mr-2 h-3.5 w-3.5" />}
+                Download PDF
               </Button>
+              {!canExport && (
+                <p className="text-xs text-muted-foreground">Select Enrollment or Payment report to export.</p>
+              )}
             </CardContent>
           </Card>
 

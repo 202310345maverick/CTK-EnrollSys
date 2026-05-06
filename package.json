@@ -32,6 +32,8 @@
     "cloudinary": "^2.2.0",
     "clsx": "^2.1.1",
     "date-fns": "^3.6.0",
+    "jspdf": "^4.2.1",
+    "jspdf-autotable": "^5.0.7",
     "lucide-react": "^0.378.0",
     "mongoose": "^8.3.2",
     "next": "14.2.3",
