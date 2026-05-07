@@ -10,6 +10,8 @@ import FeeStructure from "@/models/FeeStructure";
 import User from "@/models/User";
 import { createNotification } from "@/lib/notifications";
 import { sendStatusChangeEmail, sendReuploadRequestEmail } from "@/lib/auth/email";
+import { createAuditLog } from "@/lib/audit";
+import { logger } from "@/lib/logger";
 
 export async function GET(
   request: NextRequest,
@@ -36,12 +38,13 @@ export async function GET(
 
     // Check authorization - parents can only view their own
     if (session.user.role === "parent" && enrollment.submittedBy?.toString() !== session.user.id) {
+      // SEC-003: parent isolation enforced
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     return NextResponse.json({ enrollment });
   } catch (error) {
-    console.error("Error fetching enrollment:", error);
+    logger.error("Error fetching enrollment", { route: "GET /api/enrollments/[id]", error: String(error) });
     return NextResponse.json({ error: "Failed to fetch enrollment" }, { status: 500 });
   }
 }
@@ -72,6 +75,8 @@ export async function PUT(
     }
 
     const body = await request.json();
+    const ipAddress = request.headers.get("x-forwarded-for")?.split(",")[0] || request.headers.get("x-real-ip") || "unknown";
+    const userAgent = request.headers.get("user-agent") || "unknown";
 
     if (isOwner && !enrollment.isDraft && enrollment.status !== "pending") {
       return NextResponse.json(
@@ -147,6 +152,29 @@ export async function PUT(
 
     await enrollment.save();
 
+    if (isAdmin && body.status) {
+      const auditAction = body.status === "approved" ? "APPROVE" : body.status === "rejected" ? "REJECT" : "UPDATE";
+      void createAuditLog({
+        userId: session.user.id,
+        action: auditAction,
+        resource: "ENROLLMENT",
+        resourceId: params.id,
+        details: { status: body.status },
+        ipAddress,
+        userAgent,
+      });
+    } else if (isAdmin && body.documentUpdate) {
+      void createAuditLog({
+        userId: session.user.id,
+        action: "VERIFY",
+        resource: "DOCUMENT",
+        resourceId: params.id,
+        details: { documentUpdate: body.documentUpdate },
+        ipAddress,
+        userAgent,
+      });
+    }
+
     // Fire-and-forget notifications
     void Promise.resolve().then(async () => {
       if (isAdmin && body.status && body.status !== "draft") {
@@ -210,7 +238,7 @@ export async function PUT(
       enrollment,
     });
   } catch (error) {
-    console.error("Error updating enrollment:", error);
+    logger.error("Error updating enrollment", { route: "PUT /api/enrollments/[id]", error: String(error) });
     return NextResponse.json({ error: "Failed to update enrollment" }, { status: 500 });
   }
 }
@@ -253,6 +281,17 @@ export async function DELETE(
 
     await Enrollment.findByIdAndDelete(params.id);
 
+    const ipAddress = request.headers.get("x-forwarded-for")?.split(",")[0] || request.headers.get("x-real-ip") || "unknown";
+    const userAgent = request.headers.get("user-agent") || "unknown";
+    void createAuditLog({
+      userId: session.user.id,
+      action: "DELETE",
+      resource: "ENROLLMENT",
+      resourceId: params.id,
+      ipAddress,
+      userAgent,
+    });
+
     if (studentId) {
       const otherEnrollments = await Enrollment.countDocuments({ studentId });
 
@@ -267,7 +306,7 @@ export async function DELETE(
 
     return NextResponse.json({ message: "Enrollment deleted successfully" });
   } catch (error) {
-    console.error("Error deleting enrollment:", error);
+    logger.error("Error deleting enrollment", { route: "DELETE /api/enrollments/[id]", error: String(error) });
     return NextResponse.json({ error: "Failed to delete enrollment" }, { status: 500 });
   }
 }

@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth/options";
 import dbConnect from "@/lib/db/connection";
 import Payment from "@/models/Payment";
+import { createAuditLog } from "@/lib/audit";
 
 export async function PATCH(
   request: NextRequest,
@@ -37,6 +38,18 @@ export async function PATCH(
     payment.voidedAt = new Date();
     payment.voidReason = voidReason.trim();
     await payment.save();
+
+    const ipAddress = request.headers.get("x-forwarded-for")?.split(",")[0] || request.headers.get("x-real-ip") || "unknown";
+    const userAgent = request.headers.get("user-agent") || "unknown";
+    void createAuditLog({
+      userId: session.user.id,
+      action: "VOID",
+      resource: "PAYMENT",
+      resourceId: params.id,
+      details: { voidReason },
+      ipAddress,
+      userAgent,
+    });
 
     return NextResponse.json({ message: "Payment voided successfully", payment });
   } catch (error) {

@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth/options";
 import dbConnect from "@/lib/db/connection";
 import Student from "@/models/Student";
 import mongoose from "mongoose";
+import { createAuditLog } from "@/lib/audit";
 
 export async function GET(
   request: NextRequest,
@@ -27,6 +28,7 @@ export async function GET(
       session.user.role === "parent" &&
       student.parentUserId?.toString() !== session.user.id
     ) {
+      // SEC-003: parent isolation enforced
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
@@ -77,6 +79,18 @@ export async function PATCH(
     });
 
     await student.save();
+
+    const ipAddress = request.headers.get("x-forwarded-for")?.split(",")[0] || request.headers.get("x-real-ip") || "unknown";
+    const userAgent = request.headers.get("user-agent") || "unknown";
+    void createAuditLog({
+      userId: session.user.id,
+      action: "UPDATE",
+      resource: "STUDENT",
+      resourceId: params.id,
+      details: { status },
+      ipAddress,
+      userAgent,
+    });
 
     return NextResponse.json({ message: "Student status updated", student });
   } catch (error) {

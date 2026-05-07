@@ -37,3 +37,6 @@ coverage/
 # Misc
 *.log
 *.tsbuildinfo
+
+# Backups
+backups/

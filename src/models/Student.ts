@@ -206,6 +206,7 @@ StudentSchema.index({ "personalInfo.lastName": 1, "personalInfo.firstName": 1 })
 StudentSchema.index({ parentUserId: 1 });
 StudentSchema.index({ currentGradeLevel: 1 });
 StudentSchema.index({ status: 1 });
+StudentSchema.index({ lrn: 1 }, { sparse: true });
 
 const Student: Model<IStudent> =
   mongoose.models.Student || mongoose.model<IStudent>("Student", StudentSchema);

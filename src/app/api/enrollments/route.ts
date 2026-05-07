@@ -17,6 +17,9 @@ import {
 import User from "@/models/User";
 import { createNotification } from "@/lib/notifications";
 import { sendEnrollmentSubmittedEmail } from "@/lib/auth/email";
+import { createAuditLog } from "@/lib/audit";
+import { sanitizeObject } from "@/lib/sanitize";
+import { logger } from "@/lib/logger";
 
 type EnrollmentTypeInput = "new" | "returning" | "transferee";
 
@@ -136,6 +139,7 @@ export async function GET(request: NextRequest) {
 
     if (session.user.role === "parent") {
       query.submittedBy = session.user.id;
+      // SEC-003: parent isolation enforced
       if (!includeDrafts) {
         query.isDraft = false;
       }
@@ -169,7 +173,7 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error("Error fetching enrollments:", error);
+    logger.error("Error fetching enrollments", { route: "GET /api/enrollments", error: String(error) });
     return NextResponse.json(
       { error: "Failed to fetch enrollments" },
       { status: 500 }
@@ -186,7 +190,7 @@ export async function POST(request: NextRequest) {
 
     await dbConnect();
 
-    const body = await request.json();
+    const body = sanitizeObject(await request.json() as Record<string, unknown>);
     const action = body?.action === "save_draft" ? "save_draft" : "submit";
     const formData: EnrollmentPayload =
       typeof body?.formData === "object" && body.formData !== null
@@ -538,6 +542,17 @@ export async function POST(request: NextRequest) {
     }));
     await enrollment.save();
 
+    const ipAddress = request.headers.get("x-forwarded-for")?.split(",")[0] || request.headers.get("x-real-ip") || "unknown";
+    const userAgent = request.headers.get("user-agent") || "unknown";
+    void createAuditLog({
+      userId: session.user.id,
+      action: "CREATE",
+      resource: "ENROLLMENT",
+      resourceId: enrollment._id.toString(),
+      ipAddress,
+      userAgent,
+    });
+
     await Student.findByIdAndUpdate(student._id, {
       $addToSet: { enrollmentHistory: enrollment._id },
       currentGradeLevel: formData.gradeLevel,
@@ -579,7 +594,7 @@ export async function POST(request: NextRequest) {
       { status: 201 }
     );
   } catch (error) {
-    console.error("Error creating enrollment:", error);
+    logger.error("Error creating enrollment", { route: "POST /api/enrollments", error: String(error) });
     return NextResponse.json(
       { error: "Failed to create enrollment" },
       { status: 500 }

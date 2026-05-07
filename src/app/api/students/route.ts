@@ -25,6 +25,7 @@ export async function GET(request: NextRequest) {
     // Filter by role - parents can only see their children
     if (session.user.role === "parent") {
       query.parentUserId = session.user.id;
+      // SEC-003: parent isolation enforced
     }
 
     if (search) {

@@ -153,6 +153,9 @@ EnrollmentSchema.index({ submittedBy: 1 });
 EnrollmentSchema.index({ isDraft: 1 });
 EnrollmentSchema.index({ gradeLevel: 1 });
 EnrollmentSchema.index({ createdAt: -1 });
+EnrollmentSchema.index({ submittedBy: 1, status: 1 });
+EnrollmentSchema.index({ studentId: 1, schoolYearId: 1 });
+EnrollmentSchema.index({ schoolYearId: 1, gradeLevel: 1 });
 
 const Enrollment: Model<IEnrollment> =
   mongoose.models.Enrollment || mongoose.model<IEnrollment>("Enrollment", EnrollmentSchema);
