@@ -5,6 +5,10 @@ import dbConnect from "@/lib/db/connection";
 import Payment from "@/models/Payment";
 import Student from "@/models/Student";
 import { generateId } from "@/lib/utils";
+import Enrollment from "@/models/Enrollment";
+import User from "@/models/User";
+import { createNotification } from "@/lib/notifications";
+import { sendPaymentConfirmationEmail } from "@/lib/auth/email";
 
 export async function GET(request: NextRequest) {
   try {
@@ -118,6 +122,56 @@ export async function POST(request: NextRequest) {
       receivedBy: session.user.id,
       isVoided: false,
     });
+
+    // Fire-and-forget: send payment confirmation
+    void Promise.resolve().then(async () => {
+      let parentId: string | null = null;
+      let studentName = "";
+
+      if (cleanBody.enrollmentId) {
+        const enrollment = await Enrollment.findById(cleanBody.enrollmentId)
+          .populate("studentId", "personalInfo")
+          .lean();
+        if (enrollment) {
+          parentId = enrollment.submittedBy?.toString() ?? null;
+          const si = (enrollment.studentId as any)?.personalInfo;
+          if (si) studentName = `${si.firstName ?? ""} ${si.lastName ?? ""}`.trim();
+        }
+      }
+
+      if (!parentId && cleanBody.studentId) {
+        const student = await Student.findById(cleanBody.studentId).select("parentUserId personalInfo").lean();
+        if (student) {
+          parentId = student.parentUserId?.toString() ?? null;
+          const si = (student as any).personalInfo;
+          if (si) studentName = `${si.firstName ?? ""} ${si.lastName ?? ""}`.trim();
+        }
+      }
+
+      if (parentId) {
+        const parent = await User.findById(parentId).select("email profile").lean();
+        if (parent) {
+          const parentName = `${parent.profile?.firstName ?? ""} ${parent.profile?.lastName ?? ""}`.trim() || parent.email;
+          const paymentDateStr = payment.paymentDate
+            ? new Date(payment.paymentDate).toLocaleDateString("en-PH", { year: "numeric", month: "long", day: "numeric" })
+            : new Date().toLocaleDateString("en-PH", { year: "numeric", month: "long", day: "numeric" });
+          await sendPaymentConfirmationEmail({
+            email: parent.email,
+            name: parentName,
+            receiptNumber: payment.receiptNumber,
+            studentName,
+            amount: payment.amount,
+            paymentDate: paymentDateStr,
+          });
+          await createNotification({
+            userId: parentId,
+            title: "Payment Recorded",
+            message: `Payment of ₱${payment.amount?.toLocaleString("en-PH") ?? 0} has been recorded for ${studentName || "your child"} (Receipt: ${payment.receiptNumber}).`,
+            type: "success",
+          });
+        }
+      }
+    }).catch(console.error);
 
     return NextResponse.json(
       {

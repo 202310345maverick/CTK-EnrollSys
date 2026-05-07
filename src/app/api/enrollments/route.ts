@@ -14,6 +14,9 @@ import {
   EnrollmentDocumentType,
   getRequiredDocumentTypes,
 } from "@/lib/enrollment/constants";
+import User from "@/models/User";
+import { createNotification } from "@/lib/notifications";
+import { sendEnrollmentSubmittedEmail } from "@/lib/auth/email";
 
 type EnrollmentTypeInput = "new" | "returning" | "transferee";
 
@@ -539,6 +542,30 @@ export async function POST(request: NextRequest) {
       $addToSet: { enrollmentHistory: enrollment._id },
       currentGradeLevel: formData.gradeLevel,
     });
+
+    // Fire-and-forget: send email + in-app notification
+    const studentName = `${formData.firstName ?? ""} ${formData.lastName ?? ""}`.trim();
+    void Promise.resolve().then(async () => {
+      const parent = await User.findById(session.user.id).select("email profile").lean();
+      if (parent) {
+        const parentName = `${parent.profile?.firstName ?? ""} ${parent.profile?.lastName ?? ""}`.trim() || parent.email;
+        await sendEnrollmentSubmittedEmail({
+          email: parent.email,
+          name: parentName,
+          enrollmentNumber: enrollment.enrollmentNumber,
+          studentName,
+          gradeLevel: formData.gradeLevel ?? "",
+          enrollmentType,
+        });
+      }
+      await createNotification({
+        userId: session.user.id,
+        title: "Enrollment Submitted",
+        message: `Your enrollment for ${studentName} (${enrollment.enrollmentNumber}) has been submitted and is under review.`,
+        type: "success",
+        link: `/parent/enrollment/${enrollment._id}`,
+      });
+    }).catch(console.error);
 
     return NextResponse.json(
       {

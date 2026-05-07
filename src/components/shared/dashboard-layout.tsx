@@ -25,6 +25,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import NotificationBell from "@/components/shared/notification-bell";
 
 const adminNavItems = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
@@ -125,6 +126,7 @@ export default function DashboardLayout({
           <div />
 
           <div className="flex items-center gap-3">
+            <NotificationBell />
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button className="flex items-center gap-2 rounded-full px-2 py-1 transition-colors hover:bg-slate-100 focus:outline-none">

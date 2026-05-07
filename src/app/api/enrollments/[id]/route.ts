@@ -7,6 +7,9 @@ import Enrollment from "@/models/Enrollment";
 import Student from "@/models/Student";
 import Document from "@/models/Document";
 import FeeStructure from "@/models/FeeStructure";
+import User from "@/models/User";
+import { createNotification } from "@/lib/notifications";
+import { sendStatusChangeEmail, sendReuploadRequestEmail } from "@/lib/auth/email";
 
 export async function GET(
   request: NextRequest,
@@ -143,6 +146,64 @@ export async function PUT(
     }
 
     await enrollment.save();
+
+    // Fire-and-forget notifications
+    void Promise.resolve().then(async () => {
+      if (isAdmin && body.status && body.status !== "draft") {
+        const parent = await User.findById(enrollment.submittedBy).select("email profile").lean();
+        if (parent) {
+          const parentName = `${parent.profile?.firstName ?? ""} ${parent.profile?.lastName ?? ""}`.trim() || parent.email;
+          const studentName = (enrollment.studentId as any)?.personalInfo
+            ? `${(enrollment.studentId as any).personalInfo.firstName ?? ""} ${(enrollment.studentId as any).personalInfo.lastName ?? ""}`.trim()
+            : "";
+          const statusLabel = (body.status as string).replace(/_/g, " ").replace(/\b\w/g, (c: string) => c.toUpperCase());
+          await sendStatusChangeEmail({
+            email: parent.email,
+            name: parentName,
+            enrollmentNumber: enrollment.enrollmentNumber,
+            studentName,
+            newStatus: body.status,
+            remarks: body.remarks,
+            link: `${process.env.NEXT_PUBLIC_APP_URL ?? ""}/parent/enrollment/${enrollment._id}`,
+          });
+          await createNotification({
+            userId: enrollment.submittedBy.toString(),
+            title: `Enrollment ${statusLabel}`,
+            message: `Your enrollment application ${enrollment.enrollmentNumber}${studentName ? ` for ${studentName}` : ""} has been updated to ${statusLabel}.`,
+            type: body.status === "approved" || body.status === "enrolled" ? "success" : body.status === "rejected" ? "error" : "info",
+            link: `/parent/enrollment/${enrollment._id}`,
+          });
+        }
+      }
+
+      if (isAdmin && body.documentUpdate) {
+        const { status: docStatus, documentType, remarks: docRemarks } = body.documentUpdate;
+        if (docStatus === "rejected") {
+          const parent = await User.findById(enrollment.submittedBy).select("email profile").lean();
+          if (parent) {
+            const parentName = `${parent.profile?.firstName ?? ""} ${parent.profile?.lastName ?? ""}`.trim() || parent.email;
+            const studentName = (enrollment.studentId as any)?.personalInfo
+              ? `${(enrollment.studentId as any).personalInfo.firstName ?? ""} ${(enrollment.studentId as any).personalInfo.lastName ?? ""}`.trim()
+              : "";
+            await sendReuploadRequestEmail({
+              email: parent.email,
+              name: parentName,
+              studentName,
+              documentType,
+              remarks: docRemarks,
+              link: `${process.env.NEXT_PUBLIC_APP_URL ?? ""}/parent/enrollment/${enrollment._id}`,
+            });
+            await createNotification({
+              userId: enrollment.submittedBy.toString(),
+              title: "Document Re-upload Required",
+              message: `A document (${documentType}) for your enrollment application ${enrollment.enrollmentNumber} has been rejected and requires re-upload.`,
+              type: "warning",
+              link: `/parent/enrollment/${enrollment._id}`,
+            });
+          }
+        }
+      }
+    }).catch(console.error);
 
     return NextResponse.json({
       message: "Enrollment updated successfully",
