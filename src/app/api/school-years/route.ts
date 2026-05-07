@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth/options";
 import dbConnect from "@/lib/db/connection";
 import SchoolYear from "@/models/SchoolYear";
+import { createAuditLog } from "@/lib/audit";
 
 export async function GET() {
   try {
@@ -46,6 +47,14 @@ export async function POST(request: NextRequest) {
     const schoolYear = await SchoolYear.create({
       ...body,
       createdBy: session.user.id,
+    });
+
+    void createAuditLog({
+      userId: session.user.id,
+      action: "CREATE",
+      resource: "SCHOOL_YEAR",
+      resourceId: schoolYear._id.toString(),
+      details: { name: schoolYear.name, isActive: schoolYear.isActive },
     });
 
     return NextResponse.json(

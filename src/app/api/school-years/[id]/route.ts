@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth/options";
 import dbConnect from "@/lib/db/connection";
 import SchoolYear from "@/models/SchoolYear";
+import { createAuditLog } from "@/lib/audit";
 
 export async function GET(
   _request: NextRequest,
@@ -67,6 +68,14 @@ export async function PUT(
       return NextResponse.json({ error: "School year not found" }, { status: 404 });
     }
 
+    void createAuditLog({
+      userId: session.user.id,
+      action: "UPDATE",
+      resource: "SCHOOL_YEAR",
+      resourceId: params.id,
+      details: { updatedFields: Object.keys(updateData) },
+    });
+
     return NextResponse.json({ message: "School year updated successfully", schoolYear });
   } catch (error) {
     console.error("Error updating school year:", error);
@@ -101,6 +110,14 @@ export async function PATCH(
       return NextResponse.json({ error: "School year not found" }, { status: 404 });
     }
 
+    void createAuditLog({
+      userId: session.user.id,
+      action: "UPDATE",
+      resource: "SCHOOL_YEAR",
+      resourceId: params.id,
+      details: { updatedFields: Object.keys(updateData) },
+    });
+
     return NextResponse.json({ message: "School year updated successfully", schoolYear });
   } catch (error) {
     console.error("Error patching school year:", error);
@@ -124,6 +141,14 @@ export async function DELETE(
     if (!schoolYear) {
       return NextResponse.json({ error: "School year not found" }, { status: 404 });
     }
+
+    void createAuditLog({
+      userId: session.user.id,
+      action: "DELETE",
+      resource: "SCHOOL_YEAR",
+      resourceId: params.id,
+      details: { name: schoolYear.name },
+    });
 
     return NextResponse.json({ message: "School year deleted successfully" });
   } catch (error) {

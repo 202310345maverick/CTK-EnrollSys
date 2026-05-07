@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth/options";
 import dbConnect from "@/lib/db/connection";
 import FeeStructure from "@/models/FeeStructure";
 import "@/models/SchoolYear";
+import { createAuditLog } from "@/lib/audit";
 
 export async function GET(
   _request: NextRequest,
@@ -65,6 +66,14 @@ export async function PUT(
       return NextResponse.json({ error: "Fee structure not found" }, { status: 404 });
     }
 
+    void createAuditLog({
+      userId: session.user.id,
+      action: "UPDATE",
+      resource: "FEE_STRUCTURE",
+      resourceId: params.id,
+      details: { updatedFields: Object.keys(updateData) },
+    });
+
     return NextResponse.json({ message: "Fee structure updated successfully", feeStructure });
   } catch (error) {
     console.error("Error updating fee structure:", error);
@@ -88,6 +97,14 @@ export async function DELETE(
     if (!feeStructure) {
       return NextResponse.json({ error: "Fee structure not found" }, { status: 404 });
     }
+
+    void createAuditLog({
+      userId: session.user.id,
+      action: "DELETE",
+      resource: "FEE_STRUCTURE",
+      resourceId: params.id,
+      details: { gradeLevel: feeStructure.gradeLevel },
+    });
 
     return NextResponse.json({ message: "Fee structure deleted successfully" });
   } catch (error) {

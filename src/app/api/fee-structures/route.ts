@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth/options";
 import dbConnect from "@/lib/db/connection";
 import FeeStructure from "@/models/FeeStructure";
 import "@/models/SchoolYear";
+import { createAuditLog } from "@/lib/audit";
 
 export async function GET(request: NextRequest) {
   try {
@@ -52,6 +53,14 @@ export async function POST(request: NextRequest) {
       paymentOptions: paymentOptions || [],
       isActive: isActive !== undefined ? isActive : true,
       createdBy: session.user.id,
+    });
+
+    void createAuditLog({
+      userId: session.user.id,
+      action: "CREATE",
+      resource: "FEE_STRUCTURE",
+      resourceId: feeStructure._id.toString(),
+      details: { gradeLevel, totalAmount: feeStructure.totalAmount },
     });
 
     return NextResponse.json(

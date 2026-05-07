@@ -3,6 +3,7 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import dbConnect from "@/lib/db/connection";
 import User from "@/models/User";
+import { createAuditLog } from "@/lib/audit";
 import {
   ACCOUNT_LOCKOUT_MINUTES,
   MAX_FAILED_LOGIN_ATTEMPTS,
@@ -80,6 +81,13 @@ export const authOptions: NextAuthOptions = {
           $unset: {
             lockoutUntil: 1,
           },
+        });
+
+        void createAuditLog({
+          userId: user._id.toString(),
+          action: "LOGIN",
+          resource: "AUTH",
+          details: { email: user.email, role: user.role },
         });
 
         return {

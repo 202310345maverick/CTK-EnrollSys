@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth/options";
 import dbConnect from "@/lib/db/connection";
 import User from "@/models/User";
 import bcrypt from "bcryptjs";
+import { createAuditLog } from "@/lib/audit";
 
 export async function GET(
   _request: NextRequest,
@@ -62,6 +63,14 @@ export async function PUT(
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
+    void createAuditLog({
+      userId: session.user.id,
+      action: "UPDATE",
+      resource: "USER",
+      resourceId: params.id,
+      details: { updatedFields: Object.keys(updateData).filter(k => k !== "password") },
+    });
+
     return NextResponse.json({ message: "User updated successfully", user });
   } catch (error) {
     console.error("Error updating user:", error);
@@ -93,6 +102,14 @@ export async function PATCH(
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
+
+    void createAuditLog({
+      userId: session.user.id,
+      action: "UPDATE",
+      resource: "USER",
+      resourceId: params.id,
+      details: { isActive, action: isActive ? "activated" : "deactivated" },
+    });
 
     return NextResponse.json({
       message: `User ${isActive ? "activated" : "deactivated"} successfully`,

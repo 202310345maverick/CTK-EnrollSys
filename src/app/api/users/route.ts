@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth/options";
 import dbConnect from "@/lib/db/connection";
 import User from "@/models/User";
 import bcrypt from "bcryptjs";
+import { createAuditLog } from "@/lib/audit";
 
 export async function GET(request: NextRequest) {
   try {
@@ -93,6 +94,14 @@ export async function POST(request: NextRequest) {
       profile,
       isActive: true,
       isEmailVerified: true, // Admin-created accounts are verified
+    });
+
+    void createAuditLog({
+      userId: session.user.id,
+      action: "CREATE",
+      resource: "USER",
+      resourceId: user._id.toString(),
+      details: { email: user.email, role: user.role },
     });
 
     return NextResponse.json(
