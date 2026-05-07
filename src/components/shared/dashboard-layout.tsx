@@ -99,7 +99,11 @@ export default function DashboardLayout({
         <nav className="flex-1 space-y-1 px-0 pt-2">
           {navItems.map((item) => {
             const Icon = item.icon;
-            const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
+            // Exact match for root dashboard routes; prefix match for sub-pages
+            const isDashboardRoot = navItems[0].href === item.href;
+            const isActive = isDashboardRoot
+              ? pathname === item.href
+              : pathname === item.href || pathname.startsWith(item.href + "/");
             return (
               <Link
                 key={item.href}
@@ -123,7 +127,11 @@ export default function DashboardLayout({
       <div className="pl-0 md:pl-[218px]">
         {/* Header */}
         <header className="sticky top-0 z-40 flex h-16 items-center justify-between border-b border-black/10 bg-[#f6f6f7] px-6">
-          <div />
+          <div className="flex items-center gap-2">
+            <span className="hidden text-xs font-semibold uppercase tracking-widest text-slate-400 sm:inline">
+              {role === "admin" ? "Admin Portal" : role === "registrar" ? "Registrar Portal" : "Parent Portal"}
+            </span>
+          </div>
 
           <div className="flex items-center gap-3">
             <NotificationBell />
