@@ -95,8 +95,8 @@ export async function PUT(
         remarks: body.remarks || `Status changed to ${body.status}`,
       });
 
-      // If approved, assign section if provided and auto-assess fees if not yet assessed
-      if (body.status === "approved") {
+      // If approved or enrolled, assign section if provided and auto-assess fees if not yet assessed
+      if (body.status === "approved" || body.status === "enrolled") {
         if (body.section) {
           await Student.findByIdAndUpdate(enrollment.studentId, {
             section: body.section,
@@ -163,6 +163,16 @@ export async function PUT(
       enrollment.enrollmentType = body.draftData?.enrollmentType || enrollment.enrollmentType;
       enrollment.gradeLevel = body.draftData?.gradeLevel || enrollment.gradeLevel;
       enrollment.status = "draft";
+    }
+
+    // Admin/registrar can manually save fee assessment
+    if (isAdmin && body.assessedFees) {
+      enrollment.assessedFees = {
+        feeStructureId: body.assessedFees.feeStructureId ?? enrollment.assessedFees?.feeStructureId,
+        totalAmount: body.assessedFees.totalAmount,
+        breakdown: body.assessedFees.breakdown,
+      };
+      enrollment.markModified("assessedFees");
     }
 
     // Update documents if provided
