@@ -1,11 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { ArrowLeft, Loader2, Send, Upload, X, CheckCircle, RefreshCw } from "lucide-react";
+import { ArrowLeft, Loader2, Send, Upload, X, CheckCircle, RefreshCw, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -84,6 +84,16 @@ type UploadedDoc = {
   mimeType: string;
 };
 
+const DRAFT_KEY = "ctk_enrollment_draft";
+
+function getSavedDraft(): Partial<FormData> {
+  if (typeof window === "undefined") return {};
+  try {
+    const raw = localStorage.getItem(DRAFT_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch { return {}; }
+}
+
 export default function NewEnrollmentPage() {
   const router = useRouter();
   const { toast } = useToast();
@@ -93,13 +103,39 @@ export default function NewEnrollmentPage() {
   const [uploadingId, setUploadingId] = useState<string | null>(null);
   const [uploadProgress, setUploadProgress] = useState<Record<string, number>>({});
   const [uploadErrors, setUploadErrors] = useState<Record<string, string>>({});
+  const [hasDraft, setHasDraft] = useState(false);
 
-  const { register, handleSubmit, watch, control, formState: { errors } } = useForm<FormData>({
+  const { register, handleSubmit, watch, control, reset, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema),
-    defaultValues: { isCatholic: "yes", enrollmentType: "new" },
+    defaultValues: { isCatholic: "yes", enrollmentType: "new", ...getSavedDraft() },
   });
 
   const isCatholic = watch("isCatholic");
+  const watchedValues = watch();
+
+  // Check for existing draft on mount
+  useEffect(() => {
+    const saved = localStorage.getItem(DRAFT_KEY);
+    if (saved && saved !== "{}") setHasDraft(true);
+  }, []);
+
+  // Auto-save to localStorage on every change
+  useEffect(() => {
+    try {
+      localStorage.setItem(DRAFT_KEY, JSON.stringify(watchedValues));
+      setHasDraft(true);
+    } catch {}
+  }, [watchedValues]);
+
+  const clearDraft = () => {
+    localStorage.removeItem(DRAFT_KEY);
+    setHasDraft(false);
+    reset({ isCatholic: "yes", enrollmentType: "new" });
+    setUploadedFiles({});
+    setUploadedDocs({});
+    setUploadErrors({});
+    toast({ title: "Form cleared", description: "All fields have been reset." });
+  };
 
   // Upload a single file to /api/upload and return the doc object
   const uploadFile = (docId: string, file: File): Promise<UploadedDoc> => {
@@ -231,6 +267,7 @@ export default function NewEnrollmentPage() {
         title: "Enrollment Submitted!",
         description: `Enrollment #${result.enrollment?.enrollmentNumber} submitted successfully.`,
       });
+      localStorage.removeItem(DRAFT_KEY);
       router.push("/parent/enrollments");
     } catch (error) {
       console.error(error);
@@ -255,12 +292,26 @@ export default function NewEnrollmentPage() {
           <h1 className="text-xl font-bold text-gray-900">New Enrollment</h1>
           <p className="text-xs text-gray-500 mt-0.5">Fill out the form to enroll a student</p>
         </div>
-        <Link href="/parent/enrollments">
-          <Button variant="outline" size="sm" className="h-8 text-xs">
-            <ArrowLeft className="mr-1 h-3.5 w-3.5" />
-            Back
-          </Button>
-        </Link>
+        <div className="flex items-center gap-2 shrink-0">
+          {hasDraft && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="h-8 text-xs text-red-600 border-red-200 hover:bg-red-50"
+              onClick={clearDraft}
+            >
+              <Trash2 className="mr-1 h-3.5 w-3.5" />
+              Reset
+            </Button>
+          )}
+          <Link href="/parent/enrollments">
+            <Button variant="outline" size="sm" className="h-8 text-xs">
+              <ArrowLeft className="mr-1 h-3.5 w-3.5" />
+              Back
+            </Button>
+          </Link>
+        </div>
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
