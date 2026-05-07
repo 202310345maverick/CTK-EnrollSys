@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge, type BadgeProps } from "@/components/ui/badge";
 import { PageHeader } from "@/components/shared/page-header";
+import Link from "next/link";
 import { Search, Eye, Plus, Users, Loader2, RefreshCw } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { FormSelect } from "@/components/ui/form-select";
@@ -275,10 +276,12 @@ export default function AdminStudentsPage() {
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-1">
-                        <Button variant="outline" size="sm" className="h-8">
-                          <Eye className="mr-1 h-4 w-4" />
-                          View
-                        </Button>
+                        <Link href={`/admin/students/${student._id}`}>
+                          <Button variant="outline" size="sm" className="h-8">
+                            <Eye className="mr-1 h-4 w-4" />
+                            View
+                          </Button>
+                        </Link>
                         <Button
                           variant="outline"
                           size="sm"
