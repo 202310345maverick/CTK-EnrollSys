@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useSession } from "next-auth/react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -35,6 +35,11 @@ export default function PaymentsPage() {
   const [loadingEnrollments, setLoadingEnrollments] = useState(false);
   const [showVoided, setShowVoided] = useState(false);
 
+  // Student search state
+  const [studentSearch, setStudentSearch] = useState("");
+  const [showStudentDropdown, setShowStudentDropdown] = useState(false);
+  const studentSearchRef = useRef<HTMLDivElement>(null);
+
   // Void modal state
   const [voidTarget, setVoidTarget] = useState<{ id: string; receiptNumber: string; amount: number } | null>(null);
   const [voidReason, setVoidReason] = useState("");
@@ -55,6 +60,26 @@ export default function PaymentsPage() {
   });
 
   const isAdminOrRegistrar = session?.user?.role === "admin" || session?.user?.role === "registrar";
+
+  // Close student dropdown on outside click
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (studentSearchRef.current && !studentSearchRef.current.contains(e.target as Node)) {
+        setShowStudentDropdown(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const filteredStudents = studentSearch.trim().length === 0
+    ? students
+    : students.filter((s: any) => {
+        const full = `${s.personalInfo?.lastName} ${s.personalInfo?.firstName} ${s.studentId || ""} ${s.lrn || ""}`.toLowerCase();
+        return full.includes(studentSearch.toLowerCase());
+      });
+
+  const selectedStudent = students.find((s: any) => s._id === form.studentId);
 
   const fetchPayments = useCallback(async () => {
     setLoading(true);
@@ -139,6 +164,7 @@ export default function PaymentsPage() {
         setShowModal(false);
         setSuccess(false);
         setForm({ studentId: "", enrollmentId: "", schoolYearId: "", paymentType: "tuition", description: "", amount: "", paymentMethod: "cash", paymentDate: new Date().toISOString().split("T")[0], remarks: "" });
+        setStudentSearch("");
         fetchPayments();
       }, 1200);
     } finally {
@@ -307,7 +333,7 @@ export default function PaymentsPage() {
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-base font-semibold">Record Payment</CardTitle>
-                <Button variant="ghost" size="sm" onClick={() => setShowModal(false)} className="h-7 w-7 p-0">
+                <Button variant="ghost" size="sm" onClick={() => { setShowModal(false); setStudentSearch(""); }} className="h-7 w-7 p-0">
                   <X className="h-4 w-4" />
                 </Button>
               </div>
@@ -323,19 +349,67 @@ export default function PaymentsPage() {
                   {error && <p className="text-xs text-red-600 bg-red-50 border border-red-200 rounded p-2">{error}</p>}
 
                   <div className="grid gap-3 sm:grid-cols-2">
-                    <div>
+                    {/* Student search — full width */}
+                    <div className="sm:col-span-2">
                       <label className="text-xs font-medium text-muted-foreground mb-1 block">Student *</label>
-                      <FormSelect
-                        value={form.studentId}
-                        onChange={(v) => setForm(f => ({ ...f, studentId: v, enrollmentId: "", schoolYearId: "" }))}
-                        placeholder="Select student"
-                        options={students.map((s: any) => ({
-                          value: s._id,
-                          label: `${s.personalInfo?.lastName}, ${s.personalInfo?.firstName}`,
-                        }))}
-                      />
+                      <div className="relative" ref={studentSearchRef}>
+                        <div className="relative">
+                          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
+                          <Input
+                            placeholder="Search by name, student ID, or LRN..."
+                            value={selectedStudent
+                              ? `${selectedStudent.personalInfo?.lastName}, ${selectedStudent.personalInfo?.firstName} (${selectedStudent.studentId || ""})`
+                              : studentSearch}
+                            onFocus={() => {
+                              if (selectedStudent) setStudentSearch("");
+                              setShowStudentDropdown(true);
+                            }}
+                            onChange={(e) => {
+                              setStudentSearch(e.target.value);
+                              setShowStudentDropdown(true);
+                              if (form.studentId) setForm(f => ({ ...f, studentId: "", enrollmentId: "", schoolYearId: "" }));
+                            }}
+                            className="pl-8 h-9 text-sm"
+                          />
+                          {form.studentId && (
+                            <button
+                              type="button"
+                              onClick={() => { setForm(f => ({ ...f, studentId: "", enrollmentId: "", schoolYearId: "" })); setStudentSearch(""); }}
+                              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                            >
+                              <X className="h-3.5 w-3.5" />
+                            </button>
+                          )}
+                        </div>
+                        {showStudentDropdown && (
+                          <div className="absolute z-50 mt-1 w-full max-h-52 overflow-y-auto rounded-md border border-slate-200 bg-white shadow-lg">
+                            {filteredStudents.length === 0 ? (
+                              <p className="px-3 py-2 text-xs text-muted-foreground">No students found</p>
+                            ) : (
+                              filteredStudents.slice(0, 50).map((s: any) => (
+                                <button
+                                  key={s._id}
+                                  type="button"
+                                  className="w-full text-left px-3 py-2 text-sm hover:bg-slate-50 flex items-center justify-between gap-2 border-b border-slate-100 last:border-0"
+                                  onMouseDown={(e) => {
+                                    e.preventDefault();
+                                    setForm(f => ({ ...f, studentId: s._id, enrollmentId: "", schoolYearId: "" }));
+                                    setStudentSearch("");
+                                    setShowStudentDropdown(false);
+                                  }}
+                                >
+                                  <span className="font-medium">{s.personalInfo?.lastName}, {s.personalInfo?.firstName}</span>
+                                  <span className="text-xs text-muted-foreground font-mono shrink-0">{s.studentId || s.lrn || ""}</span>
+                                </button>
+                              ))
+                            )}
+                          </div>
+                        )}
+                      </div>
                     </div>
-                    <div>
+
+                    {/* Enrollment — full width so label fits */}
+                    <div className="sm:col-span-2">
                       <label className="text-xs font-medium text-muted-foreground mb-1 block">Enrollment</label>
                       <FormSelect
                         value={form.enrollmentId}
@@ -431,7 +505,7 @@ export default function PaymentsPage() {
                   </div>
 
                   <div className="flex gap-2 pt-1">
-                    <Button type="button" variant="outline" size="sm" onClick={() => setShowModal(false)} className="flex-1 h-8 text-xs">
+                    <Button type="button" variant="outline" size="sm" onClick={() => { setShowModal(false); setStudentSearch(""); }} className="flex-1 h-8 text-xs">
                       Cancel
                     </Button>
                     <Button type="submit" size="sm" disabled={submitting} className="flex-1 h-8 text-xs ctk-danger-button">
