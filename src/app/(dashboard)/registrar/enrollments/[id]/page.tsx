@@ -327,7 +327,7 @@ export default function EnrollmentDetailPage() {
                   {enrollment.documents?.map((doc: any, i: number) => {
                     const docId = doc.documentId as any;
                     const label = ENROLLMENT_DOCUMENT_LABELS[doc.type as keyof typeof ENROLLMENT_DOCUMENT_LABELS] || doc.type;
-                    const fileUrl = docId?.secureUrl || docId?.cloudinaryUrl;
+                    const fileUrl = docId?._id ? `/api/documents/${docId._id}/view` : (docId?.secureUrl || docId?.cloudinaryUrl);
                     return (
                       <div key={i} className="flex items-center gap-3 rounded-lg border bg-slate-50/50 px-3 py-2">
                         <div className="flex-1 min-w-0">

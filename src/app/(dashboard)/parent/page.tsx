@@ -29,7 +29,7 @@ async function getParentDashboardData(userId: string) {
     Enrollment.find({ submittedBy: userId, isDraft: { $ne: true } })
       .sort({ createdAt: -1 })
       .populate("studentId", "personalInfo")
-      .populate("documents.documentId", "secureUrl originalName fileName createdAt")
+      .populate("documents.documentId", "secureUrl cloudinaryUrl originalName fileName createdAt")
       .lean(),
   ]);
 
@@ -117,22 +117,26 @@ export default async function ParentDashboard() {
           : null,
       downloadUrl:
         uploadedDocument?.documentId && typeof uploadedDocument.documentId === "object"
-          ? (uploadedDocument.documentId as { secureUrl?: string }).secureUrl || null
+          ? (uploadedDocument.documentId as unknown as { _id?: string; secureUrl?: string })._id
+            ? `/api/documents/${(uploadedDocument.documentId as unknown as { _id: string })._id}/view`
+            : (uploadedDocument.documentId as unknown as { secureUrl?: string }).secureUrl || null
           : null,
     };
   });
 
   const submittedDocumentRows = (currentEnrollment?.documents || []).map((document) => {
     const documentType = String(document.type);
-    const documentId = document.documentId as
-      | { secureUrl?: string; originalName?: string; fileName?: string; createdAt?: string | Date }
+    const documentId = document.documentId as unknown as
+      | { _id?: string; secureUrl?: string; originalName?: string; fileName?: string; createdAt?: string | Date }
       | undefined;
     return {
       type: documentType,
       label: formatDocumentTypeLabel(documentType),
       status: (document.status || "pending") as "pending" | "verified" | "rejected" | "missing",
       uploadedAt: documentId?.createdAt || null,
-      downloadUrl: documentId?.secureUrl || null,
+      downloadUrl: documentId?._id
+        ? `/api/documents/${documentId._id}/view`
+        : documentId?.secureUrl || null,
       filename: documentId?.originalName || documentId?.fileName || null,
     };
   });

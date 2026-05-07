@@ -29,7 +29,7 @@ async function getParentEnrollmentDetail(enrollmentId: string, parentUserId: str
     .populate("studentId", "studentId personalInfo")
     .populate("schoolYearId", "name")
     .populate("statusHistory.changedBy", "profile.firstName profile.lastName email role")
-    .populate("documents.documentId", "secureUrl originalName fileName createdAt")
+    .populate("documents.documentId", "secureUrl cloudinaryUrl originalName fileName createdAt")
     .lean();
 }
 
@@ -241,9 +241,9 @@ export default async function ParentEnrollmentDetailPage({
                   <Badge variant={status === "rejected" ? "danger" : status === "missing" ? "warning" : "success"}>
                     {statusLabel}
                   </Badge>
-                  {file?.secureUrl ? (
+                  {file?.secureUrl || (file as any)?._id ? (
                     <a
-                      href={file.secureUrl}
+                      href={(file as any)?._id ? `/api/documents/${(file as any)._id}/view` : file.secureUrl}
                       target="_blank"
                       rel="noreferrer"
                       className="inline-flex items-center text-sm font-medium text-primary hover:underline"
@@ -267,9 +267,9 @@ export default async function ParentEnrollmentDetailPage({
                 <p className="text-sm text-muted-foreground capitalize">
                   Additional: {ENROLLMENT_DOCUMENT_LABELS[document.type as (typeof ENROLLMENT_DOCUMENT_TYPES)[number]] || document.type}
                 </p>
-                {(document.documentId as any)?.secureUrl ? (
+                {(document.documentId as any)?._id || (document.documentId as any)?.secureUrl ? (
                   <a
-                    href={(document.documentId as any).secureUrl}
+                    href={(document.documentId as any)?._id ? `/api/documents/${(document.documentId as any)._id}/view` : (document.documentId as any).secureUrl}
                     target="_blank"
                     rel="noreferrer"
                     className="inline-flex items-center text-sm font-medium text-primary hover:underline"
