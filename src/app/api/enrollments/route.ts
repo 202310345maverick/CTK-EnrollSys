@@ -420,6 +420,16 @@ export async function POST(request: NextRequest) {
         status: "active",
       });
     } else {
+      // CORE-006: check LRN uniqueness against OTHER students when updating
+      if (formData.lrn && formData.lrn !== student.lrn) {
+        const lrnConflict = await Student.findOne({ lrn: formData.lrn, _id: { $ne: student._id } });
+        if (lrnConflict) {
+          return NextResponse.json(
+            { error: `LRN ${formData.lrn} is already registered to another student.` },
+            { status: 409 }
+          );
+        }
+      }
       student.lrn = formData.lrn || undefined;
       student.personalInfo.firstName = formData.firstName || student.personalInfo.firstName;
       student.personalInfo.lastName = formData.lastName || student.personalInfo.lastName;

@@ -98,6 +98,8 @@ export default function NewEnrollmentPage() {
   const [draftId, setDraftId] = useState<string | null>(null);
   const [isSavingDraft, setIsSavingDraft] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  const [lrnStatus, setLrnStatus] = useState<"idle" | "checking" | "available" | "taken">("idle");
+  const lrnTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   // useRef so the auto-save closure always reads the latest values without stale captures
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const draftIdRef = useRef<string | null>(null);
@@ -190,6 +192,19 @@ export default function NewEnrollmentPage() {
   };
 
   // Upload a single file to /api/upload and return the doc object
+  const checkLrn = (lrn: string) => {
+    if (lrnTimerRef.current) clearTimeout(lrnTimerRef.current);
+    if (!lrn || lrn.length < 12) { setLrnStatus("idle"); return; }
+    setLrnStatus("checking");
+    lrnTimerRef.current = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/students/check-lrn?lrn=${lrn}`);
+        const data = await res.json();
+        setLrnStatus(data.available ? "available" : "taken");
+      } catch { setLrnStatus("idle"); }
+    }, 600);
+  };
+
   const uploadFile = (docId: string, file: File): Promise<UploadedDoc> => {
     return new Promise((resolve, reject) => {
       const xhr = new XMLHttpRequest();
@@ -257,6 +272,11 @@ export default function NewEnrollmentPage() {
   const onSubmit = async (data: FormData) => {
     setIsSubmitting(true);
     try {
+      if (lrnStatus === "taken") {
+        toast({ title: "Duplicate LRN", description: "This LRN is already registered to another student.", variant: "destructive" });
+        setIsSubmitting(false);
+        return;
+      }
       // Check required documents
       const missingDocs = DOCUMENT_TYPES.filter(
         (d) => d.required && !uploadedDocs[d.id]
@@ -423,8 +443,19 @@ export default function NewEnrollmentPage() {
               {/* Student No / LRN */}
               <div>
                 <label className={labelCls}>Student No / LRN</label>
-                <Input {...register("studentNo")} placeholder="Leave blank if new" className="mt-1 h-8 text-sm" />
-                <p className="text-xs text-muted-foreground mt-0.5">LRN must be exactly 12 digits (if applicable)</p>
+                <Input
+                  {...register("studentNo")}
+                  placeholder="Leave blank if new"
+                  className="mt-1 h-8 text-sm"
+                  onChange={(e) => {
+                    register("studentNo").onChange(e);
+                    checkLrn(e.target.value.trim());
+                  }}
+                />
+                {lrnStatus === "checking" && <p className="text-xs text-slate-400 mt-0.5">Checking LRN…</p>}
+                {lrnStatus === "available" && <p className="text-xs text-green-600 mt-0.5">✓ LRN is available</p>}
+                {lrnStatus === "taken" && <p className="text-xs text-red-600 mt-0.5">✗ This LRN is already registered to another student</p>}
+                {lrnStatus === "idle" && <p className="text-xs text-muted-foreground mt-0.5">LRN must be exactly 12 digits (if applicable)</p>}
                 {errors.studentNo && (
                   <p className="text-xs text-red-600 mt-1">{errors.studentNo.message}</p>
                 )}
