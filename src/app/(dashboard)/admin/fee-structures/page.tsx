@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Plus, CreditCard, Pencil, Trash2, X, PlusCircle, MinusCircle } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import { FormSelect } from "@/components/ui/form-select";
 import { formatCurrency } from "@/lib/utils";
 
@@ -27,8 +28,6 @@ const GRADE_LEVELS = [
 ];
 
 const labelCls = "block text-xs font-medium text-gray-700";
-const inputCls = "mt-1 h-8 text-sm w-full border border-gray-300 rounded-md px-2 focus:outline-none focus:ring-1 focus:ring-primary";
-const selectCls = "mt-1 h-8 text-sm w-full border border-gray-300 rounded-md px-2 focus:outline-none focus:ring-1 focus:ring-primary bg-white";
 
 const emptyFee = (): FeeItem => ({ description: "", amount: 0, isRequired: true });
 const emptyForm = () => ({
@@ -148,25 +147,25 @@ export default function FeeStructuresPage() {
     <div className="space-y-2">
       <div className="flex items-center justify-between">
         <label className={labelCls}>Fee Items</label>
-        <button type="button" className="text-xs text-primary flex items-center gap-1" onClick={() => setFees([...fees, emptyFee()])}>
+        <Button type="button" variant="ghost" size="sm" className="h-6 text-xs text-primary px-1 flex items-center gap-1" onClick={() => setFees([...fees, emptyFee()])}>
           <PlusCircle className="h-3.5 w-3.5" /> Add Fee
-        </button>
+        </Button>
       </div>
       {fees.map((fee, idx) => (
         <div key={idx} className="flex items-center gap-2">
-          <input
+          <Input
             required
             placeholder="Description"
-            className={inputCls + " flex-1"}
+            className="h-8 text-sm flex-1"
             value={fee.description}
             onChange={(e) => setFees(updateFee(fees, idx, "description", e.target.value))}
           />
-          <input
+          <Input
             required
             type="number"
             min="0"
             placeholder="Amount"
-            className={inputCls + " w-28"}
+            className="h-8 text-sm w-28"
             value={fee.amount || ""}
             onChange={(e) => setFees(updateFee(fees, idx, "amount", e.target.value))}
           />
@@ -180,9 +179,9 @@ export default function FeeStructuresPage() {
             Req.
           </label>
           {fees.length > 1 && (
-            <button type="button" onClick={() => setFees(fees.filter((_, i) => i !== idx))}>
+            <Button type="button" variant="ghost" size="icon" className="h-6 w-6 p-0" onClick={() => setFees(fees.filter((_, i) => i !== idx))}>
               <MinusCircle className="h-3.5 w-3.5 text-red-500" />
-            </button>
+            </Button>
           )}
         </div>
       ))}
@@ -261,7 +260,7 @@ export default function FeeStructuresPage() {
           <div className="bg-white rounded-lg shadow-xl w-full max-w-lg p-5 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-sm font-semibold">Create Fee Structure</h2>
-              <button onClick={() => setShowCreate(false)}><X className="h-4 w-4 text-muted-foreground" /></button>
+              <Button variant="ghost" size="icon" className="h-7 w-7 p-0" type="button" onClick={() => setShowCreate(false)}><X className="h-4 w-4 text-muted-foreground" /></Button>
             </div>
             <form onSubmit={handleCreate} className="space-y-3">
               <div className="grid grid-cols-2 gap-3">
@@ -306,7 +305,7 @@ export default function FeeStructuresPage() {
           <div className="bg-white rounded-lg shadow-xl w-full max-w-lg p-5 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-sm font-semibold">Edit Fee Structure</h2>
-              <button onClick={() => setShowEdit(false)}><X className="h-4 w-4 text-muted-foreground" /></button>
+              <Button variant="ghost" size="icon" className="h-7 w-7 p-0" type="button" onClick={() => setShowEdit(false)}><X className="h-4 w-4 text-muted-foreground" /></Button>
             </div>
             <form onSubmit={handleEdit} className="space-y-3">
               <div className="grid grid-cols-2 gap-3">

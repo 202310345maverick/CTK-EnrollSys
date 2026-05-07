@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Calendar, Pencil, Trash2, X, ToggleLeft, ToggleRight } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import { FormSelect } from "@/components/ui/form-select";
 import { DatePicker } from "@/components/ui/date-picker";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -21,8 +22,6 @@ type SchoolYear = {
 };
 
 const labelCls = "block text-xs font-medium text-gray-700";
-const inputCls = "mt-1 h-8 text-sm w-full border border-gray-300 rounded-md px-2 focus:outline-none focus:ring-1 focus:ring-primary";
-const selectCls = "mt-1 h-8 text-sm w-full border border-gray-300 rounded-md px-2 focus:outline-none focus:ring-1 focus:ring-primary bg-white";
 
 const EMPTY_FORM = {
   name: "",
@@ -236,12 +235,12 @@ export default function SchoolYearsPage() {
           <div className="bg-white rounded-lg shadow-xl w-full max-w-lg p-5">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-sm font-semibold">Create School Year</h2>
-              <button onClick={() => setShowCreate(false)}><X className="h-4 w-4 text-muted-foreground" /></button>
+              <Button variant="ghost" size="icon" className="h-7 w-7 p-0" type="button" onClick={() => setShowCreate(false)}><X className="h-4 w-4 text-muted-foreground" /></Button>
             </div>
             <form onSubmit={handleCreate} className="space-y-3">
               <div>
                 <label className={labelCls}>Name (e.g. 2024-2025)</label>
-                <input required className={inputCls} value={form.name} onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))} />
+                <Input required className="mt-1 h-8 text-sm" value={form.name} onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))} />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
@@ -302,12 +301,12 @@ export default function SchoolYearsPage() {
           <div className="bg-white rounded-lg shadow-xl w-full max-w-lg p-5">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-sm font-semibold">Edit School Year</h2>
-              <button onClick={() => setShowEdit(false)}><X className="h-4 w-4 text-muted-foreground" /></button>
+              <Button variant="ghost" size="icon" className="h-7 w-7 p-0" type="button" onClick={() => setShowEdit(false)}><X className="h-4 w-4 text-muted-foreground" /></Button>
             </div>
             <form onSubmit={handleEdit} className="space-y-3">
               <div>
                 <label className={labelCls}>Name</label>
-                <input required className={inputCls} value={editForm.name} onChange={(e) => setEditForm((p) => ({ ...p, name: e.target.value }))} />
+                <Input required className="mt-1 h-8 text-sm" value={editForm.name} onChange={(e) => setEditForm((p) => ({ ...p, name: e.target.value }))} />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>

@@ -24,8 +24,6 @@ type UserRecord = {
 };
 
 const labelCls = "block text-xs font-medium text-gray-700";
-const inputCls = "mt-1 h-8 text-sm w-full border border-gray-300 rounded-md px-2 focus:outline-none focus:ring-1 focus:ring-primary";
-const selectCls = "mt-1 h-8 text-sm w-full border border-gray-300 rounded-md px-2 focus:outline-none focus:ring-1 focus:ring-primary bg-white";
 
 const EMPTY_CREATE = { firstName: "", lastName: "", email: "", password: "", role: "parent" as const, contactNumber: "" };
 const EMPTY_EDIT = { firstName: "", lastName: "", email: "", role: "parent" as "admin" | "registrar" | "parent", contactNumber: "", isActive: true };
@@ -195,12 +193,12 @@ export default function UsersPage() {
           <div className="flex flex-wrap gap-2">
             <div className="relative flex-1 min-w-[160px]">
               <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-              <input
+              <Input
                 type="text"
                 placeholder="Search name or email..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="h-8 w-full rounded-md border border-gray-300 pl-8 pr-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+                className="h-8 pl-8 pr-2 text-sm"
               />
             </div>
             <FormSelect
@@ -300,26 +298,26 @@ export default function UsersPage() {
           <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-5">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-sm font-semibold">Create New User</h2>
-              <button onClick={() => setShowCreate(false)}><X className="h-4 w-4 text-muted-foreground" /></button>
+              <Button variant="ghost" size="icon" className="h-7 w-7 p-0" type="button" onClick={() => setShowCreate(false)}><X className="h-4 w-4 text-muted-foreground" /></Button>
             </div>
             <form onSubmit={handleCreate} className="space-y-3">
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className={labelCls}>First Name</label>
-                  <input required className={inputCls} value={createForm.firstName} onChange={(e) => setCreateForm((p) => ({ ...p, firstName: e.target.value }))} />
+                  <Input required className="mt-1 h-8 text-sm" value={createForm.firstName} onChange={(e) => setCreateForm((p) => ({ ...p, firstName: e.target.value }))} />
                 </div>
                 <div>
                   <label className={labelCls}>Last Name</label>
-                  <input required className={inputCls} value={createForm.lastName} onChange={(e) => setCreateForm((p) => ({ ...p, lastName: e.target.value }))} />
+                  <Input required className="mt-1 h-8 text-sm" value={createForm.lastName} onChange={(e) => setCreateForm((p) => ({ ...p, lastName: e.target.value }))} />
                 </div>
               </div>
               <div>
                 <label className={labelCls}>Email</label>
-                <input required type="email" className={inputCls} value={createForm.email} onChange={(e) => setCreateForm((p) => ({ ...p, email: e.target.value }))} />
+                <Input required type="email" className="mt-1 h-8 text-sm" value={createForm.email} onChange={(e) => setCreateForm((p) => ({ ...p, email: e.target.value }))} />
               </div>
               <div>
                 <label className={labelCls}>Password</label>
-                <input required type="password" minLength={8} className={inputCls} value={createForm.password} onChange={(e) => setCreateForm((p) => ({ ...p, password: e.target.value }))} />
+                <Input required type="password" minLength={8} className="mt-1 h-8 text-sm" value={createForm.password} onChange={(e) => setCreateForm((p) => ({ ...p, password: e.target.value }))} />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
@@ -336,7 +334,7 @@ export default function UsersPage() {
                 </div>
                 <div>
                   <label className={labelCls}>Contact Number</label>
-                  <input required className={inputCls} value={createForm.contactNumber} onChange={(e) => setCreateForm((p) => ({ ...p, contactNumber: e.target.value }))} />
+                  <Input required className="mt-1 h-8 text-sm" value={createForm.contactNumber} onChange={(e) => setCreateForm((p) => ({ ...p, contactNumber: e.target.value }))} />
                 </div>
               </div>
               {createError && <p className="mt-0.5 text-xs text-red-500">{createError}</p>}
@@ -357,22 +355,22 @@ export default function UsersPage() {
           <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-5">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-sm font-semibold">Edit User</h2>
-              <button onClick={() => setShowEdit(false)}><X className="h-4 w-4 text-muted-foreground" /></button>
+              <Button variant="ghost" size="icon" className="h-7 w-7 p-0" type="button" onClick={() => setShowEdit(false)}><X className="h-4 w-4 text-muted-foreground" /></Button>
             </div>
             <form onSubmit={handleEdit} className="space-y-3">
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className={labelCls}>First Name</label>
-                  <input required className={inputCls} value={editForm.firstName} onChange={(e) => setEditForm((p) => ({ ...p, firstName: e.target.value }))} />
+                  <Input required className="mt-1 h-8 text-sm" value={editForm.firstName} onChange={(e) => setEditForm((p) => ({ ...p, firstName: e.target.value }))} />
                 </div>
                 <div>
                   <label className={labelCls}>Last Name</label>
-                  <input required className={inputCls} value={editForm.lastName} onChange={(e) => setEditForm((p) => ({ ...p, lastName: e.target.value }))} />
+                  <Input required className="mt-1 h-8 text-sm" value={editForm.lastName} onChange={(e) => setEditForm((p) => ({ ...p, lastName: e.target.value }))} />
                 </div>
               </div>
               <div>
                 <label className={labelCls}>Email</label>
-                <input required type="email" className={inputCls} value={editForm.email} onChange={(e) => setEditForm((p) => ({ ...p, email: e.target.value }))} />
+                <Input required type="email" className="mt-1 h-8 text-sm" value={editForm.email} onChange={(e) => setEditForm((p) => ({ ...p, email: e.target.value }))} />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
@@ -389,7 +387,7 @@ export default function UsersPage() {
                 </div>
                 <div>
                   <label className={labelCls}>Contact Number</label>
-                  <input required className={inputCls} value={editForm.contactNumber} onChange={(e) => setEditForm((p) => ({ ...p, contactNumber: e.target.value }))} />
+                  <Input required className="mt-1 h-8 text-sm" value={editForm.contactNumber} onChange={(e) => setEditForm((p) => ({ ...p, contactNumber: e.target.value }))} />
                 </div>
               </div>
               <div className="flex items-center gap-2">
