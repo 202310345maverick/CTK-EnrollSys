@@ -53,6 +53,12 @@ export interface IStudent extends Document {
   section?: string;
   status: "active" | "inactive" | "graduated" | "transferred";
   enrollmentHistory: mongoose.Types.ObjectId[];
+  statusHistory: {
+    status: "active" | "inactive" | "graduated" | "transferred";
+    changedAt: Date;
+    changedBy?: mongoose.Types.ObjectId;
+    reason?: string;
+  }[];
   medicalInfo?: {
     bloodType?: string;
     allergies?: string[];
@@ -165,6 +171,18 @@ const StudentSchema = new Schema<IStudent>(
       {
         type: Schema.Types.ObjectId,
         ref: "Enrollment",
+      },
+    ],
+    statusHistory: [
+      {
+        status: {
+          type: String,
+          enum: ["active", "inactive", "graduated", "transferred"],
+          required: true,
+        },
+        changedAt: { type: Date, required: true },
+        changedBy: { type: Schema.Types.ObjectId, ref: "User" },
+        reason: { type: String },
       },
     ],
     medicalInfo: {

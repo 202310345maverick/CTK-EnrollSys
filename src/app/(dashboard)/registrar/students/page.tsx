@@ -10,7 +10,7 @@ import { PageHeader } from "@/components/shared/page-header";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
-import { Search, Eye, Loader2, Users } from "lucide-react";
+import { Search, Eye, Loader2, Users, RefreshCw } from "lucide-react";
 import { FormSelect } from "@/components/ui/form-select";
 
 const GRADE_LEVELS = ["Grade 1","Grade 2","Grade 3","Grade 4","Grade 5","Grade 6","Grade 7","Grade 8","Grade 9","Grade 10","Grade 11","Grade 12"];
@@ -23,6 +23,98 @@ const STATUS_COLORS: Record<string, string> = {
   transferred: "bg-amber-100 text-amber-800 border border-amber-200",
 };
 
+type StatusModalProps = {
+  student: any;
+  onClose: () => void;
+  onSuccess: () => void;
+};
+
+function StatusModal({ student, onClose, onSuccess }: StatusModalProps) {
+  const [newStatus, setNewStatus] = useState(student.status || "active");
+  const [reason, setReason] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  const handleSubmit = async () => {
+    setLoading(true);
+    setError("");
+    try {
+      const res = await fetch(`/api/students/${student._id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: newStatus, reason: reason || undefined }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || "Failed to update status");
+        return;
+      }
+      onSuccess();
+      onClose();
+    } catch {
+      setError("An error occurred");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+      <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-sm mx-4">
+        <h3 className="text-lg font-semibold text-slate-900 mb-1">Change Student Status</h3>
+        <p className="text-sm text-muted-foreground mb-4">
+          {student.personalInfo?.firstName} {student.personalInfo?.lastName}
+        </p>
+        <div className="space-y-4">
+          <div>
+            <label className="text-sm font-medium text-slate-700 mb-1 block">Current Status</label>
+            <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_COLORS[student.status] || "bg-slate-100 text-slate-600"}`}>
+              {student.status || "unknown"}
+            </span>
+          </div>
+          <div>
+            <label className="text-sm font-medium text-slate-700 mb-1 block">New Status</label>
+            <FormSelect
+              value={newStatus}
+              onChange={setNewStatus}
+              options={[
+                { value: "active", label: "Active" },
+                { value: "inactive", label: "Inactive" },
+                { value: "graduated", label: "Graduated" },
+                { value: "transferred", label: "Transferred" },
+              ]}
+              placeholder="Select status"
+            />
+          </div>
+          <div>
+            <label className="text-sm font-medium text-slate-700 mb-1 block">Reason (optional)</label>
+            <textarea
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              placeholder="Enter reason for status change..."
+              className="w-full rounded-xl border border-input bg-background px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-ring"
+              rows={3}
+            />
+          </div>
+          {error && <p className="text-sm text-red-600">{error}</p>}
+          <div className="flex gap-2 justify-end">
+            <Button variant="outline" size="sm" onClick={onClose} disabled={loading}>Cancel</Button>
+            <Button
+              size="sm"
+              onClick={handleSubmit}
+              disabled={loading || newStatus === student.status}
+              className="ctk-danger-button"
+            >
+              {loading ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : null}
+              Update Status
+            </Button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function StudentsPage() {
   const [students, setStudents] = useState<any[]>([]);
   const [total, setTotal] = useState(0);
@@ -31,9 +123,10 @@ export default function StudentsPage() {
   const [gradeFilter, setGradeFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [statusModal, setStatusModal] = useState<any>(null);
 
   useEffect(() => {
-    const t = setTimeout(() => setDebouncedSearch(search), 350);
+    const t = setTimeout(() => setDebouncedSearch(search), 500);
     return () => clearTimeout(t);
   }, [search]);
 
@@ -47,7 +140,7 @@ export default function StudentsPage() {
       const res = await fetch(`/api/students?${params}`);
       const data = await res.json();
       setStudents(data.students || []);
-      setTotal(data.pagination?.total || 0);
+      setTotal(data.pagination?.total ?? data.students?.length ?? 0);
     } finally {
       setLoading(false);
     }
@@ -57,6 +150,13 @@ export default function StudentsPage() {
 
   return (
     <div className="space-y-4">
+      {statusModal && (
+        <StatusModal
+          student={statusModal}
+          onClose={() => setStatusModal(null)}
+          onSuccess={() => fetchStudents()}
+        />
+      )}
       <PageHeader
         title="Student Records"
         description="Search and view student records"
@@ -143,12 +243,23 @@ export default function StudentsPage() {
                       </span>
                     </TableCell>
                     <TableCell className="text-right">
-                      <Link href={`/registrar/students/${student._id}`}>
-                        <Button variant="outline" size="sm" className="h-6 text-xs px-2">
-                          <Eye className="h-3 w-3 mr-1" />
-                          View
+                      <div className="flex justify-end gap-1">
+                        <Link href={`/registrar/students/${student._id}`}>
+                          <Button variant="outline" size="sm" className="h-6 text-xs px-2">
+                            <Eye className="h-3 w-3 mr-1" />
+                            View
+                          </Button>
+                        </Link>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-6 text-xs px-2"
+                          onClick={() => setStatusModal(student)}
+                        >
+                          <RefreshCw className="h-3 w-3 mr-1" />
+                          Status
                         </Button>
-                      </Link>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}

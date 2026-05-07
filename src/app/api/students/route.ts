@@ -79,6 +79,17 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json();
 
+    // Duplicate LRN check
+    if (body.lrn) {
+      const existingLRN = await Student.findOne({ lrn: body.lrn });
+      if (existingLRN) {
+        return NextResponse.json(
+          { error: `LRN ${body.lrn} is already registered to another student.` },
+          { status: 409 }
+        );
+      }
+    }
+
     // Generate student ID
     const year = new Date().getFullYear();
     const count = await Student.countDocuments();

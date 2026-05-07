@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge, type BadgeProps } from "@/components/ui/badge";
 import { PageHeader } from "@/components/shared/page-header";
-import { Search, Eye, Plus, Users, Loader2 } from "lucide-react";
+import { Search, Eye, Plus, Users, Loader2, RefreshCw } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { FormSelect } from "@/components/ui/form-select";
 
@@ -20,44 +20,140 @@ function statusVariant(status?: string): NonNullable<BadgeProps["variant"]> {
   return "neutral";
 }
 
+type StatusModalProps = {
+  student: any;
+  onClose: () => void;
+  onSuccess: () => void;
+};
+
+function StatusModal({ student, onClose, onSuccess }: StatusModalProps) {
+  const [newStatus, setNewStatus] = useState(student.status || "active");
+  const [reason, setReason] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  const handleSubmit = async () => {
+    setLoading(true);
+    setError("");
+    try {
+      const res = await fetch(`/api/students/${student._id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: newStatus, reason: reason || undefined }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || "Failed to update status");
+        return;
+      }
+      onSuccess();
+      onClose();
+    } catch {
+      setError("An error occurred");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+      <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-sm mx-4">
+        <h3 className="text-lg font-semibold text-slate-900 mb-1">Change Student Status</h3>
+        <p className="text-sm text-muted-foreground mb-4">
+          {student.personalInfo?.firstName} {student.personalInfo?.lastName}
+        </p>
+        <div className="space-y-4">
+          <div>
+            <label className="text-sm font-medium text-slate-700 mb-1 block">Current Status</label>
+            <Badge variant={statusVariant(student.status)}>{student.status || "unknown"}</Badge>
+          </div>
+          <div>
+            <label className="text-sm font-medium text-slate-700 mb-1 block">New Status</label>
+            <FormSelect
+              value={newStatus}
+              onChange={setNewStatus}
+              options={[
+                { value: "active", label: "Active" },
+                { value: "inactive", label: "Inactive" },
+                { value: "graduated", label: "Graduated" },
+                { value: "transferred", label: "Transferred" },
+              ]}
+              placeholder="Select status"
+            />
+          </div>
+          <div>
+            <label className="text-sm font-medium text-slate-700 mb-1 block">Reason (optional)</label>
+            <textarea
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              placeholder="Enter reason for status change..."
+              className="w-full rounded-xl border border-input bg-background px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-ring"
+              rows={3}
+            />
+          </div>
+          {error && <p className="text-sm text-red-600">{error}</p>}
+          <div className="flex gap-2 justify-end">
+            <Button variant="outline" onClick={onClose} disabled={loading}>Cancel</Button>
+            <Button
+              onClick={handleSubmit}
+              disabled={loading || newStatus === student.status}
+              className="ctk-danger-button"
+            >
+              {loading ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : null}
+              Update Status
+            </Button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function AdminStudentsPage() {
   const [students, setStudents] = useState<any[]>([]);
   const [total, setTotal] = useState(0);
   const [summary, setSummary] = useState({ total: 0, active: 0, graduated: 0 });
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [gradeFilter, setGradeFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [loading, setLoading] = useState(true);
+  const [statusModal, setStatusModal] = useState<any>(null);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(search), 500);
+    return () => clearTimeout(timer);
+  }, [search]);
 
   const fetchStudents = useCallback(async () => {
     setLoading(true);
     try {
       const params = new URLSearchParams();
-      if (search) params.set("search", search);
+      if (debouncedSearch) params.set("search", debouncedSearch);
       if (gradeFilter) params.set("gradeLevel", gradeFilter);
       if (statusFilter) params.set("status", statusFilter);
       params.set("limit", "50");
       const res = await fetch(`/api/students?${params}`);
       const data = await res.json();
-      setStudents(data.students || data || []);
-      setTotal(data.total || (data.students || data || []).length);
+      setStudents(data.students || []);
+      setTotal(data.pagination?.total ?? data.students?.length ?? 0);
     } finally {
       setLoading(false);
     }
-  }, [search, gradeFilter, statusFilter]);
+  }, [debouncedSearch, gradeFilter, statusFilter]);
 
   const fetchSummary = useCallback(async () => {
     try {
       const [totalRes, activeRes, gradRes] = await Promise.all([
-        fetch("/api/students?limit=0"),
-        fetch("/api/students?status=active&limit=0"),
-        fetch("/api/students?status=graduated&limit=0"),
+        fetch("/api/students?limit=1"),
+        fetch("/api/students?status=active&limit=1"),
+        fetch("/api/students?status=graduated&limit=1"),
       ]);
       const [td, ad, gd] = await Promise.all([totalRes.json(), activeRes.json(), gradRes.json()]);
       setSummary({
-        total: td.total ?? 0,
-        active: ad.total ?? 0,
-        graduated: gd.total ?? 0,
+        total: td.pagination?.total ?? 0,
+        active: ad.pagination?.total ?? 0,
+        graduated: gd.pagination?.total ?? 0,
       });
     } catch {}
   }, []);
@@ -67,6 +163,13 @@ export default function AdminStudentsPage() {
 
   return (
     <div className="space-y-6">
+      {statusModal && (
+        <StatusModal
+          student={statusModal}
+          onClose={() => setStatusModal(null)}
+          onSuccess={() => { fetchStudents(); fetchSummary(); }}
+        />
+      )}
       <PageHeader
         title="Student Records Management"
         description="Search, view, and manage student records"
@@ -171,10 +274,21 @@ export default function AdminStudentsPage() {
                       {typeof student.parentUserId === "object" ? student.parentUserId?.email : "—"}
                     </TableCell>
                     <TableCell className="text-right">
-                      <Button variant="outline" size="sm" className="h-8">
-                        <Eye className="mr-1 h-4 w-4" />
-                        View
-                      </Button>
+                      <div className="flex justify-end gap-1">
+                        <Button variant="outline" size="sm" className="h-8">
+                          <Eye className="mr-1 h-4 w-4" />
+                          View
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-8"
+                          onClick={() => setStatusModal(student)}
+                        >
+                          <RefreshCw className="mr-1 h-4 w-4" />
+                          Status
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}

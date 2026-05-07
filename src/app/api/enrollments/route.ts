@@ -256,6 +256,22 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // CORE-007: Transferee-specific validation
+    if (enrollmentType === "transferee") {
+      if (!formData.previousSchoolName?.trim()) {
+        return NextResponse.json(
+          { error: "Previous school name is required for transferee enrollment." },
+          { status: 400 }
+        );
+      }
+      if (!formData.previousSchoolLastGradeCompleted?.trim()) {
+        return NextResponse.json(
+          { error: "Last grade completed at previous school is required." },
+          { status: 400 }
+        );
+      }
+    }
+
     const missingFields = getMissingRequiredFields(formData);
     if (missingFields.length > 0) {
       return NextResponse.json(
@@ -320,9 +336,29 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Soft check: log if grade level doesn't match expected progression
+    if (enrollmentType === "returning" && student && student.currentGradeLevel && formData.gradeLevel) {
+      const gradeOrder = ["Grade 1","Grade 2","Grade 3","Grade 4","Grade 5","Grade 6","Grade 7","Grade 8","Grade 9","Grade 10","Grade 11","Grade 12"];
+      const currentIdx = gradeOrder.indexOf(student.currentGradeLevel);
+      const newIdx = gradeOrder.indexOf(formData.gradeLevel);
+      if (currentIdx !== -1 && newIdx !== -1 && newIdx !== currentIdx + 1) {
+        console.warn(`[CORE-007] Grade progression warning: student ${student.studentId} moving from ${student.currentGradeLevel} to ${formData.gradeLevel}`);
+      }
+    }
+
     if (!student) {
       const studentCount = await Student.countDocuments();
       const studentGeneratedId = generateId("STU", studentCount + 1);
+
+      if (formData.lrn) {
+        const existingLRN = await Student.findOne({ lrn: formData.lrn });
+        if (existingLRN) {
+          return NextResponse.json(
+            { error: `LRN ${formData.lrn} is already registered to another student. If this is your child, please use "Returning" enrollment type.` },
+            { status: 409 }
+          );
+        }
+      }
 
       student = await Student.create({
         studentId: studentGeneratedId,

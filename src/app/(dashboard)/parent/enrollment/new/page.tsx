@@ -44,7 +44,10 @@ const GRADE_LEVELS = [
 const schema = z.object({
   enrollmentType: z.enum(["new", "returning", "transferee"], { required_error: "Enrollment type is required" }),
   gradeLevel:     z.string().min(1, "Grade level is required"),
-  studentNo:      z.string().optional(),
+  studentNo:      z.string().optional().refine(
+    (val) => !val || /^\d{12}$/.test(val),
+    { message: "LRN must be exactly 12 digits" }
+  ),
   lastName:       z.string().min(1, "Last name is required"),
   firstName:      z.string().min(1, "First name is required"),
   middleName:     z.string().optional(),
@@ -292,6 +295,10 @@ export default function NewEnrollmentPage() {
               <div>
                 <label className={labelCls}>Student No / LRN</label>
                 <Input {...register("studentNo")} placeholder="Leave blank if new" className="mt-1 h-8 text-sm" />
+                <p className="text-xs text-muted-foreground mt-0.5">LRN must be exactly 12 digits (if applicable)</p>
+                {errors.studentNo && (
+                  <p className="text-xs text-red-600 mt-1">{errors.studentNo.message}</p>
+                )}
               </div>
             </div>
 
