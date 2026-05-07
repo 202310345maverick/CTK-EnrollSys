@@ -18,6 +18,7 @@ import {
   getRequiredDocumentTypes,
 } from "@/lib/enrollment/constants";
 import ParentDashboardDocuments from "@/components/shared/parent-dashboard-documents";
+import AutoRefresh from "@/components/shared/auto-refresh";
 
 async function getParentDashboardData(userId: string) {
   await dbConnect();
@@ -144,6 +145,7 @@ export default async function ParentDashboard() {
 
   return (
     <div className="space-y-4 pb-8">
+      <AutoRefresh intervalMs={30000} />
       {/* Page Header */}
       <div>
         <h1 className="text-xl font-bold text-slate-900">Parent Dashboard</h1>

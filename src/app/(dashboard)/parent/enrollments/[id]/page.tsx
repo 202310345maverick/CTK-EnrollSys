@@ -17,6 +17,7 @@ import {
   ENROLLMENT_DOCUMENT_TYPES,
   getRequiredDocumentTypes,
 } from "@/lib/enrollment/constants";
+import AutoRefresh from "@/components/shared/auto-refresh";
 
 async function getParentEnrollmentDetail(enrollmentId: string, parentUserId: string) {
   await dbConnect();
@@ -121,6 +122,7 @@ export default async function ParentEnrollmentDetailPage({
 
   return (
     <div className="space-y-6">
+      <AutoRefresh intervalMs={30000} />
       <Link href="/parent/enrollments">
         <Button variant="ghost" size="sm">
           <ArrowLeft className="mr-2 h-4 w-4" />

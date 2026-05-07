@@ -93,6 +93,8 @@ export default function ParentEnrollmentsPage() {
 
   useEffect(() => {
     fetchEnrollments();
+    const id = setInterval(fetchEnrollments, 30_000);
+    return () => clearInterval(id);
   }, []);
 
   const fetchEnrollments = async () => {
