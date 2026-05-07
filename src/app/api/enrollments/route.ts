@@ -141,11 +141,21 @@ export async function GET(request: NextRequest) {
       query.submittedBy = session.user.id;
       // SEC-003: parent isolation enforced
       if (!includeDrafts) {
-        query.isDraft = false;
+        query.status = { $ne: "draft" };
       }
+    } else {
+      // Registrar/admin never see draft enrollments — drafts are private to the parent
+      query.status = { $ne: "draft" };
     }
 
-    if (status) query.status = status;
+    // Apply explicit status filter but never allow non-parents to query for drafts
+    if (status) {
+      if (session.user.role !== "parent" && status === "draft") {
+        // Silently ignore — registrar/admin cannot query drafts
+      } else {
+        query.status = status;
+      }
+    }
     if (gradeLevel) query.gradeLevel = gradeLevel;
     // Admin/registrar can filter by studentId
     if (studentIdFilter && session.user.role !== "parent") query.studentId = studentIdFilter;
