@@ -7,13 +7,16 @@ import "@/models/Student";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ClipboardList, Clock, CheckCircle, XCircle, Users, Eye } from "lucide-react";
+import { ClipboardList, Clock, CheckCircle, XCircle, Users, Eye, TrendingUp, CheckCircle2 } from "lucide-react";
 import Link from "next/link";
 
 async function getDashboardData() {
   await dbConnect();
 
-  const [pendingCount, underReviewCount, approvedCount, rejectedCount, enrolledCount, totalStudents, recentPending] =
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const [pendingCount, underReviewCount, approvedCount, rejectedCount, enrolledCount, totalStudents, recentPending, submittedToday, enrolledToday, typeBreakdownRaw] =
     await Promise.all([
       Enrollment.countDocuments({ status: "pending" }),
       Enrollment.countDocuments({ status: "under_review" }),
@@ -26,9 +29,20 @@ async function getDashboardData() {
         .sort({ createdAt: -1 })
         .limit(6)
         .lean(),
+      Enrollment.countDocuments({ createdAt: { $gte: today }, status: { $ne: "draft" } }),
+      Enrollment.countDocuments({ status: "enrolled", updatedAt: { $gte: today } }),
+      Enrollment.aggregate([
+        { $match: { status: { $ne: "draft" } } },
+        { $group: { _id: "$enrollmentType", count: { $sum: 1 } } },
+      ]),
     ]);
 
-  return { pendingCount, underReviewCount, approvedCount, rejectedCount, enrolledCount, totalStudents, recentPending };
+  const typeBreakdown: Record<string, number> = {};
+  for (const item of typeBreakdownRaw) {
+    if (item._id) typeBreakdown[item._id] = item.count;
+  }
+
+  return { pendingCount, underReviewCount, approvedCount, rejectedCount, enrolledCount, totalStudents, recentPending, submittedToday, enrolledToday, typeBreakdown };
 }
 
 const formatDate = (date: Date) =>
@@ -36,7 +50,7 @@ const formatDate = (date: Date) =>
 
 export default async function RegistrarDashboard() {
   await getServerSession(authOptions);
-  const { pendingCount, underReviewCount, approvedCount, rejectedCount, enrolledCount, totalStudents, recentPending } =
+  const { pendingCount, underReviewCount, approvedCount, rejectedCount, enrolledCount, totalStudents, recentPending, submittedToday, enrolledToday, typeBreakdown } =
     await getDashboardData();
 
   const stats = [
@@ -46,6 +60,8 @@ export default async function RegistrarDashboard() {
     { label: "Rejected", value: rejectedCount, icon: XCircle, color: "text-red-600", border: "border-l-red-500" },
     { label: "Enrolled", value: enrolledCount, icon: CheckCircle, color: "text-purple-600", border: "border-l-purple-500" },
     { label: "Total Students", value: totalStudents, icon: Users, color: "text-slate-600", border: "border-l-slate-400" },
+    { label: "Submitted Today", value: submittedToday, icon: TrendingUp, color: "text-cyan-600", border: "border-l-cyan-500" },
+    { label: "Enrolled Today", value: enrolledToday, icon: CheckCircle2, color: "text-teal-600", border: "border-l-teal-500" },
   ];
 
   const statusColors: Record<string, string> = {
@@ -64,7 +80,7 @@ export default async function RegistrarDashboard() {
       </div>
 
       {/* Stats */}
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-4">
         {stats.map((s) => {
           const Icon = s.icon;
           return (
@@ -79,6 +95,22 @@ export default async function RegistrarDashboard() {
             </Card>
           );
         })}
+      </div>
+
+      {/* Enrollment Breakdown by Type */}
+      <div className="grid gap-3 grid-cols-3">
+        {[
+          { key: "new", label: "New Students", color: "text-blue-600", bg: "bg-blue-50", border: "border-blue-200" },
+          { key: "returning", label: "Returning", color: "text-emerald-600", bg: "bg-emerald-50", border: "border-emerald-200" },
+          { key: "transferee", label: "Transferees", color: "text-purple-600", bg: "bg-purple-50", border: "border-purple-200" },
+        ].map(({ key, label, color, bg, border }) => (
+          <Card key={key} className={`border ${border} ${bg}`}>
+            <CardContent className="p-3 text-center">
+              <p className="text-xs text-muted-foreground mb-0.5">{label}</p>
+              <p className={`text-xl font-bold ${color}`}>{typeBreakdown[key] ?? 0}</p>
+            </CardContent>
+          </Card>
+        ))}
       </div>
 
       {/* Recent Queue */}

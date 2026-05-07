@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge, type BadgeProps } from "@/components/ui/badge";
-import { Eye, Loader2, Search, AlertCircle } from "lucide-react";
+import { Eye, Loader2, Search, AlertCircle, X } from "lucide-react";
 import Link from "next/link";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { FormSelect } from "@/components/ui/form-select";
@@ -21,6 +21,15 @@ const getStatusVariant = (status: string): NonNullable<BadgeProps["variant"]> =>
   }
 };
 
+const getTypeVariant = (type: string): NonNullable<BadgeProps["variant"]> => {
+  switch (type) {
+    case "new": return "info";
+    case "returning": return "success";
+    case "transferee": return "default";
+    default: return "neutral";
+  }
+};
+
 const formatDate = (date: string) =>
   new Date(date).toLocaleDateString("en-PH", { month: "short", day: "numeric", year: "numeric" });
 
@@ -30,6 +39,9 @@ export default function EnrollmentsPage() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [gradeFilter, setGradeFilter] = useState("");
+  const [typeFilter, setTypeFilter] = useState("");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
 
   useEffect(() => {
     fetch("/api/enrollments")
@@ -45,10 +57,24 @@ export default function EnrollmentsPage() {
     const matchesSearch = !search || name.includes(search.toLowerCase()) || num.includes(search.toLowerCase());
     const matchesStatus = !statusFilter || e.status === statusFilter;
     const matchesGrade = !gradeFilter || e.gradeLevel === gradeFilter;
-    return matchesSearch && matchesStatus && matchesGrade;
+    const matchesType = !typeFilter || e.enrollmentType === typeFilter;
+    const matchesDateFrom = !dateFrom || new Date(e.createdAt) >= new Date(dateFrom);
+    const matchesDateTo = !dateTo || new Date(e.createdAt) <= new Date(dateTo + "T23:59:59");
+    return matchesSearch && matchesStatus && matchesGrade && matchesType && matchesDateFrom && matchesDateTo;
   });
 
   const gradeLevels = Array.from(new Set(enrollments.map((e) => e.gradeLevel).filter(Boolean))).sort();
+
+  const hasFilters = search || statusFilter || gradeFilter || typeFilter || dateFrom || dateTo;
+
+  const clearFilters = () => {
+    setSearch("");
+    setStatusFilter("");
+    setGradeFilter("");
+    setTypeFilter("");
+    setDateFrom("");
+    setDateTo("");
+  };
 
   return (
     <div className="space-y-4 pb-8">
@@ -89,6 +115,44 @@ export default function EnrollmentsPage() {
           options={gradeLevels.map((g) => ({ value: g, label: g }))}
           className="w-36"
         />
+        <FormSelect
+          value={typeFilter}
+          onChange={(v) => setTypeFilter(v)}
+          placeholder="All Types"
+          options={[
+            { value: "new", label: "New" },
+            { value: "returning", label: "Returning" },
+            { value: "transferee", label: "Transferee" },
+          ]}
+          className="w-36"
+        />
+        <div className="flex items-center gap-1.5">
+          <input
+            type="date"
+            value={dateFrom}
+            onChange={(e) => setDateFrom(e.target.value)}
+            className="h-8 rounded-md border border-input bg-background px-2 text-xs focus:outline-none focus:ring-1 focus:ring-ring"
+            title="Date from"
+          />
+          <span className="text-xs text-muted-foreground">–</span>
+          <input
+            type="date"
+            value={dateTo}
+            onChange={(e) => setDateTo(e.target.value)}
+            className="h-8 rounded-md border border-input bg-background px-2 text-xs focus:outline-none focus:ring-1 focus:ring-ring"
+            title="Date to"
+          />
+        </div>
+        {hasFilters && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-8 text-xs text-muted-foreground hover:text-foreground"
+            onClick={clearFilters}
+          >
+            <X className="mr-1 h-3.5 w-3.5" /> Clear
+          </Button>
+        )}
       </div>
 
       <Card>
@@ -96,7 +160,7 @@ export default function EnrollmentsPage() {
           <CardTitle className="flex items-center justify-between text-sm font-semibold">
             <span>All Enrollments</span>
             <span className="text-xs font-normal text-muted-foreground">
-              {loading ? "Loading..." : `${filtered.length} of ${enrollments.length}`}
+              {loading ? "Loading..." : `Showing ${filtered.length} of ${enrollments.length}`}
             </span>
           </CardTitle>
         </CardHeader>
@@ -134,7 +198,15 @@ export default function EnrollmentsPage() {
                       <p className="font-mono text-xs text-muted-foreground">{enrollment.enrollmentNumber}</p>
                     </TableCell>
                     <TableCell className="text-xs">{enrollment.gradeLevel || "—"}</TableCell>
-                    <TableCell className="capitalize text-xs">{enrollment.enrollmentType || "—"}</TableCell>
+                    <TableCell>
+                      {enrollment.enrollmentType ? (
+                        <Badge variant={getTypeVariant(enrollment.enrollmentType)} className="text-xs capitalize">
+                          {enrollment.enrollmentType}
+                        </Badge>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">—</span>
+                      )}
+                    </TableCell>
                     <TableCell>
                       <Badge variant={getStatusVariant(enrollment.status)} className="text-xs capitalize">
                         {enrollment.status.replace("_", " ")}

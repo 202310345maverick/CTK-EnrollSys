@@ -122,9 +122,15 @@ export async function PUT(
       }
     }
 
-    // Admin/registrar can update assessed fees
-    if (isAdmin && body.assessedFees) {
-      enrollment.assessedFees = body.assessedFees;
+    // Save remarks even without status change (internal notes)
+    if (isAdmin && body.remarks && !body.status) {
+      enrollment.remarks = body.remarks;
+      enrollment.statusHistory.push({
+        status: enrollment.status,
+        changedBy: new Types.ObjectId(session.user.id),
+        changedAt: new Date(),
+        remarks: body.remarks,
+      });
     }
 
     // Admin/registrar can update individual document status

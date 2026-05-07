@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import {
   ArrowLeft, CheckCircle, XCircle, Clock, User, FileText, Calendar,
   AlertCircle, Loader2, ExternalLink, ShieldCheck, RotateCcw, DollarSign,
+  MessageSquare, UploadCloud,
 } from "lucide-react";
 import { ENROLLMENT_DOCUMENT_LABELS } from "@/lib/enrollment/constants";
 
@@ -51,6 +52,8 @@ export default function EnrollmentDetailPage() {
   const [feeBreakdown, setFeeBreakdown] = useState<{ description: string; amount: number }[]>([]);
   const [toast, setToast] = useState<{ msg: string; type: "success" | "error" } | null>(null);
   const [balance, setBalance] = useState<{ assessed: number; paid: number; balance: number } | null>(null);
+  const [reuploadModal, setReuploadModal] = useState<{ docType: string; label: string } | null>(null);
+  const [reuploadReason, setReuploadReason] = useState("");
 
   const showToast = (msg: string, type: "success" | "error" = "success") => {
     setToast({ msg, type });
@@ -154,6 +157,25 @@ export default function EnrollmentDetailPage() {
     }
   };
 
+  const saveNote = async () => {
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/enrollments/${params.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ remarks }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      showToast("Note saved");
+      fetchEnrollment();
+    } catch (e: any) {
+      showToast(e.message || "Failed to save note", "error");
+    } finally {
+      setSaving(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex min-h-[300px] items-center justify-center">
@@ -186,6 +208,46 @@ export default function EnrollmentDetailPage() {
 
   return (
     <div className="space-y-4 pb-8">
+      {/* Re-upload Modal */}
+      {reuploadModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="w-full max-w-sm rounded-xl bg-white p-5 shadow-xl">
+            <h3 className="mb-1 text-sm font-semibold">Request Re-upload</h3>
+            <p className="mb-3 text-xs text-muted-foreground">
+              Requesting re-upload for: <span className="font-medium">{reuploadModal.label}</span>
+            </p>
+            <textarea
+              value={reuploadReason}
+              onChange={(e) => setReuploadReason(e.target.value)}
+              className="w-full rounded-md border px-3 py-2 text-xs min-h-[70px] resize-none focus:outline-none focus:ring-1 focus:ring-primary"
+              placeholder="Describe what needs to be corrected or re-uploaded..."
+            />
+            <div className="mt-3 flex gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                className="flex-1 h-8 text-xs"
+                onClick={() => { setReuploadModal(null); setReuploadReason(""); }}
+              >
+                Cancel
+              </Button>
+              <Button
+                size="sm"
+                className="flex-1 h-8 text-xs bg-amber-600 hover:bg-amber-700"
+                disabled={!reuploadReason.trim() || saving}
+                onClick={async () => {
+                  await updateDocStatus(reuploadModal.docType, "rejected", reuploadReason.trim());
+                  setReuploadModal(null);
+                  setReuploadReason("");
+                }}
+              >
+                <UploadCloud className="mr-1.5 h-3.5 w-3.5" /> Send Request
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Toast */}
       {toast && (
         <div className={`fixed bottom-4 right-4 z-50 rounded-lg border px-4 py-2.5 text-sm shadow-lg ${
@@ -317,6 +379,21 @@ export default function EnrollmentDetailPage() {
                               disabled={saving}
                             >
                               <XCircle className="h-3 w-3" />
+                            </Button>
+                          )}
+                          {doc.status !== "rejected" && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-6 px-1.5 text-xs text-amber-700 border-amber-300 hover:bg-amber-50"
+                              onClick={() => {
+                                setReuploadModal({ docType: doc.type, label });
+                                setReuploadReason("");
+                              }}
+                              title="Request Re-upload"
+                              disabled={saving}
+                            >
+                              <UploadCloud className="h-3 w-3" />
                             </Button>
                           )}
                           {doc.status === "rejected" && (
@@ -499,6 +576,32 @@ export default function EnrollmentDetailPage() {
             </Card>
           )}
 
+          {/* Add Internal Note */}
+          <Card>
+            <CardHeader className="pb-2 pt-4 px-4">
+              <CardTitle className="text-sm font-semibold flex items-center gap-1.5">
+                <MessageSquare className="h-4 w-4 text-primary" /> Add Note
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="px-4 pb-4 space-y-2">
+              <textarea
+                value={remarks}
+                onChange={(e) => setRemarks(e.target.value)}
+                className="w-full rounded-md border px-3 py-2 text-xs min-h-[70px] resize-none focus:outline-none focus:ring-1 focus:ring-primary"
+                placeholder="Add internal note or remarks..."
+              />
+              <Button
+                size="sm"
+                variant="outline"
+                className="w-full h-7 text-xs"
+                disabled={saving || !remarks.trim()}
+                onClick={() => saveNote()}
+              >
+                Save Note
+              </Button>
+            </CardContent>
+          </Card>
+
           {/* Timeline */}
           <Card>
             <CardHeader className="pb-2 pt-4 px-4">
@@ -517,6 +620,11 @@ export default function EnrollmentDetailPage() {
                       <div>
                         <p className="font-semibold capitalize">{h.status.replace("_", " ")}</p>
                         <p className="text-muted-foreground">{formatDate(h.changedAt)}</p>
+                        {h.changedBy && (
+                          <p className="text-[10px] text-muted-foreground/70">
+                            by {h.changedBy.profile?.firstName || h.changedBy.email || "System"}
+                          </p>
+                        )}
                         {h.remarks && <p className="italic text-muted-foreground">{h.remarks}</p>}
                       </div>
                     </div>
@@ -526,17 +634,6 @@ export default function EnrollmentDetailPage() {
             </CardContent>
           </Card>
 
-          {/* Current Remarks */}
-          {enrollment.remarks && !canReview && (
-            <Card>
-              <CardHeader className="pb-2 pt-4 px-4">
-                <CardTitle className="text-sm font-semibold">Remarks</CardTitle>
-              </CardHeader>
-              <CardContent className="px-4 pb-4">
-                <p className="text-xs text-slate-700">{enrollment.remarks}</p>
-              </CardContent>
-            </Card>
-          )}
         </div>
       </div>
     </div>
