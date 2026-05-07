@@ -200,10 +200,10 @@ export async function sendEnrollmentSubmittedEmail({
 }
 
 export async function sendStatusChangeEmail({
-  email, name, enrollmentNumber, studentName, newStatus, remarks, link,
+  email, name, enrollmentNumber, studentName, gradeLevel, newStatus, remarks, link,
 }: {
   email: string; name: string; enrollmentNumber: string; studentName: string;
-  newStatus: string; remarks?: string; link?: string;
+  gradeLevel?: string; newStatus: string; remarks?: string; link?: string;
 }): Promise<void> {
   try {
     const { transporter, from } = getEmailConfig();
@@ -223,6 +223,7 @@ export async function sendStatusChangeEmail({
       <table cellpadding="0" cellspacing="0" style="background:#f9f9f9;border:1px solid #e5e5e5;border-radius:6px;padding:16px;margin:16px 0;width:100%;">
         <tr><td style="padding:6px 12px;color:#555;font-size:14px;"><strong>Enrollment Number:</strong></td><td style="padding:6px 12px;color:#333;font-size:14px;">${enrollmentNumber}</td></tr>
         <tr><td style="padding:6px 12px;color:#555;font-size:14px;"><strong>Student Name:</strong></td><td style="padding:6px 12px;color:#333;font-size:14px;">${studentName}</td></tr>
+        ${gradeLevel ? `<tr><td style="padding:6px 12px;color:#555;font-size:14px;"><strong>Grade Level:</strong></td><td style="padding:6px 12px;color:#333;font-size:14px;">${gradeLevel}</td></tr>` : ""}
         <tr><td style="padding:6px 12px;color:#555;font-size:14px;"><strong>New Status:</strong></td><td style="padding:6px 12px;font-size:14px;font-weight:bold;color:${statusColor};">${statusLabel}</td></tr>
         ${remarks ? `<tr><td style="padding:6px 12px;color:#555;font-size:14px;"><strong>Remarks:</strong></td><td style="padding:6px 12px;color:#333;font-size:14px;">${remarks}</td></tr>` : ""}
       </table>

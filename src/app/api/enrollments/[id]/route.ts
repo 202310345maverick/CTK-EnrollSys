@@ -201,8 +201,10 @@ export async function PUT(
         const parent = await User.findById(enrollment.submittedBy).select("email profile").lean();
         if (parent) {
           const parentName = `${parent.profile?.firstName ?? ""} ${parent.profile?.lastName ?? ""}`.trim() || parent.email;
-          const studentName = (enrollment.studentId as any)?.personalInfo
-            ? `${(enrollment.studentId as any).personalInfo.firstName ?? ""} ${(enrollment.studentId as any).personalInfo.lastName ?? ""}`.trim()
+          // Fetch student separately — enrollment was not populated on this request
+          const student = await Student.findById(enrollment.studentId).select("personalInfo").lean();
+          const studentName = student?.personalInfo
+            ? `${student.personalInfo.firstName ?? ""} ${student.personalInfo.lastName ?? ""}`.trim()
             : "";
           const statusLabel = (body.status as string).replace(/_/g, " ").replace(/\b\w/g, (c: string) => c.toUpperCase());
           await sendStatusChangeEmail({
@@ -210,6 +212,7 @@ export async function PUT(
             name: parentName,
             enrollmentNumber: enrollment.enrollmentNumber,
             studentName,
+            gradeLevel: enrollment.gradeLevel,
             newStatus: body.status,
             remarks: body.remarks,
             link: `${process.env.NEXT_PUBLIC_APP_URL ?? ""}/parent/enrollment/${enrollment._id}`,
@@ -230,8 +233,9 @@ export async function PUT(
           const parent = await User.findById(enrollment.submittedBy).select("email profile").lean();
           if (parent) {
             const parentName = `${parent.profile?.firstName ?? ""} ${parent.profile?.lastName ?? ""}`.trim() || parent.email;
-            const studentName = (enrollment.studentId as any)?.personalInfo
-              ? `${(enrollment.studentId as any).personalInfo.firstName ?? ""} ${(enrollment.studentId as any).personalInfo.lastName ?? ""}`.trim()
+            const docStudent = await Student.findById(enrollment.studentId).select("personalInfo").lean();
+            const studentName = docStudent?.personalInfo
+              ? `${docStudent.personalInfo.firstName ?? ""} ${docStudent.personalInfo.lastName ?? ""}`.trim()
               : "";
             await sendReuploadRequestEmail({
               email: parent.email,
