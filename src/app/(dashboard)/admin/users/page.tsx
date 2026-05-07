@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge, type BadgeProps } from "@/components/ui/badge";
 import { UserPlus, Search, Pencil, X } from "lucide-react";
+import { FormSelect } from "@/components/ui/form-select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 type UserRecord = {
@@ -202,17 +203,27 @@ export default function UsersPage() {
                 className="h-8 w-full rounded-md border border-gray-300 pl-8 pr-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
               />
             </div>
-            <select value={roleFilter} onChange={(e) => setRoleFilter(e.target.value)} className={selectCls + " flex-none w-36"}>
-              <option value="all">All Roles</option>
-              <option value="admin">Admin</option>
-              <option value="registrar">Registrar</option>
-              <option value="parent">Parent</option>
-            </select>
-            <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className={selectCls + " flex-none w-36"}>
-              <option value="all">All Status</option>
-              <option value="active">Active</option>
-              <option value="inactive">Inactive</option>
-            </select>
+            <FormSelect
+              value={roleFilter}
+              onChange={setRoleFilter}
+              options={[
+                { value: "all", label: "All Roles" },
+                { value: "admin", label: "Admin" },
+                { value: "registrar", label: "Registrar" },
+                { value: "parent", label: "Parent" },
+              ]}
+              className="flex-none w-36"
+            />
+            <FormSelect
+              value={statusFilter}
+              onChange={setStatusFilter}
+              options={[
+                { value: "all", label: "All Status" },
+                { value: "active", label: "Active" },
+                { value: "inactive", label: "Inactive" },
+              ]}
+              className="flex-none w-36"
+            />
           </div>
         </CardContent>
       </Card>
@@ -313,11 +324,15 @@ export default function UsersPage() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className={labelCls}>Role</label>
-                  <select required className={selectCls} value={createForm.role} onChange={(e) => setCreateForm((p) => ({ ...p, role: e.target.value as any }))}>
-                    <option value="parent">Parent</option>
-                    <option value="registrar">Registrar</option>
-                    <option value="admin">Admin</option>
-                  </select>
+                  <FormSelect
+                    value={createForm.role}
+                    onChange={(v) => setCreateForm((p) => ({ ...p, role: v as any }))}
+                    options={[
+                      { value: "parent", label: "Parent" },
+                      { value: "registrar", label: "Registrar" },
+                      { value: "admin", label: "Admin" },
+                    ]}
+                  />
                 </div>
                 <div>
                   <label className={labelCls}>Contact Number</label>
@@ -362,11 +377,15 @@ export default function UsersPage() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className={labelCls}>Role</label>
-                  <select required className={selectCls} value={editForm.role} onChange={(e) => setEditForm((p) => ({ ...p, role: e.target.value as any }))}>
-                    <option value="parent">Parent</option>
-                    <option value="registrar">Registrar</option>
-                    <option value="admin">Admin</option>
-                  </select>
+                  <FormSelect
+                    value={editForm.role}
+                    onChange={(v) => setEditForm((p) => ({ ...p, role: v as any }))}
+                    options={[
+                      { value: "parent", label: "Parent" },
+                      { value: "registrar", label: "Registrar" },
+                      { value: "admin", label: "Admin" },
+                    ]}
+                  />
                 </div>
                 <div>
                   <label className={labelCls}>Contact Number</label>

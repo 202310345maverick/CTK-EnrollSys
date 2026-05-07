@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Plus, CreditCard, Pencil, Trash2, X, PlusCircle, MinusCircle } from "lucide-react";
+import { FormSelect } from "@/components/ui/form-select";
 import { formatCurrency } from "@/lib/utils";
 
 type FeeItem = { description: string; amount: number; isRequired: boolean };
@@ -265,16 +266,20 @@ export default function FeeStructuresPage() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className={labelCls}>School Year</label>
-                  <select required className={selectCls} value={form.schoolYearId} onChange={(e) => setForm((p) => ({ ...p, schoolYearId: e.target.value }))}>
-                    <option value="">Select...</option>
-                    {schoolYears.map((sy) => <option key={sy._id} value={sy._id}>{sy.name}</option>)}
-                  </select>
+                  <FormSelect
+                    value={form.schoolYearId}
+                    onChange={(v) => setForm((p) => ({ ...p, schoolYearId: v }))}
+                    placeholder="Select..."
+                    options={schoolYears.map((sy) => ({ value: sy._id, label: sy.name }))}
+                  />
                 </div>
                 <div>
                   <label className={labelCls}>Grade Level</label>
-                  <select required className={selectCls} value={form.gradeLevel} onChange={(e) => setForm((p) => ({ ...p, gradeLevel: e.target.value }))}>
-                    {GRADE_LEVELS.map((g) => <option key={g} value={g}>{g}</option>)}
-                  </select>
+                  <FormSelect
+                    value={form.gradeLevel}
+                    onChange={(v) => setForm((p) => ({ ...p, gradeLevel: v }))}
+                    options={GRADE_LEVELS.map((g) => ({ value: g, label: g }))}
+                  />
                 </div>
               </div>
               <FeeEditor fees={form.fees} setFees={(fees) => setForm((p) => ({ ...p, fees }))} />
@@ -306,16 +311,20 @@ export default function FeeStructuresPage() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className={labelCls}>School Year</label>
-                  <select required className={selectCls} value={editForm.schoolYearId} onChange={(e) => setEditForm((p) => ({ ...p, schoolYearId: e.target.value }))}>
-                    <option value="">Select...</option>
-                    {schoolYears.map((sy) => <option key={sy._id} value={sy._id}>{sy.name}</option>)}
-                  </select>
+                  <FormSelect
+                    value={editForm.schoolYearId}
+                    onChange={(v) => setEditForm((p) => ({ ...p, schoolYearId: v }))}
+                    placeholder="Select..."
+                    options={schoolYears.map((sy) => ({ value: sy._id, label: sy.name }))}
+                  />
                 </div>
                 <div>
                   <label className={labelCls}>Grade Level</label>
-                  <select required className={selectCls} value={editForm.gradeLevel} onChange={(e) => setEditForm((p) => ({ ...p, gradeLevel: e.target.value }))}>
-                    {GRADE_LEVELS.map((g) => <option key={g} value={g}>{g}</option>)}
-                  </select>
+                  <FormSelect
+                    value={editForm.gradeLevel}
+                    onChange={(v) => setEditForm((p) => ({ ...p, gradeLevel: v }))}
+                    options={GRADE_LEVELS.map((g) => ({ value: g, label: g }))}
+                  />
                 </div>
               </div>
               <FeeEditor fees={editForm.fees} setFees={(fees) => setEditForm((p) => ({ ...p, fees }))} />

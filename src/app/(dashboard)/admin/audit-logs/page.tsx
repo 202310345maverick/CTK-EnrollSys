@@ -5,6 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ClipboardList, Search, ChevronLeft, ChevronRight } from "lucide-react";
+import { FormSelect } from "@/components/ui/form-select";
+import { DatePicker } from "@/components/ui/date-picker";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 type AuditLog = {
@@ -131,16 +133,22 @@ export default function AuditLogsPage() {
                 className={inputCls + " w-full pl-8"}
               />
             </div>
-            <select value={actionFilter} onChange={(e) => { setActionFilter(e.target.value); setPage(1); }} className={selectCls + " w-36"}>
-              <option value="">All Actions</option>
-              {ACTIONS.map((a) => <option key={a} value={a}>{a}</option>)}
-            </select>
-            <select value={resourceFilter} onChange={(e) => { setResourceFilter(e.target.value); setPage(1); }} className={selectCls + " w-40"}>
-              <option value="">All Resources</option>
-              {RESOURCES.map((r) => <option key={r} value={r}>{r}</option>)}
-            </select>
-            <input type="date" value={dateFrom} onChange={(e) => { setDateFrom(e.target.value); setPage(1); }} className={inputCls + " w-36"} title="Date from" />
-            <input type="date" value={dateTo} onChange={(e) => { setDateTo(e.target.value); setPage(1); }} className={inputCls + " w-36"} title="Date to" />
+            <FormSelect
+              value={actionFilter}
+              onChange={(v) => { setActionFilter(v); setPage(1); }}
+              placeholder="All Actions"
+              options={ACTIONS.map((a) => ({ value: a, label: a }))}
+              className="w-36"
+            />
+            <FormSelect
+              value={resourceFilter}
+              onChange={(v) => { setResourceFilter(v); setPage(1); }}
+              placeholder="All Resources"
+              options={RESOURCES.map((r) => ({ value: r, label: r }))}
+              className="w-40"
+            />
+            <DatePicker value={dateFrom} onChange={(v) => { setDateFrom(v); setPage(1); }} placeholder="From date" minYear={2020} maxYear={2035} className="w-36" />
+            <DatePicker value={dateTo} onChange={(v) => { setDateTo(v); setPage(1); }} placeholder="To date" minYear={2020} maxYear={2035} className="w-36" />
             <Button
               variant="outline"
               className="h-8 text-xs"

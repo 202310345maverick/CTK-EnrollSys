@@ -5,6 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Calendar, Pencil, Trash2, X, ToggleLeft, ToggleRight } from "lucide-react";
+import { FormSelect } from "@/components/ui/form-select";
+import { DatePicker } from "@/components/ui/date-picker";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 type SchoolYear = {
@@ -244,32 +246,36 @@ export default function SchoolYearsPage() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className={labelCls}>Start Date</label>
-                  <input required type="date" className={inputCls} value={form.startDate} onChange={(e) => setForm((p) => ({ ...p, startDate: e.target.value }))} />
+                  <DatePicker value={form.startDate} onChange={(v) => setForm((p) => ({ ...p, startDate: v }))} minYear={2020} maxYear={2035} />
                 </div>
                 <div>
                   <label className={labelCls}>End Date</label>
-                  <input required type="date" className={inputCls} value={form.endDate} onChange={(e) => setForm((p) => ({ ...p, endDate: e.target.value }))} />
+                  <DatePicker value={form.endDate} onChange={(v) => setForm((p) => ({ ...p, endDate: v }))} minYear={2020} maxYear={2035} />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className={labelCls}>Enrollment Start</label>
-                  <input required type="date" className={inputCls} value={form.enrollmentStart} onChange={(e) => setForm((p) => ({ ...p, enrollmentStart: e.target.value }))} />
+                  <DatePicker value={form.enrollmentStart} onChange={(v) => setForm((p) => ({ ...p, enrollmentStart: v }))} minYear={2020} maxYear={2035} />
                 </div>
                 <div>
                   <label className={labelCls}>Enrollment End</label>
-                  <input required type="date" className={inputCls} value={form.enrollmentEnd} onChange={(e) => setForm((p) => ({ ...p, enrollmentEnd: e.target.value }))} />
+                  <DatePicker value={form.enrollmentEnd} onChange={(v) => setForm((p) => ({ ...p, enrollmentEnd: v }))} minYear={2020} maxYear={2035} />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className={labelCls}>Status</label>
-                  <select className={selectCls} value={form.status} onChange={(e) => setForm((p) => ({ ...p, status: e.target.value as any }))}>
-                    <option value="upcoming">Upcoming</option>
-                    <option value="enrollment">Enrollment</option>
-                    <option value="ongoing">Ongoing</option>
-                    <option value="completed">Completed</option>
-                  </select>
+                  <FormSelect
+                    value={form.status}
+                    onChange={(v) => setForm((p) => ({ ...p, status: v as any }))}
+                    options={[
+                      { value: "upcoming", label: "Upcoming" },
+                      { value: "enrollment", label: "Enrollment" },
+                      { value: "ongoing", label: "Ongoing" },
+                      { value: "completed", label: "Completed" },
+                    ]}
+                  />
                 </div>
                 <div className="flex items-end pb-1">
                   <label className="flex items-center gap-2 text-xs text-gray-700 cursor-pointer">
@@ -306,32 +312,36 @@ export default function SchoolYearsPage() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className={labelCls}>Start Date</label>
-                  <input required type="date" className={inputCls} value={editForm.startDate} onChange={(e) => setEditForm((p) => ({ ...p, startDate: e.target.value }))} />
+                  <DatePicker value={editForm.startDate} onChange={(v) => setEditForm((p) => ({ ...p, startDate: v }))} minYear={2020} maxYear={2035} />
                 </div>
                 <div>
                   <label className={labelCls}>End Date</label>
-                  <input required type="date" className={inputCls} value={editForm.endDate} onChange={(e) => setEditForm((p) => ({ ...p, endDate: e.target.value }))} />
+                  <DatePicker value={editForm.endDate} onChange={(v) => setEditForm((p) => ({ ...p, endDate: v }))} minYear={2020} maxYear={2035} />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className={labelCls}>Enrollment Start</label>
-                  <input required type="date" className={inputCls} value={editForm.enrollmentStart} onChange={(e) => setEditForm((p) => ({ ...p, enrollmentStart: e.target.value }))} />
+                  <DatePicker value={editForm.enrollmentStart} onChange={(v) => setEditForm((p) => ({ ...p, enrollmentStart: v }))} minYear={2020} maxYear={2035} />
                 </div>
                 <div>
                   <label className={labelCls}>Enrollment End</label>
-                  <input required type="date" className={inputCls} value={editForm.enrollmentEnd} onChange={(e) => setEditForm((p) => ({ ...p, enrollmentEnd: e.target.value }))} />
+                  <DatePicker value={editForm.enrollmentEnd} onChange={(v) => setEditForm((p) => ({ ...p, enrollmentEnd: v }))} minYear={2020} maxYear={2035} />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className={labelCls}>Status</label>
-                  <select className={selectCls} value={editForm.status} onChange={(e) => setEditForm((p) => ({ ...p, status: e.target.value as any }))}>
-                    <option value="upcoming">Upcoming</option>
-                    <option value="enrollment">Enrollment</option>
-                    <option value="ongoing">Ongoing</option>
-                    <option value="completed">Completed</option>
-                  </select>
+                  <FormSelect
+                    value={editForm.status}
+                    onChange={(v) => setEditForm((p) => ({ ...p, status: v as any }))}
+                    options={[
+                      { value: "upcoming", label: "Upcoming" },
+                      { value: "enrollment", label: "Enrollment" },
+                      { value: "ongoing", label: "Ongoing" },
+                      { value: "completed", label: "Completed" },
+                    ]}
+                  />
                 </div>
                 <div className="flex items-end pb-1">
                   <label className="flex items-center gap-2 text-xs text-gray-700 cursor-pointer">
