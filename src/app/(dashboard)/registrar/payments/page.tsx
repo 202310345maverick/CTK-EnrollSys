@@ -31,6 +31,8 @@ export default function PaymentsPage() {
   const [error, setError] = useState("");
   const [schoolYears, setSchoolYears] = useState<any[]>([]);
   const [students, setStudents] = useState<any[]>([]);
+  const [enrollments, setEnrollments] = useState<any[]>([]);
+  const [loadingEnrollments, setLoadingEnrollments] = useState(false);
   const [showVoided, setShowVoided] = useState(false);
 
   // Void modal state
@@ -77,6 +79,30 @@ export default function PaymentsPage() {
     fetch("/api/school-years").then(r => r.json()).then(d => setSchoolYears(d.schoolYears || []));
     fetch("/api/students?limit=200").then(r => r.json()).then(d => setStudents(d.students || []));
   }, [showModal]);
+
+  // Load enrollments when student is selected in the form
+  useEffect(() => {
+    if (!form.studentId) { setEnrollments([]); return; }
+    setLoadingEnrollments(true);
+    fetch(`/api/enrollments?studentId=${form.studentId}&limit=50`)
+      .then(r => r.json())
+      .then(d => {
+        const list = (d.enrollments || []).filter((e: any) => !e.isDraft);
+        setEnrollments(list);
+        // Auto-select if only one enrollment
+        if (list.length === 1) {
+          setForm(f => ({
+            ...f,
+            enrollmentId: list[0]._id,
+            schoolYearId: list[0].schoolYearId?._id || list[0].schoolYearId || f.schoolYearId,
+          }));
+        } else {
+          setForm(f => ({ ...f, enrollmentId: "", schoolYearId: "" }));
+        }
+      })
+      .catch(() => setEnrollments([]))
+      .finally(() => setLoadingEnrollments(false));
+  }, [form.studentId]);
 
   const filtered = payments.filter((p) => {
     if (!search) return true;
@@ -301,11 +327,31 @@ export default function PaymentsPage() {
                       <label className="text-xs font-medium text-muted-foreground mb-1 block">Student *</label>
                       <FormSelect
                         value={form.studentId}
-                        onChange={(v) => setForm(f => ({ ...f, studentId: v }))}
+                        onChange={(v) => setForm(f => ({ ...f, studentId: v, enrollmentId: "", schoolYearId: "" }))}
                         placeholder="Select student"
                         options={students.map((s: any) => ({
                           value: s._id,
                           label: `${s.personalInfo?.lastName}, ${s.personalInfo?.firstName}`,
+                        }))}
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs font-medium text-muted-foreground mb-1 block">Enrollment</label>
+                      <FormSelect
+                        value={form.enrollmentId}
+                        onChange={(v) => {
+                          const enr = enrollments.find((e: any) => e._id === v);
+                          setForm(f => ({
+                            ...f,
+                            enrollmentId: v,
+                            schoolYearId: enr?.schoolYearId?._id || enr?.schoolYearId || f.schoolYearId,
+                          }));
+                        }}
+                        placeholder={loadingEnrollments ? "Loading..." : form.studentId ? "Select enrollment" : "Select student first"}
+                        disabled={!form.studentId || loadingEnrollments}
+                        options={enrollments.map((e: any) => ({
+                          value: e._id,
+                          label: `${e.enrollmentNumber || "Draft"} — ${e.gradeLevel} (${e.status})`,
                         }))}
                       />
                     </div>

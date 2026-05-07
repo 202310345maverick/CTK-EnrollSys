@@ -122,6 +122,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const status = searchParams.get("status");
     const gradeLevel = searchParams.get("gradeLevel");
+    const studentIdFilter = searchParams.get("studentId");
     const includeDrafts =
       searchParams.get("includeDrafts") === "1" ||
       searchParams.get("includeDrafts") === "true";
@@ -139,6 +140,8 @@ export async function GET(request: NextRequest) {
 
     if (status) query.status = status;
     if (gradeLevel) query.gradeLevel = gradeLevel;
+    // Admin/registrar can filter by studentId
+    if (studentIdFilter && session.user.role !== "parent") query.studentId = studentIdFilter;
 
     const skip = (page - 1) * limit;
 

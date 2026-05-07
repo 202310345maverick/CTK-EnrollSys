@@ -3,7 +3,7 @@ import mongoose, { Schema, Document, Model } from "mongoose";
 export interface IPayment extends Document {
   _id: mongoose.Types.ObjectId;
   receiptNumber: string;
-  enrollmentId: mongoose.Types.ObjectId;
+  enrollmentId?: mongoose.Types.ObjectId;
   studentId: mongoose.Types.ObjectId;
   schoolYearId: mongoose.Types.ObjectId;
   paymentType: "tuition" | "miscellaneous" | "other";
@@ -31,7 +31,6 @@ const PaymentSchema = new Schema<IPayment>(
     enrollmentId: {
       type: Schema.Types.ObjectId,
       ref: "Enrollment",
-      required: true,
     },
     studentId: {
       type: Schema.Types.ObjectId,

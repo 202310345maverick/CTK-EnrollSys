@@ -102,12 +102,18 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json();
 
+    // Strip empty strings for ObjectId fields to avoid CastError
+    const cleanBody: Record<string, unknown> = { ...body };
+    for (const key of ["enrollmentId", "studentId", "schoolYearId"]) {
+      if (cleanBody[key] === "" || cleanBody[key] == null) delete cleanBody[key];
+    }
+
     // Generate receipt number
     const paymentCount = await Payment.countDocuments();
     const receiptNumber = generateId("OR", paymentCount + 1);
 
     const payment = await Payment.create({
-      ...body,
+      ...cleanBody,
       receiptNumber,
       receivedBy: session.user.id,
       isVoided: false,
