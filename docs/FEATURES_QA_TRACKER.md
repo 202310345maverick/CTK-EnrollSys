@@ -58,46 +58,46 @@ Use this during development, testing, and deployment review.
 
 | ID | Feature | Priority | Status | Owner | Target Date | Notes |
 |---|---|---|---|---|---|---|
-| REG-001 | Registrar dashboard with queue metrics | Must | In Progress |  |  | Dashboard mostly static |
-| REG-002 | Enrollment queue with filtering/search | Must | In Progress |  |  | Basic list exists |
+| REG-001 | Registrar dashboard with queue metrics | Must | Done |  |  | Live KPI metrics, recent queue, today's stats |
+| REG-002 | Enrollment queue with filtering/search | Must | Done |  |  | Filter by status, grade, type, date; search by name/number |
 | REG-003 | Enrollment detail review screen | Must | Done |  |  | Detail page available |
 | REG-004 | Update enrollment status | Must | Done |  |  | Pending, under review, approved, rejected |
-| REG-005 | Add review notes/remarks | Must | In Progress |  |  | Field exists; ensure persistence and visibility |
-| REG-006 | Request document re-upload | Must | Not Started |  |  | Needed for incomplete/invalid documents |
-| REG-007 | Verify uploaded documents | Must | Not Started |  |  | Per-document verification workflow |
-| REG-008 | Assess fees during review | Must | Not Started |  |  | Connect fee structures to approval flow |
-| REG-009 | Student records page | Must | In Progress |  |  | Page exists, improve live search/filter |
-| REG-010 | Payment logging form | Must | In Progress |  |  | API exists, full UI form flow pending |
-| REG-011 | Payment list and filters | Must | In Progress |  |  | Page exists |
-| REG-012 | Registrar reports page | Must | In Progress |  |  | UI exists, report generation pending |
+| REG-005 | Add review notes/remarks | Must | Done |  |  | Notes persist via PUT endpoint and shown in detail view |
+| REG-006 | Request document re-upload | Must | Done |  |  | Re-upload modal in registrar detail, sends email and in-app notification |
+| REG-007 | Verify uploaded documents | Must | Done |  |  | Per-document verify/reject buttons; syncs Document.verificationStatus |
+| REG-008 | Assess fees during review | Must | Done |  |  | Fee assessment UI with breakdown, saved to enrollment |
+| REG-009 | Student records page | Must | Done |  |  | Live search by name/LRN, filter by grade and status |
+| REG-010 | Payment logging form | Must | Done |  |  | Full logging form with student search, void support |
+| REG-011 | Payment list and filters | Must | Done |  |  | Filterable payment list with stats |
+| REG-012 | Registrar reports page | Must | Done |  |  | All 7 report types with PDF and Excel export |
 
 ### A4. Admin Portal
 
 | ID | Feature | Priority | Status | Owner | Target Date | Notes |
 |---|---|---|---|---|---|---|
-| ADM-001 | Admin dashboard with system KPIs | Must | In Progress |  |  | Replace mock stats with full live metrics |
+| ADM-001 | Admin dashboard with system KPIs | Must | Done |  |  | Live KPIs: users, students, enrollments, payments, today stats |
 | ADM-002 | User management list/search/filter | Must | Done |  |  | API and UI available |
 | ADM-003 | Create user accounts | Must | Done |  |  | Admin API available |
-| ADM-004 | Update user profile and role | Must | In Progress |  |  | Confirm complete edit workflow |
-| ADM-005 | Deactivate/reactivate users | Must | In Progress |  |  | Ensure UI + API parity |
-| ADM-006 | School year management | Must | In Progress |  |  | API exists, full admin UX pending |
-| ADM-007 | Enrollment period control | Must | Not Started |  |  | Enforce open/close on submissions |
-| ADM-008 | Fee structure management CRUD | Must | In Progress |  |  | Page exists, complete create/edit/delete |
-| ADM-009 | Settings management | Should | In Progress |  |  | Settings page currently stub-level |
-| ADM-010 | Audit log viewer | Should | Not Started |  |  | Model exists, UI/API pending |
-| ADM-011 | Admin reports with exports | Must | In Progress |  |  | Build PDF/Excel generation |
+| ADM-004 | Update user profile and role | Must | Done |  |  | Full edit with audit log |
+| ADM-005 | Deactivate/reactivate users | Must | Done |  |  | Toggle active state via PATCH with audit log |
+| ADM-006 | School year management | Must | Done |  |  | Full CRUD with enrollment period dates |
+| ADM-007 | Enrollment period control | Must | Done |  |  | Open/close toggle on admin dashboard via EnrollmentPeriodControl |
+| ADM-008 | Fee structure management CRUD | Must | Done |  |  | Create, edit, delete for all grade levels with audit log |
+| ADM-009 | Settings management | Should | Done |  |  | School info, security, registration toggle, doc requirements |
+| ADM-010 | Audit log viewer | Should | Done |  |  | Filterable paginated log with action/resource/date filters |
+| ADM-011 | Admin reports with exports | Must | Done |  |  | Same report engine as registrar, accessible by admin |
 
 ### A5. Core Academic and Data Management
 
 | ID | Feature | Priority | Status | Owner | Target Date | Notes |
 |---|---|---|---|---|---|---|
 | CORE-001 | Student master record schema | Must | Done |  |  | Rich model available |
-| CORE-002 | Student search by name/LRN/student ID | Must | In Progress |  |  | API supports, UI tuning needed |
+| CORE-002 | Student search by name/LRN/student ID | Must | Done |  |  | Search works across registrar and admin student pages |
 | CORE-003 | Student status lifecycle | Should | Not Started |  |  | Active/inactive/graduated/transferred workflow |
 | CORE-004 | Enrollment number generation | Must | Done |  |  | Generated during create |
-| CORE-005 | Status history tracking | Must | In Progress |  |  | Ensure surfaced in UI |
-| CORE-006 | Duplicate LRN prevention | Must | Not Started |  |  | Validation rule required |
-| CORE-007 | Enrollment type-specific rules | Must | In Progress |  |  | Transferee and returning rules pending |
+| CORE-005 | Status history tracking | Must | Done |  |  | Timeline shown in enrollment detail for both parent and registrar |
+| CORE-006 | Duplicate LRN prevention | Must | Done |  |  | API validates uniqueness; check-lrn endpoint available |
+| CORE-007 | Enrollment type-specific rules | Must | Done |  |  | getRequiredDocumentTypes() enforced on submission and UI |
 
 ### A6. Document and File Management
 
@@ -106,9 +106,9 @@ Use this during development, testing, and deployment review.
 | DOC-001 | File upload endpoint | Must | Done |  |  | Accepts PDF/JPG/PNG with size checks |
 | DOC-002 | Required docs by enrollment type | Must | Not Started |  |  | Rule engine needed |
 | DOC-003 | Upload progress and retry UI | Should | Not Started |  |  | Better parent experience |
-| DOC-004 | Document type tagging | Must | In Progress |  |  | Model supports types |
-| DOC-005 | Document verification status | Must | Not Started |  |  | Pending/verified/rejected per file |
-| DOC-006 | Safe access control for documents | Must | Not Started |  |  | Prevent unauthorized file access |
+| DOC-004 | Document type tagging | Must | Done |  |  | Type set on upload; labels shown throughout UI |
+| DOC-005 | Document verification status | Must | Done |  |  | Verify/reject per doc; syncs enrollment.documents and Document.verificationStatus |
+| DOC-006 | Safe access control for documents | Must | Done |  |  | Auth proxy endpoint; parents only access own docs |
 | DOC-007 | Cloud storage integration | Should | Not Started |  |  | Optional if moving off local uploads |
 
 ### A7. Fees, Billing, and Payments
@@ -116,7 +116,7 @@ Use this during development, testing, and deployment review.
 | ID | Feature | Priority | Status | Owner | Target Date | Notes |
 |---|---|---|---|---|---|---|
 | PAY-001 | Fee structure schema | Must | Done |  |  | Model exists |
-| PAY-002 | Fee structure CRUD | Must | In Progress |  |  | Complete all UI actions |
+| PAY-002 | Fee structure CRUD | Must | Done |  |  | Create, edit, delete for all grades Nursery-Grade12 with audit log |
 | PAY-003 | Auto-assess fees on approval | Must | Not Started |  |  | Core enrollment-to-payment flow |
 | PAY-004 | Manual payment recording | Must | Done |  |  | API endpoint available |
 | PAY-005 | Multiple payment methods | Must | Done |  |  | Cash/check/bank/gcash support in model/API |
@@ -129,31 +129,31 @@ Use this during development, testing, and deployment review.
 
 | ID | Feature | Priority | Status | Owner | Target Date | Notes |
 |---|---|---|---|---|---|---|
-| RPT-001 | Enrollment summary report | Must | Not Started |  |  | By status, grade, and date range |
-| RPT-002 | DepEd SF1 generation | Must | Not Started |  |  | Registrar requirement |
-| RPT-003 | DepEd SF2 generation | Should | Not Started |  |  | If attendance data is available |
-| RPT-004 | Payment collection report | Must | Not Started |  |  | By date range and payment method |
-| RPT-005 | Export to Excel | Must | Not Started |  |  | Remove ExportDemo placeholder |
-| RPT-006 | Export to PDF | Must | Not Started |  |  | Printable official reports |
-| RPT-007 | Report filters (date, grade, status) | Must | Not Started |  |  | Essential for operations |
+| RPT-001 | Enrollment summary report | Must | Done |  |  | Live with filters |
+| RPT-002 | DepEd SF1 generation | Must | Done |  |  | PDF via jspdf-autotable |
+| RPT-003 | DepEd SF2 generation | Should | Done |  |  | Attendance grid PDF |
+| RPT-004 | Payment collection report | Must | Done |  |  | KPIs + by-type breakdown |
+| RPT-005 | Export to Excel | Must | Done |  |  | All report types via SheetJS |
+| RPT-006 | Export to PDF | Must | Done |  |  | All report types via jsPDF |
+| RPT-007 | Report filters (date, grade, status) | Must | Done |  |  | Full filter panel |
 
 ### A9. Notifications and Communication
 
 | ID | Feature | Priority | Status | Owner | Target Date | Notes |
 |---|---|---|---|---|---|---|
-| NOTIF-001 | In-app notification center | Should | Not Started |  |  | Notification model exists |
-| NOTIF-002 | Enrollment submitted confirmation | Must | Not Started |  |  | Parent confirmation |
-| NOTIF-003 | Enrollment status change notice | Must | Not Started |  |  | Approve/reject/under review updates |
-| NOTIF-004 | Re-upload request notice | Must | Not Started |  |  | Document correction workflow |
-| NOTIF-005 | Payment posted confirmation | Should | Not Started |  |  | Parent transparency |
-| NOTIF-006 | Email provider integration | Must | Not Started |  |  | SMTP or equivalent integration |
+| NOTIF-001 | In-app notification center | Should | Done |  |  | Bell icon in dashboard layout, unread count badge |
+| NOTIF-002 | Enrollment submitted confirmation | Must | Done |  |  | Email sent on enrollment submission |
+| NOTIF-003 | Enrollment status change notice | Must | Done |  |  | Email + in-app on status change |
+| NOTIF-004 | Re-upload request notice | Must | Done |  |  | Email + in-app when doc rejected/re-upload requested |
+| NOTIF-005 | Payment posted confirmation | Should | Done |  |  | Email + in-app on payment recorded |
+| NOTIF-006 | Email provider integration | Must | Done |  |  | Gmail SMTP via nodemailer, configured in env |
 
 ### A10. Audit, Security, and Platform Reliability
 
 | ID | Feature | Priority | Status | Owner | Target Date | Notes |
 |---|---|---|---|---|---|---|
-| SEC-001 | Audit log write on key actions | Must | Not Started |  |  | Model exists, middleware missing |
-| SEC-002 | Audit log admin viewer | Should | Not Started |  |  | For traceability and investigations |
+| SEC-001 | Audit log write on key actions | Must | Done |  |  | All key routes log to AuditLog model including login |
+| SEC-002 | Audit log admin viewer | Should | Done |  |  | Paginated, filterable log in Admin portal |
 | SEC-003 | Parent data isolation | Must | In Progress |  |  | Maintain strict per-parent filtering |
 | SEC-004 | Input validation and sanitization | Must | In Progress |  |  | Continue across all endpoints |
 | SEC-005 | File upload validation hardening | Must | In Progress |  |  | MIME, extension, and size checks |

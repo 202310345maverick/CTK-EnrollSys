@@ -141,6 +141,20 @@ export async function PUT(
         enrollment.documents[docIndex].status = docStatus;
         if (docRemarks) enrollment.documents[docIndex].remarks = docRemarks;
         enrollment.markModified("documents");
+
+        // Sync verificationStatus on the Document model itself
+        const docRef = enrollment.documents[docIndex].documentId;
+        if (docRef) {
+          const docId = typeof docRef === "object" && "_id" in docRef ? docRef._id : docRef;
+          await Document.findByIdAndUpdate(docId, {
+            $set: {
+              verificationStatus: docStatus,
+              verificationNote: docRemarks ?? null,
+              verifiedBy: session.user.id,
+              verifiedAt: new Date(),
+            },
+          });
+        }
       }
     }
 
