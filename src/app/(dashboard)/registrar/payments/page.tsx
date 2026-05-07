@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useSession } from "next-auth/react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,24 +11,16 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import {
-  Search, Plus, Loader2, Receipt, X, CheckCircle,
+  Search, Plus, Loader2, Receipt, X, CheckCircle, Ban,
 } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import { FormSelect } from "@/components/ui/form-select";
 import { DatePicker } from "@/components/ui/date-picker";
 
-const METHOD_COLORS: Record<string, string> = {
-  cash: "bg-emerald-100 text-emerald-800 border border-emerald-200",
-  gcash: "bg-blue-100 text-blue-800 border border-blue-200",
-  bank_transfer: "bg-purple-100 text-purple-800 border border-purple-200",
-  check: "bg-amber-100 text-amber-800 border border-amber-200",
-  other: "bg-slate-100 text-slate-600 border border-slate-200",
-};
-
 const PAYMENT_TYPES = ["tuition", "miscellaneous", "other"];
-const PAYMENT_METHODS = ["cash", "gcash", "bank_transfer", "check", "other"];
 
 export default function PaymentsPage() {
+  const { data: session } = useSession();
   const [payments, setPayments] = useState<any[]>([]);
   const [stats, setStats] = useState({ total: 0, count: 0, avg: 0 });
   const [loading, setLoading] = useState(true);
@@ -38,6 +31,13 @@ export default function PaymentsPage() {
   const [error, setError] = useState("");
   const [schoolYears, setSchoolYears] = useState<any[]>([]);
   const [students, setStudents] = useState<any[]>([]);
+  const [showVoided, setShowVoided] = useState(false);
+
+  // Void modal state
+  const [voidTarget, setVoidTarget] = useState<{ id: string; receiptNumber: string; amount: number } | null>(null);
+  const [voidReason, setVoidReason] = useState("");
+  const [voidSubmitting, setVoidSubmitting] = useState(false);
+  const [voidError, setVoidError] = useState("");
 
   // Form state
   const [form, setForm] = useState({
@@ -52,19 +52,23 @@ export default function PaymentsPage() {
     remarks: "",
   });
 
+  const isAdminOrRegistrar = session?.user?.role === "admin" || session?.user?.role === "registrar";
+
   const fetchPayments = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/payments?limit=200");
+      const url = showVoided ? "/api/payments?limit=200&includeVoided=true" : "/api/payments?limit=200";
+      const res = await fetch(url);
       const data = await res.json();
       const list = data.payments || [];
-      const totalAmt = list.reduce((s: number, p: any) => s + (p.amount || 0), 0);
+      const nonVoided = list.filter((p: any) => !p.isVoided);
+      const totalAmt = nonVoided.reduce((s: number, p: any) => s + (p.amount || 0), 0);
       setPayments(list);
-      setStats({ total: totalAmt, count: list.length, avg: list.length > 0 ? totalAmt / list.length : 0 });
+      setStats({ total: totalAmt, count: nonVoided.length, avg: nonVoided.length > 0 ? totalAmt / nonVoided.length : 0 });
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [showVoided]);
 
   useEffect(() => { fetchPayments(); }, [fetchPayments]);
 
@@ -96,6 +100,7 @@ export default function PaymentsPage() {
         body: JSON.stringify({
           ...form,
           amount: parseFloat(form.amount),
+          paymentMethod: "cash",
         }),
       });
       if (!res.ok) {
@@ -112,6 +117,35 @@ export default function PaymentsPage() {
       }, 1200);
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const openVoidModal = (p: any) => {
+    setVoidTarget({ id: p._id, receiptNumber: p.receiptNumber, amount: p.amount });
+    setVoidReason("");
+    setVoidError("");
+  };
+
+  const handleVoid = async () => {
+    if (!voidTarget) return;
+    if (!voidReason.trim()) { setVoidError("Void reason is required."); return; }
+    setVoidSubmitting(true);
+    setVoidError("");
+    try {
+      const res = await fetch(`/api/payments/${voidTarget.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ voidReason: voidReason.trim() }),
+      });
+      if (!res.ok) {
+        const d = await res.json();
+        setVoidError(d.error || "Failed to void payment");
+        return;
+      }
+      setVoidTarget(null);
+      fetchPayments();
+    } finally {
+      setVoidSubmitting(false);
     }
   };
 
@@ -145,7 +179,7 @@ export default function PaymentsPage() {
 
       <Card className="ctk-panel">
         <CardHeader className="pb-3">
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <div className="relative flex-1 max-w-xs">
               <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
               <Input
@@ -155,6 +189,15 @@ export default function PaymentsPage() {
                 className="pl-8 h-8 text-sm"
               />
             </div>
+            <label className="flex items-center gap-1.5 cursor-pointer select-none text-xs text-muted-foreground">
+              <input
+                type="checkbox"
+                checked={showVoided}
+                onChange={(e) => setShowVoided(e.target.checked)}
+                className="rounded"
+              />
+              Show voided
+            </label>
             <CardDescription className="ml-auto text-xs">{filtered.length} record{filtered.length !== 1 ? "s" : ""}</CardDescription>
           </div>
         </CardHeader>
@@ -175,15 +218,23 @@ export default function PaymentsPage() {
                   <TableHead className="text-xs">Receipt #</TableHead>
                   <TableHead className="text-xs">Student</TableHead>
                   <TableHead className="text-xs">Description</TableHead>
-                  <TableHead className="text-xs">Method</TableHead>
+                  <TableHead className="text-xs">Type</TableHead>
                   <TableHead className="text-xs">Date</TableHead>
                   <TableHead className="text-xs text-right">Amount</TableHead>
+                  {isAdminOrRegistrar && <TableHead className="text-xs w-20" />}
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filtered.map((p: any) => (
-                  <TableRow key={p._id} className="text-sm">
-                    <TableCell className="font-mono text-xs">{p.receiptNumber}</TableCell>
+                  <TableRow key={p._id} className={`text-sm ${p.isVoided ? "opacity-60" : ""}`}>
+                    <TableCell className="font-mono text-xs">
+                      <span className={p.isVoided ? "line-through text-muted-foreground" : ""}>{p.receiptNumber}</span>
+                      {p.isVoided && (
+                        <Badge className="ml-1.5 bg-red-100 text-red-700 border border-red-200 text-[10px] px-1 py-0">
+                          voided
+                        </Badge>
+                      )}
+                    </TableCell>
                     <TableCell>
                       <p className="font-medium text-sm">
                         {p.studentId?.personalInfo?.lastName}, {p.studentId?.personalInfo?.firstName}
@@ -192,14 +243,29 @@ export default function PaymentsPage() {
                     </TableCell>
                     <TableCell className="text-xs">{p.description}</TableCell>
                     <TableCell>
-                      <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${METHOD_COLORS[p.paymentMethod] || METHOD_COLORS.other}`}>
-                        {p.paymentMethod?.replace("_", " ")}
+                      <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-emerald-100 text-emerald-800 border border-emerald-200">
+                        {p.paymentType}
                       </span>
                     </TableCell>
                     <TableCell className="text-xs text-muted-foreground">{formatDate(p.paymentDate)}</TableCell>
-                    <TableCell className="text-right text-sm font-semibold text-emerald-600">
+                    <TableCell className={`text-right text-sm font-semibold ${p.isVoided ? "text-muted-foreground line-through" : "text-emerald-600"}`}>
                       {formatCurrency(p.amount)}
                     </TableCell>
+                    {isAdminOrRegistrar && (
+                      <TableCell className="text-right">
+                        {!p.isVoided && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 px-2 text-xs text-red-600 hover:bg-red-50 hover:text-red-700"
+                            onClick={() => openVoidModal(p)}
+                          >
+                            <Ban className="h-3 w-3 mr-1" />
+                            Void
+                          </Button>
+                        )}
+                      </TableCell>
+                    )}
                   </TableRow>
                 ))}
               </TableBody>
@@ -267,15 +333,10 @@ export default function PaymentsPage() {
                       />
                     </div>
                     <div>
-                      <label className="text-xs font-medium text-muted-foreground mb-1 block">Payment Method *</label>
-                      <FormSelect
-                        value={form.paymentMethod}
-                        onChange={(v) => setForm(f => ({ ...f, paymentMethod: v }))}
-                        options={PAYMENT_METHODS.map((m) => ({
-                          value: m,
-                          label: m.replace("_", " ").replace(/\b\w/g, (c) => c.toUpperCase()),
-                        }))}
-                      />
+                      <label className="text-xs font-medium text-muted-foreground mb-1 block">Payment Method</label>
+                      <div className="flex h-8 items-center rounded-md border bg-muted/40 px-3 text-sm text-muted-foreground">
+                        Cash
+                      </div>
                     </div>
                     <div>
                       <label className="text-xs font-medium text-muted-foreground mb-1 block">Amount *</label>
@@ -338,6 +399,53 @@ export default function PaymentsPage() {
           </Card>
         </div>
       )}
+
+      {/* Void Payment Modal */}
+      {voidTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <Card className="w-full max-w-sm">
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-base font-semibold text-red-700">Void Payment</CardTitle>
+                <Button variant="ghost" size="sm" onClick={() => setVoidTarget(null)} className="h-7 w-7 p-0">
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="rounded-lg border bg-red-50/50 p-3 text-xs">
+                <p className="text-muted-foreground">Receipt: <span className="font-mono font-semibold">{voidTarget.receiptNumber}</span></p>
+                <p className="text-muted-foreground">Amount: <span className="font-semibold text-red-700">{formatCurrency(voidTarget.amount)}</span></p>
+              </div>
+              {voidError && <p className="text-xs text-red-600 bg-red-50 border border-red-200 rounded p-2">{voidError}</p>}
+              <div>
+                <label className="text-xs font-medium text-muted-foreground mb-1 block">Void Reason *</label>
+                <textarea
+                  value={voidReason}
+                  onChange={(e) => setVoidReason(e.target.value)}
+                  placeholder="State the reason for voiding this payment..."
+                  className="w-full rounded-md border px-3 py-2 text-xs min-h-[80px] resize-none focus:outline-none focus:ring-1 focus:ring-red-500"
+                />
+              </div>
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" onClick={() => setVoidTarget(null)} className="flex-1 h-8 text-xs">
+                  Cancel
+                </Button>
+                <Button
+                  size="sm"
+                  disabled={voidSubmitting}
+                  onClick={handleVoid}
+                  className="flex-1 h-8 text-xs bg-red-600 hover:bg-red-700 text-white"
+                >
+                  {voidSubmitting ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <Ban className="h-3.5 w-3.5 mr-1" />}
+                  Confirm Void
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }
+

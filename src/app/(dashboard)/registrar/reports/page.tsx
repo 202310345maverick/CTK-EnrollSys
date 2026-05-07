@@ -16,7 +16,11 @@ type EnrollmentStats = {
 type PaymentStats = {
   totalAmount: number;
   count: number;
-  byMethod: { method: string; amount: number }[];
+  voidedCount: number;
+  voidedAmount: number;
+  byType: { type: string; amount: number; count: number }[];
+  recentDaily: { date: string; amount: number; count: number }[];
+  list: { receiptNumber: string; studentName: string; paymentType: string; amount: number; paymentDate: string; recordedBy: string }[];
 };
 
 const BRAND_RED: [number, number, number] = [180, 4, 13]; // #b4040d
@@ -50,15 +54,14 @@ export default function ReportsPage() {
     const loadStats = async () => {
       setLoading(true);
       try {
-        const [eRes, pRes] = await Promise.all([
+        const [eRes, rRes] = await Promise.all([
           fetch("/api/enrollments?limit=500"),
-          fetch("/api/payments?limit=500"),
+          fetch("/api/admin/reports"),
         ]);
         const eData = await eRes.json();
-        const pData = await pRes.json();
+        const rData = await rRes.json();
 
         const enrollments: any[] = eData.enrollments || [];
-        const payments: any[] = pData.payments || [];
 
         const gradeMap: Record<string, number> = {};
         const statusMap: Record<string, number> = {};
@@ -74,18 +77,9 @@ export default function ReportsPage() {
           byStatus: Object.entries(statusMap).map(([status, count]) => ({ status, count })),
         });
 
-        const methodMap: Record<string, number> = {};
-        let totalAmt = 0;
-        payments.forEach((p) => {
-          const m = p.paymentMethod || "other";
-          methodMap[m] = (methodMap[m] || 0) + p.amount;
-          totalAmt += p.amount || 0;
-        });
-        setPaymentStats({
-          totalAmount: totalAmt,
-          count: payments.length,
-          byMethod: Object.entries(methodMap).map(([method, amount]) => ({ method, amount })),
-        });
+        if (rData.payments) {
+          setPaymentStats(rData.payments);
+        }
       } finally {
         setLoading(false);
       }
@@ -101,26 +95,22 @@ export default function ReportsPage() {
       const reportDate = new Date().toLocaleDateString("en-PH", { year: "numeric", month: "long", day: "numeric" });
 
       if (isPayment) {
-        const res = await fetch("/api/payments?limit=1000");
-        const data = await res.json();
-        const payments: any[] = data.payments || [];
+        const payments = paymentStats?.list || [];
 
         const metaRows = [
           [`${SCHOOL_NAME} — ${SCHOOL_SUBTITLE}`],
-          ["Payment Report"],
+          ["Payment Collection Report"],
           [`Generated: ${reportDate}`],
           [],
-          ["Receipt #", "Student Name", "Student ID", "Description", "Payment Type", "Method", "Amount", "Date"],
+          ["Receipt #", "Student Name", "Payment Type", "Amount", "Date", "Recorded By"],
         ];
         const rows = payments.map((p) => [
           p.receiptNumber || "",
-          `${p.studentId?.personalInfo?.lastName || ""}, ${p.studentId?.personalInfo?.firstName || ""}`,
-          p.studentId?.studentId || "",
-          p.description || "",
+          p.studentName || "",
           p.paymentType || "",
-          (p.paymentMethod || "").replace("_", " "),
           p.amount?.toFixed(2) || "0.00",
           p.paymentDate ? new Date(p.paymentDate).toLocaleDateString("en-PH") : "",
+          p.recordedBy || "",
         ]);
         const csv = [...metaRows, ...rows].map((r) => r.map((c) => `"${c}"`).join(",")).join("\n");
         triggerCSVDownload(csv, "payment-report");
@@ -195,81 +185,104 @@ export default function ReportsPage() {
       doc.setFont("helvetica", "normal");
       doc.text(SCHOOL_SUBTITLE, logoBase64 ? 28 : 10, 16);
 
-      // Report title + date (right side)
       doc.setFontSize(9);
       doc.setFont("helvetica", "bold");
-      doc.text(isPayment ? "Payment Report" : "Enrollment Report", pageW - 8, 10, { align: "right" });
+      doc.text(isPayment ? "Payment Collection Report" : "Enrollment Report", pageW - 8, 10, { align: "right" });
       doc.setFont("helvetica", "normal");
       doc.setFontSize(7);
       doc.text(`Generated: ${reportDate}`, pageW - 8, 16, { align: "right" });
 
-      // ── Table ──
-      let head: string[][];
-      let body: (string | number)[][];
+      const footerHook = (hookData: any) => {
+        doc.setFillColor(...BRAND_RED);
+        doc.rect(0, pageH - 10, pageW, 10, "F");
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(7);
+        doc.setFont("helvetica", "normal");
+        doc.text(`${SCHOOL_NAME} · Enrollment Management System`, pageW / 2, pageH - 4, { align: "center" });
+        doc.text(`Page ${hookData.pageNumber}`, pageW - 8, pageH - 4, { align: "right" });
+      };
 
       if (isPayment) {
-        const res = await fetch("/api/payments?limit=1000");
-        const data = await res.json();
-        const payments: any[] = data.payments || [];
-        head = [["Receipt #", "Student Name", "Student ID", "Description", "Payment Type", "Method", "Amount (₱)", "Date"]];
-        body = payments.map((p) => [
-          p.receiptNumber || "—",
-          `${p.studentId?.personalInfo?.lastName || ""}, ${p.studentId?.personalInfo?.firstName || ""}`,
-          p.studentId?.studentId || "—",
-          p.description || "",
-          p.paymentType || "",
-          (p.paymentMethod || "").replace("_", " "),
-          p.amount?.toFixed(2) || "0.00",
-          p.paymentDate ? new Date(p.paymentDate).toLocaleDateString("en-PH") : "",
-        ]);
+        const stats = paymentStats;
+
+        // Summary
+        autoTable(doc, {
+          head: [["Metric", "Value"]],
+          body: [
+            ["Total Collected", `PHP ${(stats?.totalAmount || 0).toFixed(2)}`],
+            ["Transaction Count", String(stats?.count || 0)],
+            ["Voided Transactions", String(stats?.voidedCount || 0)],
+            ["Voided Amount", `PHP ${(stats?.voidedAmount || 0).toFixed(2)}`],
+          ],
+          startY: 26,
+          styles: { fontSize: 8, cellPadding: 2.5 },
+          headStyles: { fillColor: BRAND_RED, textColor: [255, 255, 255], fontStyle: "bold", fontSize: 8 },
+          alternateRowStyles: { fillColor: [253, 240, 240] },
+          margin: { left: 8, right: 8 },
+          didDrawPage: footerHook,
+        });
+
+        const afterSummaryY = (doc as any).lastAutoTable?.finalY + 6 || 60;
+        doc.setFontSize(8);
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(0, 0, 0);
+        doc.text("Payment Type Breakdown", 8, afterSummaryY);
+
+        autoTable(doc, {
+          head: [["Type", "Count", "Amount (₱)"]],
+          body: (stats?.byType || []).map((t) => [
+            t.type.charAt(0).toUpperCase() + t.type.slice(1),
+            String(t.count),
+            t.amount.toFixed(2),
+          ]),
+          startY: afterSummaryY + 4,
+          styles: { fontSize: 8, cellPadding: 2.5 },
+          headStyles: { fillColor: BRAND_RED, textColor: [255, 255, 255], fontStyle: "bold", fontSize: 8 },
+          alternateRowStyles: { fillColor: [253, 240, 240] },
+          margin: { left: 8, right: 8 },
+          didDrawPage: footerHook,
+        });
+
+        const afterTypeY = (doc as any).lastAutoTable?.finalY + 6 || 100;
+        doc.setFontSize(8);
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(0, 0, 0);
+        doc.text("7-Day Daily Collections", 8, afterTypeY);
+
+        autoTable(doc, {
+          head: [["Date", "Amount (₱)", "Transactions"]],
+          body: (stats?.recentDaily || []).map((d) => [d.date, d.amount.toFixed(2), String(d.count)]),
+          startY: afterTypeY + 4,
+          styles: { fontSize: 8, cellPadding: 2.5 },
+          headStyles: { fillColor: BRAND_RED, textColor: [255, 255, 255], fontStyle: "bold", fontSize: 8 },
+          alternateRowStyles: { fillColor: [253, 240, 240] },
+          margin: { left: 8, right: 8 },
+          didDrawPage: footerHook,
+        });
       } else {
         const res = await fetch("/api/enrollments?limit=1000");
         const data = await res.json();
         const enrollments: any[] = data.enrollments || [];
-        head = [["Student Name", "Grade Level", "Status", "Enrollment Type", "Submitted At"]];
-        body = enrollments.map((e) => [
+        const head = [["Student Name", "Grade Level", "Status", "Enrollment Type", "Submitted At"]];
+        const body = enrollments.map((e) => [
           e.studentName || "—",
           e.gradeLevel || "—",
           (e.status || "").replace("_", " "),
           e.enrollmentType || "—",
           e.createdAt ? new Date(e.createdAt).toLocaleDateString("en-PH") : "—",
         ]);
-      }
 
-      autoTable(doc, {
-        head,
-        body,
-        startY: 26,
-        styles: { fontSize: 8, cellPadding: 2.5 },
-        headStyles: {
-          fillColor: BRAND_RED,
-          textColor: [255, 255, 255],
-          fontStyle: "bold",
-          fontSize: 8,
-        },
-        alternateRowStyles: { fillColor: [253, 240, 240] },
-        margin: { left: 8, right: 8 },
-        didDrawPage: (hookData: any) => {
-          // ── Footer on every page ──
-          doc.setFillColor(...BRAND_RED);
-          doc.rect(0, pageH - 10, pageW, 10, "F");
-          doc.setTextColor(255, 255, 255);
-          doc.setFontSize(7);
-          doc.setFont("helvetica", "normal");
-          doc.text(
-            `${SCHOOL_NAME} · Enrollment Management System`,
-            pageW / 2,
-            pageH - 4,
-            { align: "center" }
-          );
-          doc.text(
-            `Page ${hookData.pageNumber}`,
-            pageW - 8,
-            pageH - 4,
-            { align: "right" }
-          );
-        },
-      });
+        autoTable(doc, {
+          head,
+          body,
+          startY: 26,
+          styles: { fontSize: 8, cellPadding: 2.5 },
+          headStyles: { fillColor: BRAND_RED, textColor: [255, 255, 255], fontStyle: "bold", fontSize: 8 },
+          alternateRowStyles: { fillColor: [253, 240, 240] },
+          margin: { left: 8, right: 8 },
+          didDrawPage: footerHook,
+        });
+      }
 
       doc.save(`${isPayment ? "payment" : "enrollment"}-report-${new Date().toISOString().split("T")[0]}.pdf`);
     } finally {
@@ -385,15 +398,58 @@ export default function ReportsPage() {
                       <p className="text-xs text-muted-foreground">Transactions</p>
                       <p className="text-lg font-bold">{paymentStats.count}</p>
                     </div>
+                    <div className="rounded-lg border p-3">
+                      <p className="text-xs text-muted-foreground">Voided Count</p>
+                      <p className="text-lg font-bold text-red-600">{paymentStats.voidedCount}</p>
+                    </div>
+                    <div className="rounded-lg border p-3">
+                      <p className="text-xs text-muted-foreground">Voided Amount</p>
+                      <p className="text-lg font-bold text-red-600">{formatCurrency(paymentStats.voidedAmount)}</p>
+                    </div>
                   </div>
                   <div>
-                    <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">By Payment Method</p>
-                    {paymentStats.byMethod.map((m) => (
-                      <div key={m.method} className="flex items-center justify-between py-1 border-b last:border-0">
-                        <span className="text-xs capitalize">{m.method.replace("_", " ")}</span>
-                        <span className="text-xs font-semibold text-emerald-600">{formatCurrency(m.amount)}</span>
-                      </div>
-                    ))}
+                    <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">By Payment Type</p>
+                    <table className="w-full text-xs">
+                      <thead>
+                        <tr className="border-b">
+                          <th className="text-left py-1 font-medium text-muted-foreground">Type</th>
+                          <th className="text-right py-1 font-medium text-muted-foreground">Count</th>
+                          <th className="text-right py-1 font-medium text-muted-foreground">Amount</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {paymentStats.byType.map((t) => (
+                          <tr key={t.type} className="border-b last:border-0">
+                            <td className="py-1 capitalize">{t.type}</td>
+                            <td className="py-1 text-right">{t.count}</td>
+                            <td className="py-1 text-right font-semibold text-emerald-600">{formatCurrency(t.amount)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">7-Day Daily Collections</p>
+                    <table className="w-full text-xs">
+                      <thead>
+                        <tr className="border-b">
+                          <th className="text-left py-1 font-medium text-muted-foreground">Date</th>
+                          <th className="text-right py-1 font-medium text-muted-foreground">Transactions</th>
+                          <th className="text-right py-1 font-medium text-muted-foreground">Amount</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {paymentStats.recentDaily.length === 0 ? (
+                          <tr><td colSpan={3} className="py-2 text-center text-muted-foreground">No data in last 7 days</td></tr>
+                        ) : paymentStats.recentDaily.map((d) => (
+                          <tr key={d.date} className="border-b last:border-0">
+                            <td className="py-1">{d.date}</td>
+                            <td className="py-1 text-right">{d.count}</td>
+                            <td className="py-1 text-right font-semibold text-emerald-600">{formatCurrency(d.amount)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
                 </div>
               ) : (

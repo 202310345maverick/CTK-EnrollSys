@@ -50,6 +50,7 @@ export default function EnrollmentDetailPage() {
   const [feeAmount, setFeeAmount] = useState("");
   const [feeBreakdown, setFeeBreakdown] = useState<{ description: string; amount: number }[]>([]);
   const [toast, setToast] = useState<{ msg: string; type: "success" | "error" } | null>(null);
+  const [balance, setBalance] = useState<{ assessed: number; paid: number; balance: number } | null>(null);
 
   const showToast = (msg: string, type: "success" | "error" = "success") => {
     setToast({ msg, type });
@@ -68,6 +69,16 @@ export default function EnrollmentDetailPage() {
   };
 
   useEffect(() => { fetchEnrollment(); }, [params.id]);
+
+  useEffect(() => {
+    if (!enrollment) return;
+    fetch(`/api/enrollments/${params.id}/balance`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.assessed !== undefined) setBalance(data);
+      })
+      .catch(() => {});
+  }, [enrollment, params.id]);
 
   const updateStatus = async (status: string) => {
     if (!remarks.trim() && (status === "rejected")) {
@@ -393,6 +404,35 @@ export default function EnrollmentDetailPage() {
               )}
             </CardContent>
           </Card>
+
+          {/* Balance Summary */}
+          {balance !== null && (
+            <Card>
+              <CardHeader className="pb-2 pt-4 px-4">
+                <CardTitle className="flex items-center gap-1.5 text-sm font-semibold">
+                  <DollarSign className="h-4 w-4 text-primary" /> Balance Summary
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="px-4 pb-4">
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="rounded-lg border bg-slate-50/50 p-2.5 text-center">
+                    <p className="text-[10px] text-muted-foreground mb-0.5">Total Assessed</p>
+                    <p className="text-sm font-bold text-slate-800">{formatCurrency(balance.assessed)}</p>
+                  </div>
+                  <div className="rounded-lg border bg-emerald-50/50 p-2.5 text-center">
+                    <p className="text-[10px] text-muted-foreground mb-0.5">Total Paid</p>
+                    <p className="text-sm font-bold text-emerald-700">{formatCurrency(balance.paid)}</p>
+                  </div>
+                  <div className={`rounded-lg border p-2.5 text-center ${balance.balance > 0 ? "bg-red-50/50" : "bg-emerald-50/50"}`}>
+                    <p className="text-[10px] text-muted-foreground mb-0.5">Remaining</p>
+                    <p className={`text-sm font-bold ${balance.balance > 0 ? "text-red-700" : "text-emerald-700"}`}>
+                      {formatCurrency(balance.balance)}
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </div>
 
         {/* Right column */}

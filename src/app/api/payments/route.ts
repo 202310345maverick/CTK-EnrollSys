@@ -21,7 +21,8 @@ export async function GET(request: NextRequest) {
     const page = parseInt(searchParams.get("page") || "1");
     const limit = parseInt(searchParams.get("limit") || "10");
 
-    const query: Record<string, unknown> = { isVoided: false };
+    const includeVoided = searchParams.get("includeVoided") === "true";
+    const query: Record<string, unknown> = includeVoided ? {} : { isVoided: false };
 
     if (session.user.role === "parent") {
       const students = await Student.find({ parentUserId: session.user.id })

@@ -9,12 +9,7 @@ export interface IPayment extends Document {
   paymentType: "tuition" | "miscellaneous" | "other";
   description: string;
   amount: number;
-  paymentMethod: "cash" | "check" | "bank_transfer" | "gcash" | "other";
-  paymentDetails?: {
-    checkNumber?: string;
-    bankName?: string;
-    referenceNumber?: string;
-  };
+  paymentMethod: "cash";
   receivedBy: mongoose.Types.ObjectId;
   paymentDate: Date;
   remarks?: string;
@@ -64,13 +59,9 @@ const PaymentSchema = new Schema<IPayment>(
     },
     paymentMethod: {
       type: String,
-      enum: ["cash", "check", "bank_transfer", "gcash", "other"],
+      enum: ["cash"],
       required: true,
-    },
-    paymentDetails: {
-      checkNumber: String,
-      bankName: String,
-      referenceNumber: String,
+      default: "cash",
     },
     receivedBy: {
       type: Schema.Types.ObjectId,

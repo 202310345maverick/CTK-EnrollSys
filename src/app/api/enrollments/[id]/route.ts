@@ -6,6 +6,7 @@ import dbConnect from "@/lib/db/connection";
 import Enrollment from "@/models/Enrollment";
 import Student from "@/models/Student";
 import Document from "@/models/Document";
+import FeeStructure from "@/models/FeeStructure";
 
 export async function GET(
   request: NextRequest,
@@ -86,11 +87,30 @@ export async function PUT(
         remarks: body.remarks || `Status changed to ${body.status}`,
       });
 
-      // If approved, assign section if provided
-      if (body.status === "approved" && body.section) {
-        await Student.findByIdAndUpdate(enrollment.studentId, {
-          section: body.section,
-        });
+      // If approved, assign section if provided and auto-assess fees if not yet assessed
+      if (body.status === "approved") {
+        if (body.section) {
+          await Student.findByIdAndUpdate(enrollment.studentId, {
+            section: body.section,
+          });
+        }
+        if (!enrollment.assessedFees) {
+          const feeStructure = await FeeStructure.findOne({
+            schoolYearId: enrollment.schoolYearId,
+            gradeLevel: enrollment.gradeLevel,
+            isActive: true,
+          });
+          if (feeStructure) {
+            enrollment.assessedFees = {
+              feeStructureId: feeStructure._id,
+              totalAmount: feeStructure.totalAmount,
+              breakdown: feeStructure.fees.map((f: any) => ({
+                description: f.description,
+                amount: f.amount,
+              })),
+            };
+          }
+        }
       }
     }
 
