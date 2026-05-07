@@ -1,16 +1,55 @@
-import path from "path";
-import { existsSync } from "fs";
-import { mkdir, writeFile } from "fs/promises";
-
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 
 import { authOptions } from "@/lib/auth/options";
+import { uploadToCloudinary, deleteFromCloudinary } from "@/lib/cloudinary";
 import dbConnect from "@/lib/db/connection";
 import Enrollment from "@/models/Enrollment";
 import Student from "@/models/Student";
 import Document from "@/models/Document";
 import { ENROLLMENT_DOCUMENT_TYPES } from "@/lib/enrollment/constants";
+
+export async function GET(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    await dbConnect();
+
+    const enrollment = await Enrollment.findById(params.id);
+    if (!enrollment) {
+      return NextResponse.json({ error: "Enrollment not found" }, { status: 404 });
+    }
+
+    const isAdminOrRegistrar = session.user.role === "admin" || session.user.role === "registrar";
+
+    if (!isAdminOrRegistrar) {
+      // For parents, check they own the enrollment
+      const isOwner = enrollment.submittedBy?.toString() === session.user.id;
+      if (!isOwner) {
+        // Also check if the student belongs to this user
+        const student = enrollment.studentId
+          ? await Student.findOne({ _id: enrollment.studentId, userId: session.user.id })
+          : null;
+        if (!student) {
+          return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+        }
+      }
+    }
+
+    const documents = await Document.find({ enrollmentId: enrollment._id }).lean();
+
+    return NextResponse.json({ documents });
+  } catch (error) {
+    console.error("Error fetching enrollment documents:", error);
+    return NextResponse.json({ error: "Failed to fetch documents" }, { status: 500 });
+  }
+}
 
 export async function POST(
   request: NextRequest,
@@ -69,29 +108,6 @@ export async function POST(
       );
     }
 
-    const uploadsDir = path.join(
-      process.cwd(),
-      "public",
-      "uploads",
-      session.user.id,
-      "enrollments",
-      params.id
-    );
-    if (!existsSync(uploadsDir)) {
-      await mkdir(uploadsDir, { recursive: true });
-    }
-
-    const timestamp = Date.now();
-    const extension = file.name.split(".").pop();
-    const filename = `${documentType}_${timestamp}.${extension}`;
-    const filepath = path.join(uploadsDir, filename);
-
-    const bytes = await file.arrayBuffer();
-    const buffer = Buffer.from(bytes);
-    await writeFile(filepath, buffer);
-
-    const publicUrl = `/uploads/${session.user.id}/enrollments/${params.id}/${filename}`;
-
     const studentId = enrollment.studentId;
     if (!studentId) {
       return NextResponse.json({ error: "Enrollment is missing a student record" }, { status: 400 });
@@ -103,23 +119,30 @@ export async function POST(
     });
 
     if (existingDocument) {
+      await deleteFromCloudinary(existingDocument.cloudinaryId);
       await Document.findByIdAndDelete(existingDocument._id);
       enrollment.documents = (enrollment.documents || []).filter(
         (document: { type: string }) => document.type !== documentType
       );
     }
 
+    const buffer = Buffer.from(await file.arrayBuffer());
+    const result = await uploadToCloudinary(buffer, {
+      folder: `ctk-enrollsys/enrollments/${params.id}`,
+      public_id: `${documentType}_${Date.now()}`,
+    });
+
     const createdDocument = await Document.create({
       studentId,
       enrollmentId: enrollment._id,
       type: documentType,
-      fileName: filename,
+      fileName: result.public_id,
       originalName: file.name,
       fileSize: file.size,
       mimeType: file.type,
-      cloudinaryId: filename,
-      cloudinaryUrl: publicUrl,
-      secureUrl: publicUrl,
+      cloudinaryId: result.public_id,
+      cloudinaryUrl: result.secure_url,
+      secureUrl: result.secure_url,
       uploadedBy: session.user.id,
     });
 

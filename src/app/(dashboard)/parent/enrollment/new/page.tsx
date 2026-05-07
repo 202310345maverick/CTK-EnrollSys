@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { ArrowLeft, Loader2, Send, Upload, X, CheckCircle } from "lucide-react";
+import { ArrowLeft, Loader2, Send, Upload, X, CheckCircle, RefreshCw } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -91,6 +91,8 @@ export default function NewEnrollmentPage() {
   const [uploadedFiles, setUploadedFiles] = useState<Record<string, File>>({});
   const [uploadedDocs, setUploadedDocs] = useState<Record<string, UploadedDoc>>({});
   const [uploadingId, setUploadingId] = useState<string | null>(null);
+  const [uploadProgress, setUploadProgress] = useState<Record<string, number>>({});
+  const [uploadErrors, setUploadErrors] = useState<Record<string, string>>({});
 
   const { register, handleSubmit, watch, control, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema),
@@ -100,17 +102,34 @@ export default function NewEnrollmentPage() {
   const isCatholic = watch("isCatholic");
 
   // Upload a single file to /api/upload and return the doc object
-  const uploadFile = async (docId: string, file: File): Promise<UploadedDoc | null> => {
-    const fd = new FormData();
-    fd.append("file", file);
-    fd.append("documentType", docId);
+  const uploadFile = (docId: string, file: File): Promise<UploadedDoc> => {
+    return new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      const fd = new FormData();
+      fd.append("file", file);
+      fd.append("documentType", docId);
 
-    const res = await fetch("/api/upload", { method: "POST", body: fd });
-    if (!res.ok) {
-      const err = await res.json();
-      throw new Error(err.error || "Upload failed");
-    }
-    return res.json();
+      xhr.upload.onprogress = (e) => {
+        if (e.lengthComputable) {
+          const pct = Math.round((e.loaded / e.total) * 100);
+          setUploadProgress((p) => ({ ...p, [docId]: pct }));
+        }
+      };
+
+      xhr.onload = () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          try { resolve(JSON.parse(xhr.responseText)); }
+          catch { reject(new Error("Invalid response")); }
+        } else {
+          try { reject(new Error(JSON.parse(xhr.responseText).error ?? "Upload failed")); }
+          catch { reject(new Error("Upload failed")); }
+        }
+      };
+
+      xhr.onerror = () => reject(new Error("Network error during upload"));
+      xhr.open("POST", "/api/upload");
+      xhr.send(fd);
+    });
   };
 
   const handleFileSelect = async (docId: string, file: File | null) => {
@@ -121,28 +140,29 @@ export default function NewEnrollmentPage() {
     }
 
     setUploadedFiles((p) => ({ ...p, [docId]: file }));
+    setUploadErrors((p) => { const n = {...p}; delete n[docId]; return n; });
+    setUploadProgress((p) => ({ ...p, [docId]: 0 }));
     setUploadingId(docId);
     try {
       const result = await uploadFile(docId, file);
-      if (result) {
-        setUploadedDocs((p) => ({
-          ...p,
-          [docId]: {
-            documentType: result.documentType || docId,
-            url: result.url,
-            filename: result.filename,
-            originalName: result.originalName || file.name,
-            size: result.size || file.size,
-            mimeType: result.mimeType || file.type,
-          },
-        }));
-        toast({ title: "File uploaded", description: `${file.name} ready` });
-      }
+      setUploadedDocs((p) => ({
+        ...p,
+        [docId]: {
+          documentType: result.documentType || docId,
+          url: result.url,
+          filename: result.filename,
+          originalName: result.originalName || file.name,
+          size: result.size || file.size,
+          mimeType: result.mimeType || file.type,
+        },
+      }));
+      toast({ title: "File uploaded", description: `${file.name} ready` });
     } catch (e: any) {
-      toast({ title: "Upload failed", description: e.message, variant: "destructive" });
+      setUploadErrors((p) => ({ ...p, [docId]: e.message || "Upload failed" }));
       setUploadedFiles((p) => { const n = { ...p }; delete n[docId]; return n; });
     } finally {
       setUploadingId(null);
+      setUploadProgress((p) => { const n = { ...p }; delete n[docId]; return n; });
     }
   };
 
@@ -496,7 +516,7 @@ export default function NewEnrollmentPage() {
                 const uploaded = !!uploadedDocs[doc.id];
                 const isUploading = uploadingId === doc.id;
                 return (
-                  <div key={doc.id} className={`flex items-center justify-between rounded-lg border p-3 ${uploaded ? "border-green-300 bg-green-50" : "border-gray-200"}`}>
+                  <div key={doc.id} className={`flex items-center justify-between rounded-lg border p-3 ${uploaded ? "border-green-300 bg-green-50" : uploadErrors[doc.id] ? "border-red-300 bg-red-50" : "border-gray-200"}`}>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-gray-800">
                         {doc.label}
@@ -507,6 +527,14 @@ export default function NewEnrollmentPage() {
                           <CheckCircle className="h-3 w-3" />
                           <span className="truncate max-w-[200px]">{uploadedFiles[doc.id]?.name}</span>
                         </div>
+                      )}
+                      {uploadProgress[doc.id] !== undefined && uploadProgress[doc.id] < 100 && (
+                        <div className="w-full bg-gray-200 rounded-full h-1.5 mt-1">
+                          <div className="bg-[#b4040d] h-1.5 rounded-full transition-all" style={{ width: `${uploadProgress[doc.id]}%` }} />
+                        </div>
+                      )}
+                      {uploadErrors[doc.id] && (
+                        <p className="mt-0.5 text-xs text-red-600">{uploadErrors[doc.id]}</p>
                       )}
                     </div>
                     <div className="ml-2 flex-shrink-0">
@@ -522,6 +550,30 @@ export default function NewEnrollmentPage() {
                           }}
                         >
                           <X className="h-3 w-3 mr-1" />Remove
+                        </Button>
+                      ) : uploadErrors[doc.id] ? (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="h-7 text-xs border-red-300 text-red-600 hover:bg-red-50"
+                          disabled={isUploading}
+                          onClick={() => {
+                            if (uploadedFiles[doc.id]) {
+                              handleFileSelect(doc.id, uploadedFiles[doc.id]);
+                            } else {
+                              const input = document.createElement("input");
+                              input.type = "file";
+                              input.accept = "image/*,application/pdf";
+                              input.onchange = (e) => {
+                                const file = (e.target as HTMLInputElement).files?.[0];
+                                if (file) handleFileSelect(doc.id, file);
+                              };
+                              input.click();
+                            }
+                          }}
+                        >
+                          <RefreshCw className="h-3 w-3 mr-1" />Retry
                         </Button>
                       ) : (
                         <Button

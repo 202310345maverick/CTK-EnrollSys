@@ -45,6 +45,7 @@ export default function EnrollmentDetailPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [remarks, setRemarks] = useState("");
+  const [docRemarks, setDocRemarks] = useState<Record<string, string>>({});
   const [feeDescription, setFeeDescription] = useState("");
   const [feeAmount, setFeeAmount] = useState("");
   const [feeBreakdown, setFeeBreakdown] = useState<{ description: string; amount: number }[]>([]);
@@ -258,10 +259,25 @@ export default function EnrollmentDetailPage() {
                       <div key={i} className="flex items-center gap-3 rounded-lg border bg-slate-50/50 px-3 py-2">
                         <div className="flex-1 min-w-0">
                           <p className="text-xs font-medium">{label}</p>
-                          <p className={`mt-0.5 inline-flex rounded px-1.5 py-0.5 text-xs font-medium capitalize ${DOC_STATUS_COLORS[doc.status] || DOC_STATUS_COLORS.pending}`}>
+                          <p className={`mt-0.5 inline-flex rounded px-1.5 py-0.5 text-xs font-medium capitalize ${
+                            doc.status === "verified"
+                              ? "bg-emerald-100 text-emerald-700 border border-emerald-200"
+                              : doc.status === "rejected"
+                              ? "bg-red-100 text-red-700 border border-red-200"
+                              : "bg-amber-100 text-amber-700 border border-amber-200"
+                          }`}>
                             {doc.status}
                           </p>
                           {doc.remarks && <p className="mt-0.5 text-xs text-muted-foreground italic">{doc.remarks}</p>}
+                          {doc.status !== "verified" && (
+                            <input
+                              type="text"
+                              className="mt-1 w-full rounded border border-slate-200 px-2 py-1 text-xs placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-[#b4040d]"
+                              placeholder="Add rejection note (optional)..."
+                              value={docRemarks[doc.type] ?? ""}
+                              onChange={(e) => setDocRemarks((p) => ({ ...p, [doc.type]: e.target.value }))}
+                            />
+                          )}
                         </div>
                         <div className="flex items-center gap-1 shrink-0">
                           {fileUrl && (
@@ -286,7 +302,7 @@ export default function EnrollmentDetailPage() {
                               size="sm"
                               variant="destructive"
                               className="h-6 px-1.5 text-xs"
-                              onClick={() => updateDocStatus(doc.type, "rejected", "Document rejected — please re-upload")}
+                              onClick={() => updateDocStatus(doc.type, "rejected", docRemarks[doc.type] || "Document rejected — please re-upload")}
                               disabled={saving}
                             >
                               <XCircle className="h-3 w-3" />

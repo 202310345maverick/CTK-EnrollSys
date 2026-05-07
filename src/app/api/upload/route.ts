@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth/options";
-import { writeFile, mkdir } from "fs/promises";
-import path from "path";
-import { existsSync } from "fs";
+import { uploadToCloudinary } from "@/lib/cloudinary";
 import { ENROLLMENT_DOCUMENT_TYPES } from "@/lib/enrollment/constants";
 
 export async function POST(request: NextRequest) {
@@ -46,30 +44,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create uploads directory if it doesn't exist
-    const uploadsDir = path.join(process.cwd(), "public", "uploads", session.user.id);
-    if (!existsSync(uploadsDir)) {
-      await mkdir(uploadsDir, { recursive: true });
-    }
-
-    // Generate unique filename
-    const timestamp = Date.now();
-    const extension = file.name.split(".").pop();
-    const filename = `${documentType}_${timestamp}.${extension}`;
-    const filepath = path.join(uploadsDir, filename);
-
-    // Write file to disk
-    const bytes = await file.arrayBuffer();
-    const buffer = Buffer.from(bytes);
-    await writeFile(filepath, buffer);
-
-    // Return the public URL
-    const publicUrl = `/uploads/${session.user.id}/${filename}`;
+    const buffer = Buffer.from(await file.arrayBuffer());
+    const result = await uploadToCloudinary(buffer, {
+      folder: `ctk-enrollsys/uploads/${session.user.id}`,
+      public_id: `${documentType}_${Date.now()}`,
+    });
 
     return NextResponse.json({
       message: "File uploaded successfully",
-      url: publicUrl,
-      filename,
+      url: result.secure_url,
+      cloudinaryId: result.public_id,
+      filename: result.public_id,
       originalName: file.name,
       documentType,
       size: file.size,

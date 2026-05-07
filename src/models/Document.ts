@@ -13,6 +13,10 @@ export interface IDocument extends Document {
   cloudinaryUrl: string;
   secureUrl: string;
   uploadedBy: mongoose.Types.ObjectId;
+  verificationStatus: "pending" | "verified" | "rejected";
+  verificationNote?: string;
+  verifiedBy?: mongoose.Types.ObjectId;
+  verifiedAt?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -73,6 +77,21 @@ const DocumentSchema = new Schema<IDocument>(
       type: Schema.Types.ObjectId,
       ref: "User",
       required: true,
+    },
+    verificationStatus: {
+      type: String,
+      enum: ["pending", "verified", "rejected"],
+      default: "pending",
+    },
+    verificationNote: {
+      type: String,
+    },
+    verifiedBy: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+    },
+    verifiedAt: {
+      type: Date,
     },
   },
   {
