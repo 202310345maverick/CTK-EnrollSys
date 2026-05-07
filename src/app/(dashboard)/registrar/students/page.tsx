@@ -11,6 +11,7 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import { Search, Eye, Loader2, Users } from "lucide-react";
+import { FormSelect } from "@/components/ui/form-select";
 
 const GRADE_LEVELS = ["Grade 1","Grade 2","Grade 3","Grade 4","Grade 5","Grade 6","Grade 7","Grade 8","Grade 9","Grade 10","Grade 11","Grade 12"];
 const STATUS_OPTIONS = ["active","inactive","graduated","transferred"];
@@ -73,24 +74,23 @@ export default function StudentsPage() {
                 className="pl-8 h-8 text-sm"
               />
             </div>
-            <select
+            <FormSelect
               value={gradeFilter}
-              onChange={(e) => setGradeFilter(e.target.value)}
-              className="h-8 rounded-md border border-input bg-background px-2.5 text-sm"
-            >
-              <option value="">All Grades</option>
-              {GRADE_LEVELS.map((g) => <option key={g} value={g}>{g}</option>)}
-            </select>
-            <select
+              onChange={(v) => setGradeFilter(v)}
+              placeholder="All Grades"
+              options={GRADE_LEVELS.map((g) => ({ value: g, label: g }))}
+              className="w-36"
+            />
+            <FormSelect
               value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="h-8 rounded-md border border-input bg-background px-2.5 text-sm"
-            >
-              <option value="">All Status</option>
-              {STATUS_OPTIONS.map((s) => (
-                <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>
-              ))}
-            </select>
+              onChange={(v) => setStatusFilter(v)}
+              placeholder="All Status"
+              options={STATUS_OPTIONS.map((s) => ({
+                value: s,
+                label: s.charAt(0).toUpperCase() + s.slice(1),
+              }))}
+              className="w-36"
+            />
             <CardTitle className="text-xs text-muted-foreground ml-auto">
               {total} student{total !== 1 ? "s" : ""}
             </CardTitle>

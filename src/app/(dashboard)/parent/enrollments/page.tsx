@@ -19,6 +19,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/components/ui/use-toast";
+import { FormSelect } from "@/components/ui/form-select";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -93,7 +94,7 @@ export default function ParentEnrollmentsPage() {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [statusFilter, setStatusFilter] = useState<string>("");
 
   useEffect(() => {
     fetchEnrollments();
@@ -165,7 +166,7 @@ export default function ParentEnrollmentsPage() {
         .toLowerCase()
         .includes(searchQuery.toLowerCase());
     
-    const matchesStatus = statusFilter === "all" || enrollment.status === statusFilter;
+    const matchesStatus = !statusFilter || enrollment.status === statusFilter;
     
     return matchesSearch && matchesStatus;
   });
@@ -208,19 +209,20 @@ export default function ParentEnrollmentsPage() {
             className="h-8 text-xs"
           />
         </div>
-        <select
+        <FormSelect
           value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-          className="h-8 rounded-md border border-input bg-background px-2 text-xs"
-        >
-          <option value="all">All Status</option>
-          <option value="draft">Draft</option>
-          <option value="pending">Pending</option>
-          <option value="under_review">Under Review</option>
-          <option value="approved">Approved</option>
-          <option value="enrolled">Enrolled</option>
-          <option value="rejected">Rejected</option>
-        </select>
+          onChange={(v) => setStatusFilter(v)}
+          placeholder="All Status"
+          options={[
+            { value: "draft", label: "Draft" },
+            { value: "pending", label: "Pending" },
+            { value: "under_review", label: "Under Review" },
+            { value: "approved", label: "Approved" },
+            { value: "enrolled", label: "Enrolled" },
+            { value: "rejected", label: "Rejected" },
+          ]}
+          className="w-40"
+        />
       </div>
 
       {filteredEnrollments.length === 0 && enrollments.length === 0 ? (

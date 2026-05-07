@@ -8,6 +8,7 @@ import { Badge, type BadgeProps } from "@/components/ui/badge";
 import { Eye, Loader2, Search, AlertCircle } from "lucide-react";
 import Link from "next/link";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { FormSelect } from "@/components/ui/form-select";
 
 const getStatusVariant = (status: string): NonNullable<BadgeProps["variant"]> => {
   switch (status) {
@@ -27,8 +28,8 @@ export default function EnrollmentsPage() {
   const [enrollments, setEnrollments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
-  const [gradeFilter, setGradeFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("");
+  const [gradeFilter, setGradeFilter] = useState("");
 
   useEffect(() => {
     fetch("/api/enrollments")
@@ -42,8 +43,8 @@ export default function EnrollmentsPage() {
     const name = `${e.studentId?.personalInfo?.firstName || ""} ${e.studentId?.personalInfo?.lastName || ""}`.toLowerCase();
     const num = (e.enrollmentNumber || "").toLowerCase();
     const matchesSearch = !search || name.includes(search.toLowerCase()) || num.includes(search.toLowerCase());
-    const matchesStatus = statusFilter === "all" || e.status === statusFilter;
-    const matchesGrade = gradeFilter === "all" || e.gradeLevel === gradeFilter;
+    const matchesStatus = !statusFilter || e.status === statusFilter;
+    const matchesGrade = !gradeFilter || e.gradeLevel === gradeFilter;
     return matchesSearch && matchesStatus && matchesGrade;
   });
 
@@ -67,27 +68,27 @@ export default function EnrollmentsPage() {
             className="h-8 pl-8 text-xs"
           />
         </div>
-        <select
+        <FormSelect
           value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-          className="h-8 rounded-md border border-input bg-background px-2 text-xs"
-        >
-          <option value="all">All Status</option>
-          <option value="pending">Pending</option>
-          <option value="under_review">Under Review</option>
-          <option value="approved">Approved</option>
-          <option value="rejected">Rejected</option>
-          <option value="enrolled">Enrolled</option>
-          <option value="draft">Draft</option>
-        </select>
-        <select
+          onChange={(v) => setStatusFilter(v)}
+          placeholder="All Status"
+          options={[
+            { value: "pending", label: "Pending" },
+            { value: "under_review", label: "Under Review" },
+            { value: "approved", label: "Approved" },
+            { value: "rejected", label: "Rejected" },
+            { value: "enrolled", label: "Enrolled" },
+            { value: "draft", label: "Draft" },
+          ]}
+          className="w-36"
+        />
+        <FormSelect
           value={gradeFilter}
-          onChange={(e) => setGradeFilter(e.target.value)}
-          className="h-8 rounded-md border border-input bg-background px-2 text-xs"
-        >
-          <option value="all">All Grades</option>
-          {gradeLevels.map((g) => <option key={g} value={g}>{g}</option>)}
-        </select>
+          onChange={(v) => setGradeFilter(v)}
+          placeholder="All Grades"
+          options={gradeLevels.map((g) => ({ value: g, label: g }))}
+          className="w-36"
+        />
       </div>
 
       <Card>

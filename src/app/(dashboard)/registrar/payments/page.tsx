@@ -13,6 +13,8 @@ import {
   Search, Plus, Loader2, Receipt, X, CheckCircle,
 } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
+import { FormSelect } from "@/components/ui/form-select";
+import { DatePicker } from "@/components/ui/date-picker";
 
 const METHOD_COLORS: Record<string, string> = {
   cash: "bg-emerald-100 text-emerald-800 border border-emerald-200",
@@ -231,61 +233,49 @@ export default function PaymentsPage() {
                   <div className="grid gap-3 sm:grid-cols-2">
                     <div>
                       <label className="text-xs font-medium text-muted-foreground mb-1 block">Student *</label>
-                      <select
-                        required
+                      <FormSelect
                         value={form.studentId}
-                        onChange={(e) => setForm(f => ({ ...f, studentId: e.target.value }))}
-                        className="w-full h-8 rounded-md border border-input bg-background px-2.5 text-sm"
-                      >
-                        <option value="">Select student</option>
-                        {students.map((s: any) => (
-                          <option key={s._id} value={s._id}>
-                            {s.personalInfo?.lastName}, {s.personalInfo?.firstName}
-                          </option>
-                        ))}
-                      </select>
+                        onChange={(v) => setForm(f => ({ ...f, studentId: v }))}
+                        placeholder="Select student"
+                        options={students.map((s: any) => ({
+                          value: s._id,
+                          label: `${s.personalInfo?.lastName}, ${s.personalInfo?.firstName}`,
+                        }))}
+                      />
                     </div>
                     <div>
                       <label className="text-xs font-medium text-muted-foreground mb-1 block">School Year *</label>
-                      <select
-                        required
+                      <FormSelect
                         value={form.schoolYearId}
-                        onChange={(e) => setForm(f => ({ ...f, schoolYearId: e.target.value }))}
-                        className="w-full h-8 rounded-md border border-input bg-background px-2.5 text-sm"
-                      >
-                        <option value="">Select school year</option>
-                        {schoolYears.map((sy: any) => (
-                          <option key={sy._id} value={sy._id}>
-                            {sy.name || sy.year} {sy.isActive ? "(Active)" : ""}
-                          </option>
-                        ))}
-                      </select>
+                        onChange={(v) => setForm(f => ({ ...f, schoolYearId: v }))}
+                        placeholder="Select school year"
+                        options={schoolYears.map((sy: any) => ({
+                          value: sy._id,
+                          label: `${sy.name || sy.year}${sy.isActive ? " (Active)" : ""}`,
+                        }))}
+                      />
                     </div>
                     <div>
                       <label className="text-xs font-medium text-muted-foreground mb-1 block">Payment Type *</label>
-                      <select
-                        required
+                      <FormSelect
                         value={form.paymentType}
-                        onChange={(e) => setForm(f => ({ ...f, paymentType: e.target.value }))}
-                        className="w-full h-8 rounded-md border border-input bg-background px-2.5 text-sm"
-                      >
-                        {PAYMENT_TYPES.map((t) => (
-                          <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>
-                        ))}
-                      </select>
+                        onChange={(v) => setForm(f => ({ ...f, paymentType: v }))}
+                        options={PAYMENT_TYPES.map((t) => ({
+                          value: t,
+                          label: t.charAt(0).toUpperCase() + t.slice(1),
+                        }))}
+                      />
                     </div>
                     <div>
                       <label className="text-xs font-medium text-muted-foreground mb-1 block">Payment Method *</label>
-                      <select
-                        required
+                      <FormSelect
                         value={form.paymentMethod}
-                        onChange={(e) => setForm(f => ({ ...f, paymentMethod: e.target.value }))}
-                        className="w-full h-8 rounded-md border border-input bg-background px-2.5 text-sm"
-                      >
-                        {PAYMENT_METHODS.map((m) => (
-                          <option key={m} value={m}>{m.replace("_", " ").replace(/\b\w/g, c => c.toUpperCase())}</option>
-                        ))}
-                      </select>
+                        onChange={(v) => setForm(f => ({ ...f, paymentMethod: v }))}
+                        options={PAYMENT_METHODS.map((m) => ({
+                          value: m,
+                          label: m.replace("_", " ").replace(/\b\w/g, (c) => c.toUpperCase()),
+                        }))}
+                      />
                     </div>
                     <div>
                       <label className="text-xs font-medium text-muted-foreground mb-1 block">Amount *</label>
@@ -302,12 +292,12 @@ export default function PaymentsPage() {
                     </div>
                     <div>
                       <label className="text-xs font-medium text-muted-foreground mb-1 block">Payment Date *</label>
-                      <Input
-                        type="date"
-                        required
+                      <DatePicker
                         value={form.paymentDate}
-                        onChange={(e) => setForm(f => ({ ...f, paymentDate: e.target.value }))}
-                        className="h-8 text-sm"
+                        onChange={(v) => setForm(f => ({ ...f, paymentDate: v }))}
+                        placeholder="Select date"
+                        minYear={2020}
+                        maxYear={2035}
                       />
                     </div>
                   </div>
