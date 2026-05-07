@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -98,7 +98,13 @@ export default function NewEnrollmentPage() {
   const [draftId, setDraftId] = useState<string | null>(null);
   const [isSavingDraft, setIsSavingDraft] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
-  const saveTimerRef = useState<ReturnType<typeof setTimeout> | null>(null);
+  // useRef so the auto-save closure always reads the latest values without stale captures
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const draftIdRef = useRef<string | null>(null);
+  const isLoadingRef = useRef(true); // suppress auto-save during initial draft load
+
+  // Keep ref in sync with state
+  useEffect(() => { draftIdRef.current = draftId; }, [draftId]);
 
   const { register, handleSubmit, watch, control, reset, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema),
@@ -108,7 +114,7 @@ export default function NewEnrollmentPage() {
   const isCatholic = watch("isCatholic");
   const watchedValues = watch();
 
-  // On mount: fetch existing draft from server and restore it
+  // On mount: fetch the single existing draft and restore it
   useEffect(() => {
     async function loadDraft() {
       try {
@@ -117,8 +123,8 @@ export default function NewEnrollmentPage() {
         const data = await res.json();
         const draft = data.enrollments?.[0];
         if (draft?.draftData) {
+          draftIdRef.current = draft._id;
           setDraftId(draft._id);
-          // Restore uploaded docs metadata (URLs) if present
           if (draft.draftData.uploadedDocuments?.length) {
             const docsMap: Record<string, UploadedDoc> = {};
             for (const d of draft.draftData.uploadedDocuments) {
@@ -126,22 +132,23 @@ export default function NewEnrollmentPage() {
             }
             setUploadedDocs(docsMap);
           }
-          // Reset form with saved field values (strip uploadedDocuments)
           const { uploadedDocuments: _ud, ...fieldValues } = draft.draftData;
           reset({ ...DEFAULT_VALUES, ...fieldValues });
           setLastSaved(new Date(draft.updatedAt));
           toast({ title: "Draft restored", description: "Your previous progress has been loaded." });
         }
       } catch {}
+      finally { isLoadingRef.current = false; }
     }
     loadDraft();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Auto-save to server 2s after last change
+  // Auto-save to server 2s after last change — uses refs to avoid stale closures
   useEffect(() => {
-    if (saveTimerRef[0]) clearTimeout(saveTimerRef[0]);
-    saveTimerRef[0] = setTimeout(async () => {
+    if (isLoadingRef.current) return; // skip during initial load
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    saveTimerRef.current = setTimeout(async () => {
       try {
         setIsSavingDraft(true);
         const res = await fetch("/api/enrollments", {
@@ -149,14 +156,17 @@ export default function NewEnrollmentPage() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             action: "save_draft",
-            draftId: draftId ?? undefined,
+            draftId: draftIdRef.current ?? undefined,
             formData: watchedValues,
             uploadedDocuments: Object.values(uploadedDocs),
           }),
         });
         if (res.ok) {
           const data = await res.json();
-          if (data.draft?.id) setDraftId(data.draft.id);
+          if (data.draft?.id) {
+            draftIdRef.current = data.draft.id;
+            setDraftId(data.draft.id);
+          }
           setLastSaved(new Date());
         }
       } catch {} finally {
