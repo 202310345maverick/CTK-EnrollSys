@@ -13,7 +13,7 @@ export interface IEnrollment extends Document {
     lastGradeCompleted: string;
     schoolYear: string;
   };
-  status: "draft" | "pending" | "under_review" | "approved" | "rejected" | "waitlisted" | "enrolled";
+  status: "draft" | "pending" | "under_review" | "approved" | "rejected" | "enrolled";
   isDraft: boolean;
   draftData?: Record<string, unknown>;
   statusHistory: {
@@ -75,7 +75,7 @@ const EnrollmentSchema = new Schema<IEnrollment>(
     },
     status: {
       type: String,
-      enum: ["draft", "pending", "under_review", "approved", "rejected", "waitlisted", "enrolled"],
+      enum: ["draft", "pending", "under_review", "approved", "rejected", "enrolled"],
       default: "pending",
     },
     isDraft: {

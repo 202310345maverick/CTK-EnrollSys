@@ -212,7 +212,11 @@ export async function sendStatusChangeEmail({
       pending: "#6b7280", enrolled: "#2563eb",
     };
     const statusColor = statusColors[newStatus] ?? "#6b7280";
-    const statusLabel = newStatus.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+    const statusLabels: Record<string, string> = {
+      pending: "Pending", under_review: "Under Review", approved: "Approved",
+      rejected: "Not Approved", enrolled: "Enrolled",
+    };
+    const statusLabel = statusLabels[newStatus] ?? newStatus.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
     const body = `
       <p style="color:#333;line-height:1.6;">Dear <strong>${name}</strong>,</p>
       <p style="color:#333;line-height:1.6;">The status of your enrollment application has been updated.</p>

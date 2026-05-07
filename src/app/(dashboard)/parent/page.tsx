@@ -46,10 +46,9 @@ function getStatusLabel(status: string) {
   switch (status) {
     case "under_review": return "Under Review";
     case "approved": return "Approved";
-    case "rejected": return "Rejected";
+    case "rejected": return "Not Approved";
     case "enrolled": return "Enrolled";
     case "pending": return "Pending";
-    case "waitlisted": return "Waitlisted";
     default: return status;
   }
 }
@@ -60,7 +59,6 @@ function getStatusBadgeVariant(status: string): "warning" | "success" | "danger"
     case "enrolled": return "success";
     case "rejected": return "danger";
     case "under_review": return "info";
-    case "waitlisted": return "neutral";
     default: return "warning";
   }
 }
@@ -78,10 +76,9 @@ function formatDocumentTypeLabel(documentType: string) {
 const STATUS_DESCRIPTIONS = [
   { status: "Pending", description: "Your enrollment application has been received and is waiting to be reviewed by the registrar." },
   { status: "Under Review", description: "The registrar is currently reviewing your application and submitted documents." },
-  { status: "Approved", description: "Your enrollment has been approved. Please proceed to the finance office for payment." },
-  { status: "Enrolled", description: "Payment confirmed. Your child is officially enrolled for the school year." },
-  { status: "Rejected", description: "Your application was not approved. Please contact the registrar's office for details." },
-  { status: "Waitlisted", description: "Your application is on the waitlist. You will be notified if a slot becomes available." },
+  { status: "Approved", description: "Your enrollment has been approved. Please wait for the registrar to finalize your enrollment." },
+  { status: "Enrolled", description: "Your child is officially enrolled for the school year." },
+  { status: "Not Approved", description: "Your application was not approved. Please contact the registrar's office for details." },
 ];
 
 export default async function ParentDashboard() {

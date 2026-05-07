@@ -149,7 +149,7 @@ export default async function AdminDashboard() {
     { label: "Under Review", count: underReviewCount, color: "text-indigo-600", bg: "bg-indigo-400" },
     { label: "Approved", count: approvedCount, color: "text-emerald-600", bg: "bg-emerald-400" },
     { label: "Enrolled", count: enrolledCount, color: "text-violet-600", bg: "bg-violet-400" },
-    { label: "Rejected", count: rejectedCount, color: "text-red-600", bg: "bg-red-400" },
+    { label: "Not Approved", count: rejectedCount, color: "text-red-600", bg: "bg-red-400" },
   ];
   const totalAll = statusBreakdown.reduce((s, x) => s + x.count, 0);
 
@@ -275,8 +275,8 @@ export default async function AdminDashboard() {
                       </div>
                       <div className="flex items-center gap-2 shrink-0">
                         <span className="text-xs text-muted-foreground">{formatDate(enrollment.createdAt)}</span>
-                        <span className={`rounded-full border px-2 py-0.5 text-xs font-medium capitalize ${statusClass}`}>
-                          {(enrollment.status || "").replace("_", " ")}
+                        <span className={`rounded-full border px-2 py-0.5 text-xs font-medium ${statusClass}`}>
+                          {{ pending: "Pending", under_review: "Under Review", approved: "Approved", rejected: "Not Approved", enrolled: "Enrolled" }[(enrollment.status || "") as string] ?? (enrollment.status || "").replace("_", " ")}
                         </span>
                       </div>
                     </div>

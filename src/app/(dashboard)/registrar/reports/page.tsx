@@ -53,7 +53,12 @@ const GRADE_LEVELS = [
   "Grade 7","Grade 8","Grade 9","Grade 10","Grade 11","Grade 12",
 ];
 
-const STATUS_OPTIONS = ["pending","under_review","approved","rejected","enrolled","waitlisted"];
+const STATUS_OPTIONS = ["pending","under_review","approved","rejected","enrolled"];
+
+const STATUS_LABELS: Record<string, string> = {
+  pending: "Pending", under_review: "Under Review", approved: "Approved",
+  rejected: "Not Approved", enrolled: "Enrolled", draft: "Draft",
+};
 
 const STATUS_COLORS: Record<string, string> = {
   pending: "bg-amber-100 text-amber-800 border-amber-200",
@@ -61,7 +66,6 @@ const STATUS_COLORS: Record<string, string> = {
   approved: "bg-emerald-100 text-emerald-800 border-emerald-200",
   rejected: "bg-red-100 text-red-800 border-red-200",
   enrolled: "bg-purple-100 text-purple-800 border-purple-200",
-  waitlisted: "bg-orange-100 text-orange-800 border-orange-200",
   draft: "bg-slate-100 text-slate-600 border-slate-200",
 };
 
@@ -530,7 +534,7 @@ export default function ReportsPage() {
                     onChange={(e) => setFilters((f) => ({ ...f, status: e.target.value }))}>
                     <option value="">All statuses</option>
                     {STATUS_OPTIONS.map((s) => (
-                      <option key={s} value={s}>{s.replace("_", " ")}</option>
+                      <option key={s} value={s}>{STATUS_LABELS[s] ?? s.replace("_", " ")}</option>
                     ))}
                   </select>
                 ) : (
@@ -636,7 +640,7 @@ export default function ReportsPage() {
                   <div className="flex flex-wrap gap-1.5">
                     {data.byStatus.map((s) => (
                       <span key={s.status} className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-medium ${STATUS_COLORS[s.status] || "bg-slate-100 text-slate-600"}`}>
-                        {s.status.replace("_", " ")} · {s.count}
+                        {STATUS_LABELS[s.status] ?? s.status.replace("_", " ")} · {s.count}
                       </span>
                     ))}
                   </div>
@@ -678,7 +682,7 @@ export default function ReportsPage() {
                           <td className="px-3 py-1.5">{r.section}</td>
                           <td className="px-3 py-1.5">
                             <span className={`inline-flex items-center rounded-full border px-1.5 py-0.5 text-[9px] font-medium ${STATUS_COLORS[r.status] || "bg-slate-100 text-slate-600"}`}>
-                              {r.status.replace("_", " ")}
+                              {STATUS_LABELS[r.status] ?? r.status.replace("_", " ")}
                             </span>
                           </td>
                           <td className="px-3 py-1.5 text-muted-foreground">{r.schoolYear}</td>

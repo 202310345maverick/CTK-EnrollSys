@@ -102,9 +102,8 @@ export default function EnrollmentsPage() {
             { value: "pending", label: "Pending" },
             { value: "under_review", label: "Under Review" },
             { value: "approved", label: "Approved" },
-            { value: "rejected", label: "Rejected" },
+            { value: "rejected", label: "Not Approved" },
             { value: "enrolled", label: "Enrolled" },
-            { value: "draft", label: "Draft" },
           ]}
           className="w-36"
         />
@@ -208,8 +207,8 @@ export default function EnrollmentsPage() {
                       )}
                     </TableCell>
                     <TableCell>
-                      <Badge variant={getStatusVariant(enrollment.status)} className="text-xs capitalize">
-                        {enrollment.status.replace("_", " ")}
+                      <Badge variant={getStatusVariant(enrollment.status)} className="text-xs">
+                        {({"pending":"Pending","under_review":"Under Review","approved":"Approved","rejected":"Not Approved","enrolled":"Enrolled"} as Record<string,string>)[enrollment.status] ?? (enrollment.status as string).replace("_", " ")}
                       </Badge>
                     </TableCell>
                     <TableCell className="text-xs text-muted-foreground">{formatDate(enrollment.createdAt)}</TableCell>

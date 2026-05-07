@@ -19,7 +19,14 @@ const STATUS_COLORS: Record<string, string> = {
   approved: "bg-emerald-100 text-emerald-800 border border-emerald-200",
   rejected: "bg-red-100 text-red-800 border border-red-200",
   enrolled: "bg-purple-100 text-purple-800 border border-purple-200",
-  waitlisted: "bg-slate-100 text-slate-700 border border-slate-200",
+};
+
+const STATUS_LABELS: Record<string, string> = {
+  pending: "Pending",
+  under_review: "Under Review",
+  approved: "Approved",
+  rejected: "Not Approved",
+  enrolled: "Enrolled",
 };
 
 const DOC_STATUS_COLORS: Record<string, string> = {
@@ -203,7 +210,7 @@ export default function EnrollmentDetailPage() {
   }
 
   const student = enrollment.studentId;
-  const canReview = enrollment.status === "pending" || enrollment.status === "under_review";
+  const canReview = enrollment.status === "pending" || enrollment.status === "under_review" || enrollment.status === "approved";
   const statusClass = STATUS_COLORS[enrollment.status] || STATUS_COLORS.pending;
 
   return (
@@ -268,8 +275,8 @@ export default function EnrollmentDetailPage() {
           <h1 className="text-xl font-bold text-slate-900">Enrollment Review</h1>
           <p className="font-mono text-xs text-muted-foreground">{enrollment.enrollmentNumber}</p>
         </div>
-        <span className={`rounded-full px-3 py-1 text-xs font-semibold capitalize ${statusClass}`}>
-          {enrollment.status.replace("_", " ")}
+        <span className={`rounded-full px-3 py-1 text-xs font-semibold ${statusClass}`}>
+          {STATUS_LABELS[enrollment.status] ?? enrollment.status.replace("_", " ")}
         </span>
       </div>
 
@@ -550,7 +557,7 @@ export default function EnrollmentDetailPage() {
                     disabled={saving}
                   >
                     {saving ? <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" /> : <XCircle className="mr-1 h-3.5 w-3.5" />}
-                    Reject
+                    Not Approved
                   </Button>
                   <Button
                     size="sm"
@@ -618,7 +625,7 @@ export default function EnrollmentDetailPage() {
                     <div key={i} className="flex gap-2.5 text-xs">
                       <div className="mt-0.5 h-2 w-2 shrink-0 rounded-full bg-primary" />
                       <div>
-                        <p className="font-semibold capitalize">{h.status.replace("_", " ")}</p>
+                        <p className="font-semibold">{STATUS_LABELS[h.status] ?? h.status.replace("_", " ")}</p>
                         <p className="text-muted-foreground">{formatDate(h.changedAt)}</p>
                         {h.changedBy && (
                           <p className="text-[10px] text-muted-foreground/70">

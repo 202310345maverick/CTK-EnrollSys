@@ -77,12 +77,7 @@ const statusConfig: Record<string, { icon: React.ReactNode; color: string; label
   rejected: { 
     icon: <XCircle className="h-4 w-4" />, 
     color: "bg-red-100 text-red-800 border-red-200", 
-    label: "Rejected" 
-  },
-  waitlisted: { 
-    icon: <Clock className="h-4 w-4" />, 
-    color: "bg-orange-100 text-orange-800 border-orange-200", 
-    label: "Waitlisted" 
+    label: "Not Approved" 
   },
 };
 
@@ -219,7 +214,7 @@ export default function ParentEnrollmentsPage() {
             { value: "under_review", label: "Under Review" },
             { value: "approved", label: "Approved" },
             { value: "enrolled", label: "Enrolled" },
-            { value: "rejected", label: "Rejected" },
+            { value: "rejected", label: "Not Approved" },
           ]}
           className="w-40"
         />

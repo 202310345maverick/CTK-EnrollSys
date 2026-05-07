@@ -57,7 +57,7 @@ export default async function RegistrarDashboard() {
     { label: "Pending", value: pendingCount, icon: Clock, color: "text-amber-600", border: "border-l-amber-500" },
     { label: "Under Review", value: underReviewCount, icon: ClipboardList, color: "text-blue-600", border: "border-l-blue-500" },
     { label: "Approved", value: approvedCount, icon: CheckCircle, color: "text-emerald-600", border: "border-l-emerald-500" },
-    { label: "Rejected", value: rejectedCount, icon: XCircle, color: "text-red-600", border: "border-l-red-500" },
+    { label: "Not Approved", value: rejectedCount, icon: XCircle, color: "text-red-600", border: "border-l-red-500" },
     { label: "Enrolled", value: enrolledCount, icon: CheckCircle, color: "text-purple-600", border: "border-l-purple-500" },
     { label: "Total Students", value: totalStudents, icon: Users, color: "text-slate-600", border: "border-l-slate-400" },
     { label: "Submitted Today", value: submittedToday, icon: TrendingUp, color: "text-cyan-600", border: "border-l-cyan-500" },
@@ -148,8 +148,8 @@ export default async function RegistrarDashboard() {
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
                       <span className="text-xs text-muted-foreground">{formatDate(enrollment.createdAt)}</span>
-                      <span className={`rounded-full border px-2 py-0.5 text-xs font-medium capitalize ${statusClass}`}>
-                        {enrollment.status.replace("_", " ")}
+                      <span className={`rounded-full border px-2 py-0.5 text-xs font-medium ${statusClass}`}>
+                        {{ pending: "Pending", under_review: "Under Review", approved: "Approved", rejected: "Not Approved", enrolled: "Enrolled" }[enrollment.status as string] ?? enrollment.status.replace("_", " ")}
                       </span>
                       <Link href={`/registrar/enrollments/${enrollment._id}`}>
                         <Button size="sm" className="h-6 px-2 text-xs bg-[#b4040d] hover:bg-[#b4040d]/90">
