@@ -5,8 +5,10 @@ import { ArrowLeft, CalendarClock, CheckCircle2, CircleAlert, FileText } from "l
 import { authOptions } from "@/lib/auth/options";
 import dbConnect from "@/lib/db/connection";
 import Enrollment from "@/models/Enrollment";
-import "@/models/Document"; // ensure Document model is registered for populate
-import "@/models/User";    // ensure User model is registered for statusHistory populate
+import "@/models/Document";    // ensure Document model is registered for populate
+import "@/models/User";       // ensure User model is registered for statusHistory populate
+import "@/models/Student";    // ensure Student model is registered for studentId populate
+import "@/models/SchoolYear"; // ensure SchoolYear model is registered for schoolYearId populate
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
