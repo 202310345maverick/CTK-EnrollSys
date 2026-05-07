@@ -1,99 +1,200 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users, ClipboardList, CreditCard, TrendingUp, UserCheck, Clock } from "lucide-react";
-import { PageHeader } from "@/components/shared/page-header";
-import { StatsGrid } from "@/components/shared/stats-grid";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth/options";
+import dbConnect from "@/lib/db/connection";
+import User from "@/models/User";
+import Student from "@/models/Student";
+import Enrollment from "@/models/Enrollment";
+import Payment from "@/models/Payment";
+import "@/models/Student";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Users, ClipboardList, CreditCard, UserCog } from "lucide-react";
+import { formatCurrency } from "@/lib/utils";
 
-export default function AdminDashboard() {
+async function getDashboardData() {
+  await dbConnect();
+
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+
+  const [
+    totalUsers,
+    totalStudents,
+    totalEnrollments,
+    pendingEnrollments,
+    approvedToday,
+    paymentAgg,
+    recentEnrollments,
+    recentPayments,
+  ] = await Promise.all([
+    User.countDocuments(),
+    Student.countDocuments(),
+    Enrollment.countDocuments({ isDraft: { $ne: true } }),
+    Enrollment.countDocuments({ status: "pending", isDraft: { $ne: true } }),
+    Enrollment.countDocuments({
+      status: { $in: ["approved", "enrolled"] },
+      updatedAt: { $gte: todayStart },
+    }),
+    Payment.aggregate([
+      { $match: { isVoided: false } },
+      { $group: { _id: null, total: { $sum: "$amount" } } },
+    ]),
+    Enrollment.find({ isDraft: { $ne: true } })
+      .sort({ createdAt: -1 })
+      .limit(5)
+      .populate("studentId", "personalInfo")
+      .lean(),
+    Payment.find({ isVoided: false })
+      .sort({ createdAt: -1 })
+      .limit(5)
+      .populate("studentId", "personalInfo")
+      .lean(),
+  ]);
+
+  const totalPayments = paymentAgg[0]?.total || 0;
+
+  return {
+    totalUsers,
+    totalStudents,
+    totalEnrollments,
+    pendingEnrollments,
+    approvedToday,
+    totalPayments,
+    recentEnrollments,
+    recentPayments,
+  };
+}
+
+const formatDate = (date: Date) =>
+  new Date(date).toLocaleDateString("en-PH", { month: "short", day: "numeric", year: "numeric" });
+
+const statusColors: Record<string, string> = {
+  pending: "bg-amber-100 text-amber-800 border-amber-200",
+  under_review: "bg-blue-100 text-blue-800 border-blue-200",
+  approved: "bg-emerald-100 text-emerald-800 border-emerald-200",
+  rejected: "bg-red-100 text-red-800 border-red-200",
+  enrolled: "bg-purple-100 text-purple-800 border-purple-200",
+  draft: "bg-slate-100 text-slate-600 border-slate-200",
+};
+
+export default async function AdminDashboard() {
+  await getServerSession(authOptions);
+  const {
+    totalUsers,
+    totalStudents,
+    pendingEnrollments,
+    approvedToday,
+    totalPayments,
+    recentEnrollments,
+    recentPayments,
+  } = await getDashboardData();
+
   const stats = [
-    {
-      title: "Total Students",
-      value: "1,234",
-      change: "+12%",
-      icon: Users,
-      color: "text-blue-600",
-      bg: "bg-blue-100",
-    },
-    {
-      title: "Pending Enrollments",
-      value: "45",
-      change: "+5",
-      icon: Clock,
-      color: "text-yellow-600",
-      bg: "bg-yellow-100",
-    },
-    {
-      title: "Approved Today",
-      value: "12",
-      change: "+8",
-      icon: UserCheck,
-      color: "text-green-600",
-      bg: "bg-green-100",
-    },
-    {
-      title: "Total Payments",
-      value: "₱2.5M",
-      change: "+18%",
-      icon: CreditCard,
-      color: "text-purple-600",
-      bg: "bg-purple-100",
-    },
+    { label: "Total Users", value: totalUsers, icon: UserCog, color: "text-blue-600", border: "border-l-blue-500" },
+    { label: "Total Students", value: totalStudents, icon: Users, color: "text-emerald-600", border: "border-l-emerald-500" },
+    { label: "Pending Enrollments", value: pendingEnrollments, icon: ClipboardList, color: "text-amber-600", border: "border-l-amber-500" },
+    { label: "Total Collections", value: formatCurrency(totalPayments), icon: CreditCard, color: "text-purple-600", border: "border-l-purple-500" },
   ];
 
   return (
-    <div className="space-y-6">
-      <PageHeader title="Admin Dashboard" description="System overview and management" />
+    <div className="space-y-4 pb-8">
+      <div>
+        <h1 className="text-xl font-bold text-gray-900">Admin Dashboard</h1>
+        <p className="text-xs text-slate-500">System overview · {approvedToday} approved today</p>
+      </div>
 
-      <StatsGrid
-        items={stats.map((stat) => ({
-          title: stat.title,
-          value: stat.value,
-          icon: stat.icon,
-          change: `${stat.change} from last month`,
-          iconClassName: stat.color,
-          iconBgClassName: stat.bg,
-        }))}
-      />
+      {/* Stats */}
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        {stats.map((s) => {
+          const Icon = s.icon;
+          return (
+            <Card key={s.label} className={`border-l-4 ${s.border}`}>
+              <CardContent className="flex items-center justify-between p-3">
+                <div>
+                  <p className="text-xs text-gray-500">{s.label}</p>
+                  <p className={`text-2xl font-bold ${s.color}`}>{s.value}</p>
+                </div>
+                <Icon className={`h-5 w-5 ${s.color}`} />
+              </CardContent>
+            </Card>
+          );
+        })}
+      </div>
 
       {/* Recent Activity */}
       <div className="grid gap-4 md:grid-cols-2">
-        <Card className="ctk-panel">
-          <CardHeader>
-            <CardTitle className="ctk-section-title">Recent Enrollments</CardTitle>
-            <CardDescription>Latest enrollment applications</CardDescription>
+        {/* Recent Enrollments */}
+        <Card>
+          <CardHeader className="pb-2 pt-4 px-4">
+            <CardTitle className="text-sm font-semibold flex items-center gap-1.5">
+              <ClipboardList className="h-4 w-4 text-primary" />
+              Recent Enrollments
+            </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {[1, 2, 3, 4, 5].map((i) => (
-                <div key={i} className="flex items-center justify-between py-2 border-b last:border-0">
-                  <div>
-                    <p className="font-medium">Maria Santos Dela Cruz</p>
-                    <p className="text-sm text-muted-foreground">Grade 3 - New Student</p>
-                  </div>
-                    <Badge variant="pending">Pending</Badge>
-                  </div>
-                ))}
+          <CardContent className="px-4 pb-4">
+            {recentEnrollments.length === 0 ? (
+              <p className="py-6 text-center text-xs text-muted-foreground">No enrollments yet.</p>
+            ) : (
+              <div className="space-y-1.5">
+                {recentEnrollments.map((enrollment: any) => {
+                  const student = enrollment.studentId;
+                  const name = student?.personalInfo
+                    ? `${student.personalInfo.firstName} ${student.personalInfo.lastName}`
+                    : "Unknown Student";
+                  const statusClass = statusColors[enrollment.status] || "bg-slate-100 text-slate-800";
+                  return (
+                    <div key={enrollment._id?.toString()} className="flex items-center gap-3 rounded-lg border bg-slate-50/50 px-3 py-2">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-medium truncate">{name}</p>
+                        <p className="text-xs text-muted-foreground">{enrollment.gradeLevel || "—"}</p>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <span className="text-xs text-muted-foreground">{formatDate(enrollment.createdAt)}</span>
+                        <span className={`rounded-full border px-2 py-0.5 text-xs font-medium capitalize ${statusClass}`}>
+                          {(enrollment.status || "").replace("_", " ")}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
-            </CardContent>
-          </Card>
+            )}
+          </CardContent>
+        </Card>
 
-        <Card className="ctk-panel">
-          <CardHeader>
-            <CardTitle className="ctk-section-title">Recent Payments</CardTitle>
-            <CardDescription>Latest payment transactions</CardDescription>
+        {/* Recent Payments */}
+        <Card>
+          <CardHeader className="pb-2 pt-4 px-4">
+            <CardTitle className="text-sm font-semibold flex items-center gap-1.5">
+              <CreditCard className="h-4 w-4 text-primary" />
+              Recent Payments
+            </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {[1, 2, 3, 4, 5].map((i) => (
-                <div key={i} className="flex items-center justify-between py-2 border-b last:border-0">
-                  <div>
-                    <p className="font-medium">Juan Dela Cruz Jr.</p>
-                    <p className="text-sm text-muted-foreground">First Quarter Payment</p>
-                  </div>
-                  <span className="font-medium text-green-600">₱6,250</span>
-                </div>
-              ))}
-            </div>
+          <CardContent className="px-4 pb-4">
+            {recentPayments.length === 0 ? (
+              <p className="py-6 text-center text-xs text-muted-foreground">No payments yet.</p>
+            ) : (
+              <div className="space-y-1.5">
+                {recentPayments.map((payment: any) => {
+                  const student = payment.studentId;
+                  const name = student?.personalInfo
+                    ? `${student.personalInfo.firstName} ${student.personalInfo.lastName}`
+                    : "Unknown Student";
+                  return (
+                    <div key={payment._id?.toString()} className="flex items-center gap-3 rounded-lg border bg-slate-50/50 px-3 py-2">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-medium truncate">{name}</p>
+                        <p className="text-xs text-muted-foreground capitalize">{(payment.paymentType || "").replace("_", " ")}</p>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <span className="text-xs text-muted-foreground">{formatDate(payment.paymentDate || payment.createdAt)}</span>
+                        <span className="text-xs font-semibold text-emerald-600">{formatCurrency(payment.amount || 0)}</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>

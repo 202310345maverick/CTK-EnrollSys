@@ -1,109 +1,358 @@
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth/options";
-import dbConnect from "@/lib/db/connection";
-import SchoolYear from "@/models/SchoolYear";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+"use client";
+
+import { useState, useEffect, useCallback } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Plus, Calendar, Settings } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Plus, Calendar, Pencil, Trash2, X, ToggleLeft, ToggleRight } from "lucide-react";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
-async function getSchoolYears() {
-  await dbConnect();
-  const schoolYears = await SchoolYear.find().sort({ startDate: -1 }).lean();
-  return schoolYears;
-}
+type SchoolYear = {
+  _id: string;
+  name: string;
+  startDate: string;
+  endDate: string;
+  enrollmentPeriod: { start: string; end: string };
+  gradeLevels: string[];
+  status: "upcoming" | "enrollment" | "ongoing" | "completed";
+  isActive: boolean;
+};
 
-export default async function SchoolYearsPage() {
-  const session = await getServerSession(authOptions);
-  const schoolYears = await getSchoolYears();
+const labelCls = "block text-xs font-medium text-gray-700";
+const inputCls = "mt-1 h-8 text-sm w-full border border-gray-300 rounded-md px-2 focus:outline-none focus:ring-1 focus:ring-primary";
+const selectCls = "mt-1 h-8 text-sm w-full border border-gray-300 rounded-md px-2 focus:outline-none focus:ring-1 focus:ring-primary bg-white";
 
-  const formatDate = (date: Date) => {
-    return new Date(date).toLocaleDateString("en-PH", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    });
+const EMPTY_FORM = {
+  name: "",
+  startDate: "",
+  endDate: "",
+  enrollmentStart: "",
+  enrollmentEnd: "",
+  status: "upcoming" as SchoolYear["status"],
+  isActive: false,
+};
+
+const fmt = (d: string) => d ? new Date(d).toLocaleDateString("en-PH", { month: "short", day: "numeric", year: "numeric" }) : "—";
+
+const statusVariant = (s: string) => {
+  switch (s) {
+    case "enrollment": return "info";
+    case "ongoing": return "success";
+    case "completed": return "neutral";
+    default: return "warning";
+  }
+};
+
+export default function SchoolYearsPage() {
+  const [schoolYears, setSchoolYears] = useState<SchoolYear[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const [showCreate, setShowCreate] = useState(false);
+  const [form, setForm] = useState({ ...EMPTY_FORM });
+  const [formError, setFormError] = useState("");
+  const [formLoading, setFormLoading] = useState(false);
+
+  const [showEdit, setShowEdit] = useState(false);
+  const [editId, setEditId] = useState("");
+  const [editForm, setEditForm] = useState({ ...EMPTY_FORM });
+  const [editError, setEditError] = useState("");
+  const [editLoading, setEditLoading] = useState(false);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/school-years");
+      const data = await res.json();
+      setSchoolYears(data.schoolYears || []);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { load(); }, [load]);
+
+  const handleCreate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setFormLoading(true);
+    setFormError("");
+    try {
+      const res = await fetch("/api/school-years", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: form.name,
+          startDate: form.startDate,
+          endDate: form.endDate,
+          enrollmentPeriod: { start: form.enrollmentStart, end: form.enrollmentEnd },
+          status: form.status,
+          isActive: form.isActive,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setFormError(data.error || "Failed to create"); return; }
+      setShowCreate(false);
+      setForm({ ...EMPTY_FORM });
+      await load();
+    } catch { setFormError("Network error"); }
+    finally { setFormLoading(false); }
   };
 
-  const getStatusBadge = (sy: any) => {
-    if (sy.isCurrent) return { label: "Current", class: "bg-green-100 text-green-800" };
-    if (sy.enrollmentOpen) return { label: "Enrollment Open", class: "bg-blue-100 text-blue-800" };
-    return { label: "Closed", class: "bg-gray-100 text-gray-800" };
+  const openEdit = (sy: SchoolYear) => {
+    setEditId(sy._id);
+    setEditForm({
+      name: sy.name,
+      startDate: sy.startDate ? sy.startDate.slice(0, 10) : "",
+      endDate: sy.endDate ? sy.endDate.slice(0, 10) : "",
+      enrollmentStart: sy.enrollmentPeriod?.start ? sy.enrollmentPeriod.start.slice(0, 10) : "",
+      enrollmentEnd: sy.enrollmentPeriod?.end ? sy.enrollmentPeriod.end.slice(0, 10) : "",
+      status: sy.status,
+      isActive: sy.isActive,
+    });
+    setEditError("");
+    setShowEdit(true);
+  };
+
+  const handleEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setEditLoading(true);
+    setEditError("");
+    try {
+      const res = await fetch(`/api/school-years/${editId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: editForm.name,
+          startDate: editForm.startDate,
+          endDate: editForm.endDate,
+          enrollmentPeriod: { start: editForm.enrollmentStart, end: editForm.enrollmentEnd },
+          status: editForm.status,
+          isActive: editForm.isActive,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setEditError(data.error || "Failed to update"); return; }
+      setShowEdit(false);
+      await load();
+    } catch { setEditError("Network error"); }
+    finally { setEditLoading(false); }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm("Delete this school year?")) return;
+    await fetch(`/api/school-years/${id}`, { method: "DELETE" });
+    await load();
+  };
+
+  const handleToggleEnrollment = async (sy: SchoolYear) => {
+    const newStatus = sy.status === "enrollment" ? "ongoing" : "enrollment";
+    await fetch(`/api/school-years/${sy._id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: newStatus }),
+    });
+    await load();
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 pb-8">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight">School Years</h2>
-          <p className="text-muted-foreground">
-            Configure academic years and enrollment periods
-          </p>
+          <h1 className="text-xl font-bold text-gray-900">School Years</h1>
+          <p className="text-xs text-slate-500">Configure academic years and enrollment periods</p>
         </div>
-        <Button>
-          <Plus className="mr-2 h-4 w-4" />
+        <Button className="ctk-danger-button h-8 text-xs" onClick={() => { setShowCreate(true); setForm({ ...EMPTY_FORM }); setFormError(""); }}>
+          <Plus className="mr-1.5 h-3.5 w-3.5" />
           Add School Year
         </Button>
       </div>
 
-      {schoolYears.length === 0 ? (
-        <Card>
-          <CardContent className="py-12 text-center">
-            <Calendar className="mx-auto h-12 w-12 text-muted-foreground" />
-            <h3 className="mt-4 text-lg font-semibold">No school years configured</h3>
-            <p className="text-muted-foreground">Create a school year to start enrollment</p>
-            <Button className="mt-4">
-              <Plus className="mr-2 h-4 w-4" />
-              Create School Year
-            </Button>
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {schoolYears.map((sy: any) => {
-            const status = getStatusBadge(sy);
-            return (
-              <Card key={sy._id} className={sy.isCurrent ? "border-primary" : ""}>
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-lg">{sy.name}</CardTitle>
-                    <span className={`px-2 py-1 text-xs rounded-full ${status.class}`}>
-                      {status.label}
-                    </span>
-                  </div>
-                  <CardDescription>
-                    {formatDate(sy.startDate)} - {formatDate(sy.endDate)}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Enrollment Period</span>
-                    </div>
-                    <div className="text-sm">
-                      {formatDate(sy.enrollmentStartDate)} - {formatDate(sy.enrollmentEndDate)}
-                    </div>
-                    
-                    <div className="flex items-center gap-2 pt-2">
-                      <span className={`px-2 py-1 text-xs rounded ${
-                        sy.enrollmentOpen ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800"
-                      }`}>
-                        {sy.enrollmentOpen ? "Open" : "Closed"}
-                      </span>
-                    </div>
+      <Card>
+        <CardHeader className="pb-2 pt-4 px-4">
+          <CardTitle className="text-sm font-semibold flex items-center gap-1.5">
+            <Calendar className="h-4 w-4 text-primary" />
+            All School Years
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="px-4 pb-4">
+          {loading ? (
+            <p className="text-center text-xs text-muted-foreground py-8">Loading...</p>
+          ) : schoolYears.length === 0 ? (
+            <p className="text-center text-xs text-muted-foreground py-8">No school years configured.</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-muted/50">
+                    <TableHead className="text-xs">Name</TableHead>
+                    <TableHead className="text-xs">School Year Period</TableHead>
+                    <TableHead className="text-xs">Enrollment Period</TableHead>
+                    <TableHead className="text-xs">Status</TableHead>
+                    <TableHead className="text-xs">Active</TableHead>
+                    <TableHead className="text-xs text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {schoolYears.map((sy) => (
+                    <TableRow key={sy._id}>
+                      <TableCell className="text-xs font-medium">{sy.name}</TableCell>
+                      <TableCell className="text-xs text-muted-foreground">{fmt(sy.startDate)} – {fmt(sy.endDate)}</TableCell>
+                      <TableCell className="text-xs text-muted-foreground">{fmt(sy.enrollmentPeriod?.start)} – {fmt(sy.enrollmentPeriod?.end)}</TableCell>
+                      <TableCell><Badge variant={statusVariant(sy.status) as any}>{sy.status}</Badge></TableCell>
+                      <TableCell><Badge variant={sy.isActive ? "success" : "neutral"}>{sy.isActive ? "Yes" : "No"}</Badge></TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex items-center justify-end gap-1">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className={`h-7 text-xs px-2 ${sy.status === "enrollment" ? "text-amber-600 border-amber-200 hover:bg-amber-50" : "text-blue-600 border-blue-200 hover:bg-blue-50"}`}
+                            onClick={() => handleToggleEnrollment(sy)}
+                            title={sy.status === "enrollment" ? "Close Enrollment" : "Open Enrollment"}
+                          >
+                            {sy.status === "enrollment" ? <ToggleRight className="h-3.5 w-3.5 mr-1" /> : <ToggleLeft className="h-3.5 w-3.5 mr-1" />}
+                            {sy.status === "enrollment" ? "Close" : "Open"}
+                          </Button>
+                          <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => openEdit(sy)}>
+                            <Pencil className="h-3.5 w-3.5" />
+                          </Button>
+                          <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-red-500 hover:text-red-700" onClick={() => handleDelete(sy._id)}>
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
-                    <div className="flex gap-2 pt-4">
-                      <Button variant="outline" size="sm" className="flex-1">
-                        <Settings className="mr-2 h-4 w-4" />
-                        Configure
-                      </Button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
+      {/* Create Modal */}
+      {showCreate && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-lg p-5">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-sm font-semibold">Create School Year</h2>
+              <button onClick={() => setShowCreate(false)}><X className="h-4 w-4 text-muted-foreground" /></button>
+            </div>
+            <form onSubmit={handleCreate} className="space-y-3">
+              <div>
+                <label className={labelCls}>Name (e.g. 2024-2025)</label>
+                <input required className={inputCls} value={form.name} onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))} />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className={labelCls}>Start Date</label>
+                  <input required type="date" className={inputCls} value={form.startDate} onChange={(e) => setForm((p) => ({ ...p, startDate: e.target.value }))} />
+                </div>
+                <div>
+                  <label className={labelCls}>End Date</label>
+                  <input required type="date" className={inputCls} value={form.endDate} onChange={(e) => setForm((p) => ({ ...p, endDate: e.target.value }))} />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className={labelCls}>Enrollment Start</label>
+                  <input required type="date" className={inputCls} value={form.enrollmentStart} onChange={(e) => setForm((p) => ({ ...p, enrollmentStart: e.target.value }))} />
+                </div>
+                <div>
+                  <label className={labelCls}>Enrollment End</label>
+                  <input required type="date" className={inputCls} value={form.enrollmentEnd} onChange={(e) => setForm((p) => ({ ...p, enrollmentEnd: e.target.value }))} />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className={labelCls}>Status</label>
+                  <select className={selectCls} value={form.status} onChange={(e) => setForm((p) => ({ ...p, status: e.target.value as any }))}>
+                    <option value="upcoming">Upcoming</option>
+                    <option value="enrollment">Enrollment</option>
+                    <option value="ongoing">Ongoing</option>
+                    <option value="completed">Completed</option>
+                  </select>
+                </div>
+                <div className="flex items-end pb-1">
+                  <label className="flex items-center gap-2 text-xs text-gray-700 cursor-pointer">
+                    <input type="checkbox" checked={form.isActive} onChange={(e) => setForm((p) => ({ ...p, isActive: e.target.checked }))} className="h-4 w-4 rounded border-gray-300" />
+                    Set as Active Year
+                  </label>
+                </div>
+              </div>
+              {formError && <p className="mt-0.5 text-xs text-red-500">{formError}</p>}
+              <div className="flex justify-end gap-2 pt-1">
+                <Button type="button" variant="outline" className="h-8 text-xs" onClick={() => setShowCreate(false)}>Cancel</Button>
+                <Button type="submit" className="ctk-danger-button h-8 text-xs" disabled={formLoading}>
+                  {formLoading ? "Creating..." : "Create"}
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Modal */}
+      {showEdit && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-lg p-5">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-sm font-semibold">Edit School Year</h2>
+              <button onClick={() => setShowEdit(false)}><X className="h-4 w-4 text-muted-foreground" /></button>
+            </div>
+            <form onSubmit={handleEdit} className="space-y-3">
+              <div>
+                <label className={labelCls}>Name</label>
+                <input required className={inputCls} value={editForm.name} onChange={(e) => setEditForm((p) => ({ ...p, name: e.target.value }))} />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className={labelCls}>Start Date</label>
+                  <input required type="date" className={inputCls} value={editForm.startDate} onChange={(e) => setEditForm((p) => ({ ...p, startDate: e.target.value }))} />
+                </div>
+                <div>
+                  <label className={labelCls}>End Date</label>
+                  <input required type="date" className={inputCls} value={editForm.endDate} onChange={(e) => setEditForm((p) => ({ ...p, endDate: e.target.value }))} />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className={labelCls}>Enrollment Start</label>
+                  <input required type="date" className={inputCls} value={editForm.enrollmentStart} onChange={(e) => setEditForm((p) => ({ ...p, enrollmentStart: e.target.value }))} />
+                </div>
+                <div>
+                  <label className={labelCls}>Enrollment End</label>
+                  <input required type="date" className={inputCls} value={editForm.enrollmentEnd} onChange={(e) => setEditForm((p) => ({ ...p, enrollmentEnd: e.target.value }))} />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className={labelCls}>Status</label>
+                  <select className={selectCls} value={editForm.status} onChange={(e) => setEditForm((p) => ({ ...p, status: e.target.value as any }))}>
+                    <option value="upcoming">Upcoming</option>
+                    <option value="enrollment">Enrollment</option>
+                    <option value="ongoing">Ongoing</option>
+                    <option value="completed">Completed</option>
+                  </select>
+                </div>
+                <div className="flex items-end pb-1">
+                  <label className="flex items-center gap-2 text-xs text-gray-700 cursor-pointer">
+                    <input type="checkbox" checked={editForm.isActive} onChange={(e) => setEditForm((p) => ({ ...p, isActive: e.target.checked }))} className="h-4 w-4 rounded border-gray-300" />
+                    Set as Active Year
+                  </label>
+                </div>
+              </div>
+              {editError && <p className="mt-0.5 text-xs text-red-500">{editError}</p>}
+              <div className="flex justify-end gap-2 pt-1">
+                <Button type="button" variant="outline" className="h-8 text-xs" onClick={() => setShowEdit(false)}>Cancel</Button>
+                <Button type="submit" className="ctk-danger-button h-8 text-xs" disabled={editLoading}>
+                  {editLoading ? "Saving..." : "Save Changes"}
+                </Button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
     </div>
   );
 }
+
+

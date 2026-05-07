@@ -296,7 +296,13 @@ export async function POST(request: NextRequest) {
           end: new Date(`${currentYear + 1}-12-31`),
         },
         isActive: true,
+        status: "enrollment",
       });
+    }
+
+    // ADM-007: Enforce enrollment period — only allow if status is "enrollment"
+    if (activeSchoolYear.status && activeSchoolYear.status !== "enrollment") {
+      return NextResponse.json({ error: "Enrollment is currently closed." }, { status: 400 });
     }
 
     let student =

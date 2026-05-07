@@ -14,6 +14,8 @@ import {
   ClipboardList,
   CircleDollarSign,
   ChevronDown,
+  Calendar,
+  Settings,
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -29,6 +31,10 @@ const adminNavItems = [
   { href: "/admin/students", label: "Student Records", icon: Users },
   { href: "/admin/reports", label: "Reports", icon: FileText },
   { href: "/admin/users", label: "User Management", icon: UserCog },
+  { href: "/admin/school-years", label: "School Years", icon: Calendar },
+  { href: "/admin/fee-structures", label: "Fee Structures", icon: CreditCard },
+  { href: "/admin/audit-logs", label: "Audit Logs", icon: ClipboardList },
+  { href: "/admin/settings", label: "Settings", icon: Settings },
 ];
 
 const registrarNavItems = [

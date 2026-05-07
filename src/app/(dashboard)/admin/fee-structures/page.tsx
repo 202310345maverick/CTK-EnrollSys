@@ -1,139 +1,339 @@
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth/options";
-import dbConnect from "@/lib/db/connection";
-import FeeStructure from "@/models/FeeStructure";
-import SchoolYear from "@/models/SchoolYear";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+"use client";
+
+import { useState, useEffect, useCallback } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Plus, CreditCard, Settings } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Plus, CreditCard, Pencil, Trash2, X, PlusCircle, MinusCircle } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 
-async function getFeeStructures() {
-  await dbConnect();
-  const feeStructures = await FeeStructure.find()
-    .populate("schoolYear", "name")
-    .sort({ createdAt: -1 })
-    .lean();
-  return feeStructures;
-}
+type FeeItem = { description: string; amount: number; isRequired: boolean };
+type SchoolYearOption = { _id: string; name: string };
+type FeeStructure = {
+  _id: string;
+  gradeLevel: string;
+  fees: FeeItem[];
+  totalAmount: number;
+  isActive: boolean;
+  schoolYearId: { _id: string; name: string } | null;
+  paymentOptions: { name: string; installments: number; discount?: number }[];
+};
 
-export default async function FeeStructuresPage() {
-  const session = await getServerSession(authOptions);
-  const feeStructures = await getFeeStructures();
+const GRADE_LEVELS = [
+  "Nursery","Kinder 1","Kinder 2",
+  "Grade 1","Grade 2","Grade 3","Grade 4","Grade 5","Grade 6",
+];
 
-  const gradeLevels = [
-    "Kinder 1", "Kinder 2",
-    "Grade 1", "Grade 2", "Grade 3", "Grade 4", "Grade 5", "Grade 6",
-    "Grade 7", "Grade 8", "Grade 9", "Grade 10"
-  ];
+const labelCls = "block text-xs font-medium text-gray-700";
+const inputCls = "mt-1 h-8 text-sm w-full border border-gray-300 rounded-md px-2 focus:outline-none focus:ring-1 focus:ring-primary";
+const selectCls = "mt-1 h-8 text-sm w-full border border-gray-300 rounded-md px-2 focus:outline-none focus:ring-1 focus:ring-primary bg-white";
+
+const emptyFee = (): FeeItem => ({ description: "", amount: 0, isRequired: true });
+const emptyForm = () => ({
+  schoolYearId: "",
+  gradeLevel: "Nursery",
+  isActive: true,
+  fees: [emptyFee()],
+});
+
+export default function FeeStructuresPage() {
+  const [feeStructures, setFeeStructures] = useState<FeeStructure[]>([]);
+  const [schoolYears, setSchoolYears] = useState<SchoolYearOption[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const [showCreate, setShowCreate] = useState(false);
+  const [form, setForm] = useState(emptyForm());
+  const [formError, setFormError] = useState("");
+  const [formLoading, setFormLoading] = useState(false);
+
+  const [showEdit, setShowEdit] = useState(false);
+  const [editId, setEditId] = useState("");
+  const [editForm, setEditForm] = useState(emptyForm());
+  const [editError, setEditError] = useState("");
+  const [editLoading, setEditLoading] = useState(false);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const [fsRes, syRes] = await Promise.all([
+        fetch("/api/fee-structures"),
+        fetch("/api/school-years"),
+      ]);
+      const fsData = await fsRes.json();
+      const syData = await syRes.json();
+      setFeeStructures(fsData.feeStructures || []);
+      setSchoolYears(syData.schoolYears || []);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { load(); }, [load]);
+
+  const calcTotal = (fees: FeeItem[]) => fees.reduce((s, f) => s + (Number(f.amount) || 0), 0);
+
+  const updateFee = (arr: FeeItem[], idx: number, field: keyof FeeItem, val: any): FeeItem[] =>
+    arr.map((f, i) => i === idx ? { ...f, [field]: field === "amount" ? Number(val) : val } : f);
+
+  const handleCreate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setFormLoading(true);
+    setFormError("");
+    try {
+      const res = await fetch("/api/fee-structures", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          schoolYearId: form.schoolYearId,
+          gradeLevel: form.gradeLevel,
+          fees: form.fees,
+          totalAmount: calcTotal(form.fees),
+          isActive: form.isActive,
+          paymentOptions: [],
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setFormError(data.error || "Failed to create"); return; }
+      setShowCreate(false);
+      await load();
+    } catch { setFormError("Network error"); }
+    finally { setFormLoading(false); }
+  };
+
+  const openEdit = (fs: FeeStructure) => {
+    setEditId(fs._id);
+    setEditForm({
+      schoolYearId: typeof fs.schoolYearId === "object" ? fs.schoolYearId?._id || "" : fs.schoolYearId || "",
+      gradeLevel: fs.gradeLevel,
+      isActive: fs.isActive,
+      fees: fs.fees.length ? fs.fees : [emptyFee()],
+    });
+    setEditError("");
+    setShowEdit(true);
+  };
+
+  const handleEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setEditLoading(true);
+    setEditError("");
+    try {
+      const res = await fetch(`/api/fee-structures/${editId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          schoolYearId: editForm.schoolYearId,
+          gradeLevel: editForm.gradeLevel,
+          fees: editForm.fees,
+          totalAmount: calcTotal(editForm.fees),
+          isActive: editForm.isActive,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setEditError(data.error || "Failed to update"); return; }
+      setShowEdit(false);
+      await load();
+    } catch { setEditError("Network error"); }
+    finally { setEditLoading(false); }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm("Delete this fee structure?")) return;
+    await fetch(`/api/fee-structures/${id}`, { method: "DELETE" });
+    await load();
+  };
+
+  const FeeEditor = ({ fees, setFees }: { fees: FeeItem[]; setFees: (f: FeeItem[]) => void }) => (
+    <div className="space-y-2">
+      <div className="flex items-center justify-between">
+        <label className={labelCls}>Fee Items</label>
+        <button type="button" className="text-xs text-primary flex items-center gap-1" onClick={() => setFees([...fees, emptyFee()])}>
+          <PlusCircle className="h-3.5 w-3.5" /> Add Fee
+        </button>
+      </div>
+      {fees.map((fee, idx) => (
+        <div key={idx} className="flex items-center gap-2">
+          <input
+            required
+            placeholder="Description"
+            className={inputCls + " flex-1"}
+            value={fee.description}
+            onChange={(e) => setFees(updateFee(fees, idx, "description", e.target.value))}
+          />
+          <input
+            required
+            type="number"
+            min="0"
+            placeholder="Amount"
+            className={inputCls + " w-28"}
+            value={fee.amount || ""}
+            onChange={(e) => setFees(updateFee(fees, idx, "amount", e.target.value))}
+          />
+          <label className="flex items-center gap-1 text-xs shrink-0">
+            <input
+              type="checkbox"
+              checked={fee.isRequired}
+              onChange={(e) => setFees(updateFee(fees, idx, "isRequired", e.target.checked))}
+              className="h-3.5 w-3.5"
+            />
+            Req.
+          </label>
+          {fees.length > 1 && (
+            <button type="button" onClick={() => setFees(fees.filter((_, i) => i !== idx))}>
+              <MinusCircle className="h-3.5 w-3.5 text-red-500" />
+            </button>
+          )}
+        </div>
+      ))}
+      <p className="text-xs text-muted-foreground pt-1">
+        Total: <span className="font-semibold text-foreground">{formatCurrency(calcTotal(fees))}</span>
+      </p>
+    </div>
+  );
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 pb-8">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight">Fee Structures</h2>
-          <p className="text-muted-foreground">
-            Configure tuition and miscellaneous fees per grade level
-          </p>
+          <h1 className="text-xl font-bold text-gray-900">Fee Structures</h1>
+          <p className="text-xs text-slate-500">Configure tuition and fees per grade level</p>
         </div>
-        <Button>
-          <Plus className="mr-2 h-4 w-4" />
+        <Button className="ctk-danger-button h-8 text-xs" onClick={() => { setShowCreate(true); setForm(emptyForm()); setFormError(""); }}>
+          <Plus className="mr-1.5 h-3.5 w-3.5" />
           Add Fee Structure
         </Button>
       </div>
 
-      {feeStructures.length === 0 ? (
+      {loading ? (
+        <p className="text-center text-xs text-muted-foreground py-8">Loading...</p>
+      ) : feeStructures.length === 0 ? (
         <Card>
           <CardContent className="py-12 text-center">
-            <CreditCard className="mx-auto h-12 w-12 text-muted-foreground" />
-            <h3 className="mt-4 text-lg font-semibold">No fee structures configured</h3>
-            <p className="text-muted-foreground">Create fee structures for each grade level</p>
-            <Button className="mt-4">
-              <Plus className="mr-2 h-4 w-4" />
-              Create Fee Structure
-            </Button>
+            <CreditCard className="mx-auto h-8 w-8 text-muted-foreground mb-3" />
+            <p className="text-sm font-medium">No fee structures yet</p>
+            <p className="text-xs text-muted-foreground mt-1">Create fee structures for each grade level</p>
           </CardContent>
         </Card>
       ) : (
-        <div className="space-y-6">
-          {feeStructures.map((fs: any) => (
-            <Card key={fs._id}>
-              <CardHeader>
-                <div className="flex items-center justify-between">
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {feeStructures.map((fs) => (
+            <Card key={fs._id} className={fs.isActive ? "" : "opacity-60"}>
+              <CardHeader className="pb-2 pt-4 px-4">
+                <div className="flex items-start justify-between">
                   <div>
-                    <CardTitle>{fs.gradeLevel}</CardTitle>
-                    <CardDescription>
-                      School Year: {fs.schoolYear?.name || "—"} • {fs.isActive ? "Active" : "Inactive"}
-                    </CardDescription>
+                    <CardTitle className="text-sm font-semibold">{fs.gradeLevel}</CardTitle>
+                    <p className="text-xs text-muted-foreground mt-0.5">{fs.schoolYearId?.name || "—"}</p>
                   </div>
-                  <Button variant="outline" size="sm">
-                    <Settings className="mr-2 h-4 w-4" />
-                    Edit
-                  </Button>
+                  <div className="flex items-center gap-1">
+                    <Badge variant={fs.isActive ? "success" : "neutral"}>{fs.isActive ? "Active" : "Inactive"}</Badge>
+                    <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => openEdit(fs)}>
+                      <Pencil className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-red-500" onClick={() => handleDelete(fs._id)}>
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
                 </div>
               </CardHeader>
-              <CardContent>
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                  <div className="p-4 bg-muted rounded-lg">
-                    <p className="text-sm text-muted-foreground">Tuition Fee</p>
-                    <p className="text-xl font-bold">{formatCurrency(fs.tuitionFee)}</p>
-                  </div>
-                  <div className="p-4 bg-muted rounded-lg">
-                    <p className="text-sm text-muted-foreground">Registration Fee</p>
-                    <p className="text-xl font-bold">{formatCurrency(fs.registrationFee)}</p>
-                  </div>
-                  <div className="p-4 bg-muted rounded-lg">
-                    <p className="text-sm text-muted-foreground">Miscellaneous</p>
-                    <p className="text-xl font-bold">
-                      {formatCurrency(fs.miscellaneousFees?.reduce((sum: number, f: any) => sum + f.amount, 0) || 0)}
-                    </p>
-                  </div>
-                  <div className="p-4 bg-primary/10 rounded-lg">
-                    <p className="text-sm text-muted-foreground">Total</p>
-                    <p className="text-xl font-bold text-primary">
-                      {formatCurrency(
-                        fs.tuitionFee + 
-                        fs.registrationFee + 
-                        (fs.miscellaneousFees?.reduce((sum: number, f: any) => sum + f.amount, 0) || 0)
-                      )}
-                    </p>
-                  </div>
-                </div>
-                
-                {fs.miscellaneousFees && fs.miscellaneousFees.length > 0 && (
-                  <div className="mt-4 pt-4 border-t">
-                    <p className="text-sm font-medium mb-2">Miscellaneous Fees Breakdown</p>
-                    <div className="grid gap-2 md:grid-cols-3">
-                      {fs.miscellaneousFees.map((fee: any, index: number) => (
-                        <div key={index} className="flex justify-between text-sm">
-                          <span className="text-muted-foreground">{fee.name}</span>
-                          <span>{formatCurrency(fee.amount)}</span>
-                        </div>
-                      ))}
+              <CardContent className="px-4 pb-4">
+                <div className="space-y-1">
+                  {(fs.fees || []).map((fee, i) => (
+                    <div key={i} className="flex items-center justify-between text-xs">
+                      <span className="text-muted-foreground truncate max-w-[160px]">{fee.description}</span>
+                      <span className="font-medium shrink-0 ml-2">{formatCurrency(fee.amount)}</span>
                     </div>
-                  </div>
-                )}
+                  ))}
+                </div>
+                <div className="mt-2 pt-2 border-t flex items-center justify-between">
+                  <span className="text-xs font-semibold">Total</span>
+                  <span className="text-sm font-bold text-primary">{formatCurrency(fs.totalAmount)}</span>
+                </div>
               </CardContent>
             </Card>
           ))}
         </div>
       )}
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Quick Setup</CardTitle>
-          <CardDescription>Create fee structures for all grade levels at once</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-wrap gap-2">
-            {gradeLevels.map((level) => (
-              <Button key={level} variant="outline" size="sm">
-                {level}
-              </Button>
-            ))}
+      {/* Create Modal */}
+      {showCreate && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-lg p-5 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-sm font-semibold">Create Fee Structure</h2>
+              <button onClick={() => setShowCreate(false)}><X className="h-4 w-4 text-muted-foreground" /></button>
+            </div>
+            <form onSubmit={handleCreate} className="space-y-3">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className={labelCls}>School Year</label>
+                  <select required className={selectCls} value={form.schoolYearId} onChange={(e) => setForm((p) => ({ ...p, schoolYearId: e.target.value }))}>
+                    <option value="">Select...</option>
+                    {schoolYears.map((sy) => <option key={sy._id} value={sy._id}>{sy.name}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className={labelCls}>Grade Level</label>
+                  <select required className={selectCls} value={form.gradeLevel} onChange={(e) => setForm((p) => ({ ...p, gradeLevel: e.target.value }))}>
+                    {GRADE_LEVELS.map((g) => <option key={g} value={g}>{g}</option>)}
+                  </select>
+                </div>
+              </div>
+              <FeeEditor fees={form.fees} setFees={(fees) => setForm((p) => ({ ...p, fees }))} />
+              <label className="flex items-center gap-2 text-xs text-gray-700 cursor-pointer">
+                <input type="checkbox" checked={form.isActive} onChange={(e) => setForm((p) => ({ ...p, isActive: e.target.checked }))} className="h-4 w-4 rounded border-gray-300" />
+                Active
+              </label>
+              {formError && <p className="mt-0.5 text-xs text-red-500">{formError}</p>}
+              <div className="flex justify-end gap-2 pt-1">
+                <Button type="button" variant="outline" className="h-8 text-xs" onClick={() => setShowCreate(false)}>Cancel</Button>
+                <Button type="submit" className="ctk-danger-button h-8 text-xs" disabled={formLoading}>
+                  {formLoading ? "Creating..." : "Create"}
+                </Button>
+              </div>
+            </form>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      )}
+
+      {/* Edit Modal */}
+      {showEdit && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-lg p-5 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-sm font-semibold">Edit Fee Structure</h2>
+              <button onClick={() => setShowEdit(false)}><X className="h-4 w-4 text-muted-foreground" /></button>
+            </div>
+            <form onSubmit={handleEdit} className="space-y-3">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className={labelCls}>School Year</label>
+                  <select required className={selectCls} value={editForm.schoolYearId} onChange={(e) => setEditForm((p) => ({ ...p, schoolYearId: e.target.value }))}>
+                    <option value="">Select...</option>
+                    {schoolYears.map((sy) => <option key={sy._id} value={sy._id}>{sy.name}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className={labelCls}>Grade Level</label>
+                  <select required className={selectCls} value={editForm.gradeLevel} onChange={(e) => setEditForm((p) => ({ ...p, gradeLevel: e.target.value }))}>
+                    {GRADE_LEVELS.map((g) => <option key={g} value={g}>{g}</option>)}
+                  </select>
+                </div>
+              </div>
+              <FeeEditor fees={editForm.fees} setFees={(fees) => setEditForm((p) => ({ ...p, fees }))} />
+              <label className="flex items-center gap-2 text-xs text-gray-700 cursor-pointer">
+                <input type="checkbox" checked={editForm.isActive} onChange={(e) => setEditForm((p) => ({ ...p, isActive: e.target.checked }))} className="h-4 w-4 rounded border-gray-300" />
+                Active
+              </label>
+              {editError && <p className="mt-0.5 text-xs text-red-500">{editError}</p>}
+              <div className="flex justify-end gap-2 pt-1">
+                <Button type="button" variant="outline" className="h-8 text-xs" onClick={() => setShowEdit(false)}>Cancel</Button>
+                <Button type="submit" className="ctk-danger-button h-8 text-xs" disabled={editLoading}>
+                  {editLoading ? "Saving..." : "Save Changes"}
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
