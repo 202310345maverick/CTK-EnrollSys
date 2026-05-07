@@ -84,15 +84,7 @@ type UploadedDoc = {
   mimeType: string;
 };
 
-const DRAFT_KEY = "ctk_enrollment_draft";
-
-function getSavedDraft(): Partial<FormData> {
-  if (typeof window === "undefined") return {};
-  try {
-    const raw = localStorage.getItem(DRAFT_KEY);
-    return raw ? JSON.parse(raw) : {};
-  } catch { return {}; }
-}
+const DEFAULT_VALUES = { isCatholic: "yes" as const, enrollmentType: "new" as const };
 
 export default function NewEnrollmentPage() {
   const router = useRouter();
@@ -103,34 +95,84 @@ export default function NewEnrollmentPage() {
   const [uploadingId, setUploadingId] = useState<string | null>(null);
   const [uploadProgress, setUploadProgress] = useState<Record<string, number>>({});
   const [uploadErrors, setUploadErrors] = useState<Record<string, string>>({});
-  const [hasDraft, setHasDraft] = useState(false);
+  const [draftId, setDraftId] = useState<string | null>(null);
+  const [isSavingDraft, setIsSavingDraft] = useState(false);
+  const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  const saveTimerRef = useState<ReturnType<typeof setTimeout> | null>(null);
 
   const { register, handleSubmit, watch, control, reset, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema),
-    defaultValues: { isCatholic: "yes", enrollmentType: "new", ...getSavedDraft() },
+    defaultValues: DEFAULT_VALUES,
   });
 
   const isCatholic = watch("isCatholic");
   const watchedValues = watch();
 
-  // Check for existing draft on mount
+  // On mount: fetch existing draft from server and restore it
   useEffect(() => {
-    const saved = localStorage.getItem(DRAFT_KEY);
-    if (saved && saved !== "{}") setHasDraft(true);
+    async function loadDraft() {
+      try {
+        const res = await fetch("/api/enrollments?includeDrafts=1&status=draft&limit=1");
+        if (!res.ok) return;
+        const data = await res.json();
+        const draft = data.enrollments?.[0];
+        if (draft?.draftData) {
+          setDraftId(draft._id);
+          // Restore uploaded docs metadata (URLs) if present
+          if (draft.draftData.uploadedDocuments?.length) {
+            const docsMap: Record<string, UploadedDoc> = {};
+            for (const d of draft.draftData.uploadedDocuments) {
+              docsMap[d.documentType] = d;
+            }
+            setUploadedDocs(docsMap);
+          }
+          // Reset form with saved field values (strip uploadedDocuments)
+          const { uploadedDocuments: _ud, ...fieldValues } = draft.draftData;
+          reset({ ...DEFAULT_VALUES, ...fieldValues });
+          setLastSaved(new Date(draft.updatedAt));
+          toast({ title: "Draft restored", description: "Your previous progress has been loaded." });
+        }
+      } catch {}
+    }
+    loadDraft();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Auto-save to localStorage on every change
+  // Auto-save to server 2s after last change
   useEffect(() => {
-    try {
-      localStorage.setItem(DRAFT_KEY, JSON.stringify(watchedValues));
-      setHasDraft(true);
-    } catch {}
-  }, [watchedValues]);
+    if (saveTimerRef[0]) clearTimeout(saveTimerRef[0]);
+    saveTimerRef[0] = setTimeout(async () => {
+      try {
+        setIsSavingDraft(true);
+        const res = await fetch("/api/enrollments", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action: "save_draft",
+            draftId: draftId ?? undefined,
+            formData: watchedValues,
+            uploadedDocuments: Object.values(uploadedDocs),
+          }),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.draft?.id) setDraftId(data.draft.id);
+          setLastSaved(new Date());
+        }
+      } catch {} finally {
+        setIsSavingDraft(false);
+      }
+    }, 2000);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [watchedValues, uploadedDocs]);
 
-  const clearDraft = () => {
-    localStorage.removeItem(DRAFT_KEY);
-    setHasDraft(false);
-    reset({ isCatholic: "yes", enrollmentType: "new" });
+  const clearDraft = async () => {
+    if (draftId) {
+      try { await fetch(`/api/enrollments/${draftId}`, { method: "DELETE" }); } catch {}
+    }
+    setDraftId(null);
+    setLastSaved(null);
+    reset(DEFAULT_VALUES);
     setUploadedFiles({});
     setUploadedDocs({});
     setUploadErrors({});
@@ -249,7 +291,7 @@ export default function NewEnrollmentPage() {
       const res = await fetch("/api/enrollments", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({ ...payload, draftId: draftId ?? undefined }),
       });
 
       const result = await res.json();
@@ -267,7 +309,7 @@ export default function NewEnrollmentPage() {
         title: "Enrollment Submitted!",
         description: `Enrollment #${result.enrollment?.enrollmentNumber} submitted successfully.`,
       });
-      localStorage.removeItem(DRAFT_KEY);
+      setDraftId(null);
       router.push("/parent/enrollments");
     } catch (error) {
       console.error(error);
@@ -290,10 +332,16 @@ export default function NewEnrollmentPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-bold text-gray-900">New Enrollment</h1>
-          <p className="text-xs text-gray-500 mt-0.5">Fill out the form to enroll a student</p>
+          <p className="text-xs text-gray-500 mt-0.5">
+            {isSavingDraft
+              ? "Saving draft…"
+              : lastSaved
+              ? `Draft saved · ${lastSaved.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`
+              : "Fill out the form to enroll a student"}
+          </p>
         </div>
         <div className="flex items-center gap-2 shrink-0">
-          {hasDraft && (
+          {draftId && (
             <Button
               type="button"
               variant="outline"
