@@ -21,18 +21,14 @@ type FeeStructure = {
   paymentOptions: { name: string; installments: number; discount?: number }[];
 };
 
-const GRADE_LEVELS = [
-  "Nursery","Kinder 1","Kinder 2",
-  "Grade 1","Grade 2","Grade 3","Grade 4","Grade 5","Grade 6",
-  "Grade 7","Grade 8","Grade 9","Grade 10","Grade 11","Grade 12",
-];
+import { GRADE_LEVELS } from "@/lib/grade-levels";
 
 const labelCls = "block text-xs font-medium text-gray-700";
 
 const emptyFee = (): FeeItem => ({ description: "", amount: 0, isRequired: true });
 const emptyForm = () => ({
   schoolYearId: "",
-  gradeLevel: "Nursery",
+  gradeLevel: "Pre-Kindergarten",
   isActive: true,
   fees: [emptyFee()],
 });

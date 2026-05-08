@@ -9,6 +9,8 @@ import {
   Filter, TableProperties, RefreshCw,
 } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
+import { FormSelect } from "@/components/ui/form-select";
+import { GRADE_LEVELS } from "@/lib/grade-levels";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -46,12 +48,6 @@ type ReportData = {
 const BRAND_RED: [number, number, number] = [180, 4, 13];
 const SCHOOL_NAME = "Christ the King Catholic School";
 const SCHOOL_SUBTITLE = "Enrollment Management System";
-
-const GRADE_LEVELS = [
-  "Nursery","Kinder 1","Kinder 2",
-  "Grade 1","Grade 2","Grade 3","Grade 4","Grade 5","Grade 6",
-  "Grade 7","Grade 8","Grade 9","Grade 10","Grade 11","Grade 12",
-];
 
 const STATUS_OPTIONS = ["pending","under_review","approved","rejected","enrolled"];
 
@@ -506,21 +502,23 @@ export default function AdminReportsPage() {
             {/* School Year */}
             <div>
               <label className="block text-[10px] font-medium text-gray-600 mb-1">School Year</label>
-              <select className={inputCls} value={filters.schoolYearId}
-                onChange={(e) => setFilters((f) => ({ ...f, schoolYearId: e.target.value }))}>
-                <option value="">All school years</option>
-                {schoolYears.map((sy) => <option key={sy._id} value={sy._id}>{sy.name}</option>)}
-              </select>
+              <FormSelect
+                value={filters.schoolYearId}
+                onChange={(v) => setFilters((f) => ({ ...f, schoolYearId: v }))}
+                options={[{ value: "", label: "All school years" }, ...schoolYears.map((sy) => ({ value: sy._id, label: sy.name }))]}
+                placeholder="All school years"
+              />
             </div>
             {/* Grade Level — hidden for payment */}
             {reportType !== "payment" && (
               <div>
                 <label className="block text-[10px] font-medium text-gray-600 mb-1">Grade Level</label>
-                <select className={inputCls} value={filters.gradeLevel}
-                  onChange={(e) => setFilters((f) => ({ ...f, gradeLevel: e.target.value }))}>
-                  <option value="">All grades</option>
-                  {GRADE_LEVELS.map((g) => <option key={g} value={g}>{g}</option>)}
-                </select>
+                <FormSelect
+                  value={filters.gradeLevel}
+                  onChange={(v) => setFilters((f) => ({ ...f, gradeLevel: v }))}
+                  options={[{ value: "", label: "All grades" }, ...GRADE_LEVELS.map((g) => ({ value: g, label: g }))]}
+                  placeholder="All grades"
+                />
               </div>
             )}
             {/* Status — hidden for sf1/sf2 (forced to enrolled) */}
@@ -530,13 +528,12 @@ export default function AdminReportsPage() {
                   {reportType === "payment" ? "Grade (N/A)" : "Status"}
                 </label>
                 {reportType !== "payment" ? (
-                  <select className={inputCls} value={filters.status}
-                    onChange={(e) => setFilters((f) => ({ ...f, status: e.target.value }))}>
-                    <option value="">All statuses</option>
-                    {STATUS_OPTIONS.map((s) => (
-                      <option key={s} value={s}>{STATUS_LABELS[s] ?? s.replace("_", " ")}</option>
-                    ))}
-                  </select>
+                  <FormSelect
+                    value={filters.status}
+                    onChange={(v) => setFilters((f) => ({ ...f, status: v }))}
+                    options={[{ value: "", label: "All statuses" }, ...STATUS_OPTIONS.map((s) => ({ value: s, label: STATUS_LABELS[s] ?? s.replace("_", " ") }))]}
+                    placeholder="All statuses"
+                  />
                 ) : (
                   <input className={inputCls} disabled placeholder="N/A for payments" />
                 )}

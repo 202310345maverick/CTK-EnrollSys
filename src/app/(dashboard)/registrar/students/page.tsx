@@ -13,7 +13,7 @@ import {
 import { Search, Eye, Loader2, Users, RefreshCw } from "lucide-react";
 import { FormSelect } from "@/components/ui/form-select";
 
-const GRADE_LEVELS = ["Grade 1","Grade 2","Grade 3","Grade 4","Grade 5","Grade 6","Grade 7","Grade 8","Grade 9","Grade 10","Grade 11","Grade 12"];
+import { GRADE_LEVELS } from "@/lib/grade-levels";
 const STATUS_OPTIONS = ["active","inactive","graduated","transferred"];
 
 const STATUS_COLORS: Record<string, string> = {
