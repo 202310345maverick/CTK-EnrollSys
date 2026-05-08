@@ -503,9 +503,9 @@ export default function ReportsPage() {
             <div>
               <label className="block text-[10px] font-medium text-gray-600 mb-1">School Year</label>
               <FormSelect
-                value={filters.schoolYearId}
-                onChange={(v) => setFilters((f) => ({ ...f, schoolYearId: v }))}
-                options={[{ value: "", label: "All school years" }, ...schoolYears.map((sy) => ({ value: sy._id, label: sy.name }))]}
+                value={filters.schoolYearId || undefined}
+                onChange={(v) => setFilters((f) => ({ ...f, schoolYearId: v === "_all_" ? "" : v }))}
+                options={[{ value: "_all_", label: "All school years" }, ...schoolYears.map((sy) => ({ value: sy._id, label: sy.name }))]}
                 placeholder="All school years"
               />
             </div>
@@ -514,9 +514,9 @@ export default function ReportsPage() {
               <div>
                 <label className="block text-[10px] font-medium text-gray-600 mb-1">Grade Level</label>
                 <FormSelect
-                  value={filters.gradeLevel}
-                  onChange={(v) => setFilters((f) => ({ ...f, gradeLevel: v }))}
-                  options={[{ value: "", label: "All grades" }, ...GRADE_LEVELS.map((g) => ({ value: g, label: g }))]}
+                  value={filters.gradeLevel || undefined}
+                  onChange={(v) => setFilters((f) => ({ ...f, gradeLevel: v === "_all_" ? "" : v }))}
+                  options={[{ value: "_all_", label: "All grades" }, ...GRADE_LEVELS.map((g) => ({ value: g, label: g }))]}
                   placeholder="All grades"
                 />
               </div>
@@ -529,9 +529,9 @@ export default function ReportsPage() {
                 </label>
                 {reportType !== "payment" ? (
                   <FormSelect
-                    value={filters.status}
-                    onChange={(v) => setFilters((f) => ({ ...f, status: v }))}
-                    options={[{ value: "", label: "All statuses" }, ...STATUS_OPTIONS.map((s) => ({ value: s, label: STATUS_LABELS[s] ?? s.replace("_", " ") }))]}
+                    value={filters.status || undefined}
+                    onChange={(v) => setFilters((f) => ({ ...f, status: v === "_all_" ? "" : v }))}
+                    options={[{ value: "_all_", label: "All statuses" }, ...STATUS_OPTIONS.map((s) => ({ value: s, label: STATUS_LABELS[s] ?? s.replace("_", " ") }))]}
                     placeholder="All statuses"
                   />
                 ) : (
