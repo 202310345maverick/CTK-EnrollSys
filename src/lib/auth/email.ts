@@ -269,6 +269,59 @@ export async function sendReuploadRequestEmail({
   }
 }
 
+export async function sendFeeAssessmentEmail({
+  email, name, enrollmentNumber, studentName, gradeLevel, totalAmount, breakdown, link,
+}: {
+  email: string; name: string; enrollmentNumber: string; studentName: string;
+  gradeLevel?: string; totalAmount: number;
+  breakdown: { description: string; amount: number }[];
+  link?: string;
+}): Promise<void> {
+  try {
+    const { transporter, from } = getEmailConfig();
+    const fmt = (n: number) => new Intl.NumberFormat("en-PH", { style: "currency", currency: "PHP" }).format(n);
+    const breakdownRows = breakdown
+      .map(
+        (item) => `
+        <tr>
+          <td style="padding:6px 12px;color:#333;font-size:14px;">${item.description}</td>
+          <td style="padding:6px 12px;color:#333;font-size:14px;text-align:right;">${fmt(item.amount)}</td>
+        </tr>`
+      )
+      .join("");
+    const body = `
+      <p style="color:#333;line-height:1.6;">Dear <strong>${name}</strong>,</p>
+      <p style="color:#333;line-height:1.6;">The school fees for <strong>${studentName}</strong>'s enrollment have been assessed. Please review the breakdown below and proceed with payment at the school cashier.</p>
+      <table cellpadding="0" cellspacing="0" style="background:#f9f9f9;border:1px solid #e5e5e5;border-radius:6px;padding:8px;margin:16px 0;width:100%;">
+        <tr>
+          <td style="padding:6px 12px;color:#555;font-size:13px;font-weight:bold;border-bottom:1px solid #e5e5e5;">Description</td>
+          <td style="padding:6px 12px;color:#555;font-size:13px;font-weight:bold;border-bottom:1px solid #e5e5e5;text-align:right;">Amount</td>
+        </tr>
+        ${breakdownRows}
+        <tr style="border-top:2px solid #b4040d;">
+          <td style="padding:10px 12px;color:#b4040d;font-size:15px;font-weight:bold;">Total</td>
+          <td style="padding:10px 12px;color:#b4040d;font-size:15px;font-weight:bold;text-align:right;">${fmt(totalAmount)}</td>
+        </tr>
+      </table>
+      <table cellpadding="0" cellspacing="0" style="background:#f9f9f9;border:1px solid #e5e5e5;border-radius:6px;padding:16px;margin:16px 0;width:100%;">
+        <tr><td style="padding:6px 12px;color:#555;font-size:14px;"><strong>Enrollment Number:</strong></td><td style="padding:6px 12px;color:#333;font-size:14px;">${enrollmentNumber}</td></tr>
+        <tr><td style="padding:6px 12px;color:#555;font-size:14px;"><strong>Student Name:</strong></td><td style="padding:6px 12px;color:#333;font-size:14px;">${studentName}</td></tr>
+        ${gradeLevel ? `<tr><td style="padding:6px 12px;color:#555;font-size:14px;"><strong>Grade Level:</strong></td><td style="padding:6px 12px;color:#333;font-size:14px;">${gradeLevel}</td></tr>` : ""}
+      </table>
+      <p style="color:#333;line-height:1.6;">Please bring this breakdown when making your payment. For questions, contact our finance office.</p>
+      ${link ? `<p style="color:#333;line-height:1.6;"><a href="${link}" style="background:#b4040d;color:#fff;padding:10px 20px;border-radius:5px;text-decoration:none;font-weight:bold;">View Enrollment</a></p>` : ""}
+      <p style="color:#333;line-height:1.6;">God bless,<br><strong>Christ the King Catholic School</strong></p>
+    `;
+    await transporter.sendMail({
+      from, to: email,
+      subject: `Fee Assessment – ${enrollmentNumber} | CTK EnrollSys`,
+      html: buildEmailHtml("Fee Assessment", body),
+    });
+  } catch (error) {
+    console.error("[sendFeeAssessmentEmail] Failed:", error);
+  }
+}
+
 export async function sendPaymentConfirmationEmail({
   email, name, receiptNumber, studentName, amount, paymentDate,
 }: {

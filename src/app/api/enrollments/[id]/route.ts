@@ -9,7 +9,7 @@ import Document from "@/models/Document";
 import FeeStructure from "@/models/FeeStructure";
 import User from "@/models/User";
 import { createNotification } from "@/lib/notifications";
-import { sendStatusChangeEmail, sendReuploadRequestEmail } from "@/lib/auth/email";
+import { sendStatusChangeEmail, sendReuploadRequestEmail, sendFeeAssessmentEmail } from "@/lib/auth/email";
 import { createAuditLog } from "@/lib/audit";
 import { logger } from "@/lib/logger";
 
@@ -232,6 +232,34 @@ export async function PUT(
             title: `Enrollment ${statusLabel}`,
             message: `Your enrollment application ${enrollment.enrollmentNumber}${studentName ? ` for ${studentName}` : ""} has been updated to ${statusLabel}.`,
             type: body.status === "approved" || body.status === "enrolled" ? "success" : body.status === "rejected" ? "error" : "info",
+            link: `/parent/enrollment/${enrollment._id}`,
+          });
+        }
+      }
+
+      if (isAdmin && body.assessedFees) {
+        const feeParent = await User.findById(enrollment.submittedBy).select("email profile").lean();
+        if (feeParent) {
+          const feeParentName = `${feeParent.profile?.firstName ?? ""} ${feeParent.profile?.lastName ?? ""}`.trim() || feeParent.email;
+          const feeStudent = await Student.findById(enrollment.studentId).select("personalInfo").lean();
+          const feeStudentName = feeStudent?.personalInfo
+            ? `${feeStudent.personalInfo.firstName ?? ""} ${feeStudent.personalInfo.lastName ?? ""}`.trim()
+            : "";
+          await sendFeeAssessmentEmail({
+            email: feeParent.email,
+            name: feeParentName,
+            enrollmentNumber: enrollment.enrollmentNumber,
+            studentName: feeStudentName,
+            gradeLevel: enrollment.gradeLevel,
+            totalAmount: body.assessedFees.totalAmount,
+            breakdown: body.assessedFees.breakdown,
+            link: `${process.env.NEXT_PUBLIC_APP_URL ?? ""}/parent/enrollment/${enrollment._id}`,
+          });
+          await createNotification({
+            userId: enrollment.submittedBy.toString(),
+            title: "Fee Assessment Ready",
+            message: `School fees for ${feeStudentName || "your student"} (${enrollment.enrollmentNumber}) have been assessed. Total: ₱${body.assessedFees.totalAmount.toLocaleString("en-PH")}.`,
+            type: "info",
             link: `/parent/enrollment/${enrollment._id}`,
           });
         }
