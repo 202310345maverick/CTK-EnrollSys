@@ -71,8 +71,13 @@ export default function EnrollmentDetailPage() {
     fetch(`/api/enrollments/${params.id}`)
       .then((r) => r.json())
       .then((data) => {
-        setEnrollment(data.enrollment);
-        setRemarks(data.enrollment?.remarks || "");
+        if (data.enrollment) {
+          setEnrollment(data.enrollment);
+          setRemarks(data.enrollment?.remarks || "");
+        } else if (!enrollment) {
+          // Only clear on initial load (enrollment was never set); preserve existing state on refetch errors
+          setEnrollment(null);
+        }
       })
       .catch(console.error)
       .finally(() => setLoading(false));
