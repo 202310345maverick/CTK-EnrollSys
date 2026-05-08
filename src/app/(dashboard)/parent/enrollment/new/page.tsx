@@ -270,6 +270,8 @@ export default function NewEnrollmentPage() {
   };
 
   const onSubmit = async (data: FormData) => {
+    // Cancel any pending auto-save to prevent it from overwriting status back to "draft"
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     setIsSubmitting(true);
     try {
       if (lrnStatus === "taken") {
@@ -318,10 +320,15 @@ export default function NewEnrollmentPage() {
         uploadedDocuments: Object.values(uploadedDocs),
       };
 
+      // Capture draftId then clear refs so auto-save cannot fire after submission
+      const submittingDraftId = draftIdRef.current;
+      draftIdRef.current = null;
+      setDraftId(null);
+
       const res = await fetch("/api/enrollments", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...payload, draftId: draftId ?? undefined }),
+        body: JSON.stringify({ ...payload, draftId: submittingDraftId ?? undefined }),
       });
 
       const result = await res.json();
@@ -339,7 +346,6 @@ export default function NewEnrollmentPage() {
         title: "Enrollment Submitted!",
         description: `Enrollment #${result.enrollment?.enrollmentNumber} submitted successfully.`,
       });
-      setDraftId(null);
       router.push("/parent/enrollments");
     } catch (error) {
       console.error(error);
