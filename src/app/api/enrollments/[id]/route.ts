@@ -206,6 +206,7 @@ export async function PUT(
     }
 
     // Fire-and-forget notifications
+    const appUrl = (process.env.NEXT_PUBLIC_APP_URL ?? "").replace(/\/$/, "");
     void Promise.resolve().then(async () => {
       if (isAdmin && body.status && body.status !== "draft") {
         const parent = await User.findById(enrollment.submittedBy).select("email profile").lean();
@@ -225,14 +226,14 @@ export async function PUT(
             gradeLevel: enrollment.gradeLevel,
             newStatus: body.status,
             remarks: body.remarks,
-            link: `${process.env.NEXT_PUBLIC_APP_URL ?? ""}/parent/enrollment/${enrollment._id}`,
+            link: `${appUrl}/parent/enrollments/${enrollment._id}`,
           });
           await createNotification({
             userId: enrollment.submittedBy.toString(),
             title: `Enrollment ${statusLabel}`,
             message: `Your enrollment application ${enrollment.enrollmentNumber}${studentName ? ` for ${studentName}` : ""} has been updated to ${statusLabel}.`,
             type: body.status === "approved" || body.status === "enrolled" ? "success" : body.status === "rejected" ? "error" : "info",
-            link: `/parent/enrollment/${enrollment._id}`,
+            link: `/parent/enrollments/${enrollment._id}`,
           });
         }
       }
@@ -253,14 +254,14 @@ export async function PUT(
             gradeLevel: enrollment.gradeLevel,
             totalAmount: body.assessedFees.totalAmount,
             breakdown: body.assessedFees.breakdown,
-            link: `${process.env.NEXT_PUBLIC_APP_URL ?? ""}/parent/enrollment/${enrollment._id}`,
+            link: `${appUrl}/parent/enrollments/${enrollment._id}`,
           });
           await createNotification({
             userId: enrollment.submittedBy.toString(),
             title: "Fee Assessment Ready",
             message: `School fees for ${feeStudentName || "your student"} (${enrollment.enrollmentNumber}) have been assessed. Total: ₱${body.assessedFees.totalAmount.toLocaleString("en-PH")}.`,
             type: "info",
-            link: `/parent/enrollment/${enrollment._id}`,
+            link: `/parent/enrollments/${enrollment._id}`,
           });
         }
       }
@@ -281,14 +282,14 @@ export async function PUT(
               studentName,
               documentType,
               remarks: docRemarks,
-              link: `${process.env.NEXT_PUBLIC_APP_URL ?? ""}/parent/enrollment/${enrollment._id}`,
+              link: `${appUrl}/parent/enrollments/${enrollment._id}`,
             });
             await createNotification({
               userId: enrollment.submittedBy.toString(),
               title: "Document Re-upload Required",
               message: `A document (${documentType}) for your enrollment application ${enrollment.enrollmentNumber} has been rejected and requires re-upload.`,
               type: "warning",
-              link: `/parent/enrollment/${enrollment._id}`,
+              link: `/parent/enrollments/${enrollment._id}`,
             });
           }
         }

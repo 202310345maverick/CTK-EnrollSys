@@ -598,7 +598,7 @@ export async function POST(request: NextRequest) {
         title: "Enrollment Submitted",
         message: `Your enrollment for ${studentName} (${enrollment.enrollmentNumber}) has been submitted and is under review.`,
         type: "success",
-        link: `/parent/enrollment/${enrollment._id}`,
+        link: `/parent/enrollments/${enrollment._id}`,
       });
     }).catch(console.error);
 
