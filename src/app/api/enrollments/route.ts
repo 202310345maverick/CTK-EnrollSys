@@ -367,8 +367,13 @@ export async function POST(request: NextRequest) {
     }
 
     if (!student) {
-      const studentCount = await Student.countDocuments();
-      const studentGeneratedId = generateId("STU", studentCount + 1);
+      let studentCount = await Student.countDocuments();
+      let studentGeneratedId = generateId("STU", studentCount + 1);
+      // Avoid collision when IDs have gaps (e.g. due to deletions or retries)
+      while (await Student.exists({ studentId: studentGeneratedId })) {
+        studentCount++;
+        studentGeneratedId = generateId("STU", studentCount + 1);
+      }
 
       if (formData.lrn) {
         const existingLRN = await Student.findOne({ lrn: formData.lrn });
@@ -483,8 +488,13 @@ export async function POST(request: NextRequest) {
       await student.save();
     }
 
-    const enrollmentCount = await Enrollment.countDocuments({ isDraft: false });
-    const generatedEnrollmentNumber = generateId("ENR", enrollmentCount + 1);
+    let enrollmentCount = await Enrollment.countDocuments({ isDraft: false });
+    let generatedEnrollmentNumber = generateId("ENR", enrollmentCount + 1);
+    // Avoid collision when IDs have gaps (e.g. due to deletions or retries)
+    while (await Enrollment.exists({ enrollmentNumber: generatedEnrollmentNumber })) {
+      enrollmentCount++;
+      generatedEnrollmentNumber = generateId("ENR", enrollmentCount + 1);
+    }
     const draft = draftId
       ? await Enrollment.findOne({
           _id: draftId,
@@ -614,10 +624,13 @@ export async function POST(request: NextRequest) {
       { status: 201 }
     );
   } catch (error) {
-    logger.error("Error creating enrollment", { route: "POST /api/enrollments", error: String(error) });
+    const errMsg = error instanceof Error ? error.message : String(error);
+    logger.error("Error creating enrollment", { route: "POST /api/enrollments", error: errMsg });
+    // Surface MongoDB duplicate key errors as a friendlier message
+    const isDuplicate = typeof error === "object" && error !== null && "code" in error && (error as { code: number }).code === 11000;
     return NextResponse.json(
-      { error: "Failed to create enrollment" },
-      { status: 500 }
+      { error: isDuplicate ? "A duplicate record was detected. Please try submitting again." : "Failed to create enrollment" },
+      { status: isDuplicate ? 409 : 500 }
     );
   }
 }
