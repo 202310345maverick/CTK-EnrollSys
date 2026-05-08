@@ -333,6 +333,7 @@ export async function POST(request: NextRequest) {
         },
         isActive: true,
         status: "enrollment",
+        createdBy: new Types.ObjectId(session.user.id),
       });
     }
 
