@@ -5,7 +5,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge, type BadgeProps } from "@/components/ui/badge";
-import { PageHeader } from "@/components/shared/page-header";
 import Link from "next/link";
 import { Search, Eye, Plus, Users, Loader2, RefreshCw, GraduationCap } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -181,7 +180,7 @@ export default function AdminStudentsPage() {
   useEffect(() => { fetchSummary(); }, [fetchSummary]);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 pb-8">
       {statusModal && (
         <StatusModal
           student={statusModal}
@@ -189,28 +188,28 @@ export default function AdminStudentsPage() {
           onSuccess={() => { fetchStudents(); fetchSummary(); }}
         />
       )}
-      <PageHeader
-        title="Student Records Management"
-        description="Search, view, and manage student records"
-        actions={
-          <Button className="h-11 rounded-xl px-5 ctk-danger-button">
-            <Plus className="mr-2 h-4 w-4" />
-            Create New Record
-          </Button>
-        }
-      />
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-xl font-bold text-gray-900">Student Records</h1>
+          <p className="text-xs text-slate-500">Search, view, and manage student records</p>
+        </div>
+        <Button className="h-8 text-xs ctk-danger-button">
+          <Plus className="mr-1.5 h-3.5 w-3.5" />
+          Create New Record
+        </Button>
+      </div>
 
-      <Card className="ctk-panel">
-        <CardContent className="space-y-4 pt-6">
-          <div className="grid gap-3 md:grid-cols-3">
+      <Card>
+        <CardContent className="space-y-3 p-3">
+          <div className="grid gap-2 md:grid-cols-3">
             <div className="relative md:col-span-1">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
               <Input
                 type="text"
                 placeholder="Search by name or student ID..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="ctk-input w-full border pl-10"
+                className="h-8 text-sm w-full pl-8"
               />
             </div>
             <FormSelect
@@ -236,18 +235,18 @@ export default function AdminStudentsPage() {
             />
           </div>
 
-          <div className="grid gap-3 md:grid-cols-3">
+          <div className="grid gap-2 md:grid-cols-3">
             <div className="rounded-xl bg-emerald-50 px-4 py-3 text-center">
-              <p className="text-3xl font-bold text-emerald-700">{summary.active}</p>
-              <p className="text-sm text-emerald-700">Active Students</p>
+              <p className="text-2xl font-bold text-emerald-700">{summary.active}</p>
+              <p className="text-xs text-emerald-700">Active Students</p>
             </div>
             <div className="rounded-xl bg-orange-50 px-4 py-3 text-center">
-              <p className="text-3xl font-bold text-orange-700">{summary.graduated}</p>
-              <p className="text-sm text-orange-700">Graduated</p>
+              <p className="text-2xl font-bold text-orange-700">{summary.graduated}</p>
+              <p className="text-xs text-orange-700">Graduated</p>
             </div>
             <div className="rounded-xl bg-slate-100 px-4 py-3 text-center">
-              <p className="text-3xl font-bold text-slate-700">{summary.total}</p>
-              <p className="text-sm text-slate-700">Total Records</p>
+              <p className="text-2xl font-bold text-slate-700">{summary.total}</p>
+              <p className="text-xs text-slate-700">Total Records</p>
             </div>
           </div>
         </CardContent>
@@ -255,7 +254,7 @@ export default function AdminStudentsPage() {
 
       {/* Students per Grade Level */}
       {gradeBreakdown.length > 0 && (
-        <Card className="ctk-panel">
+        <Card>
           <CardHeader className="pb-2 pt-4 px-4">
             <CardTitle className="text-sm font-semibold flex items-center gap-1.5">
               <GraduationCap className="h-4 w-4 text-primary" /> Students per Grade Level
@@ -283,9 +282,9 @@ export default function AdminStudentsPage() {
         </Card>
       )}
 
-      <Card className="ctk-panel">
-        <CardHeader>
-          <CardTitle className="ctk-section-title">All Student Records</CardTitle>
+      <Card>
+        <CardHeader className="pb-2 pt-4 px-4">
+          <CardTitle className="text-sm font-semibold">All Student Records</CardTitle>
           <CardDescription>
             {loading ? "Loading..." : `${total} record${total !== 1 ? "s" : ""} found`}
           </CardDescription>

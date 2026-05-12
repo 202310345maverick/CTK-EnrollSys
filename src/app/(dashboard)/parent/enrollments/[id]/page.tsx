@@ -99,7 +99,7 @@ export default async function ParentEnrollmentDetailPage({
             Back to Enrollments
           </Button>
         </Link>
-        <Card className="ctk-panel">
+        <Card>
           <CardContent className="py-12 text-center">
             <p className="text-muted-foreground">Enrollment record not found.</p>
           </CardContent>
@@ -132,8 +132,8 @@ export default async function ParentEnrollmentDetailPage({
 
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="ctk-page-title">Enrollment Details</h1>
-          <p className="ctk-page-subtitle">{enrollment.enrollmentNumber}</p>
+          <h1 className="text-xl font-bold text-gray-900">Enrollment Details</h1>
+          <p className="text-xs text-slate-500">{enrollment.enrollmentNumber}</p>
         </div>
         <Badge variant={getStatusVariant(enrollment.status)}>
           {{ pending: "Pending", under_review: "Under Review", approved: "Approved", rejected: "Not Approved", enrolled: "Enrolled" }[String(enrollment.status)] ?? String(enrollment.status).replace("_", " ")}
@@ -141,9 +141,9 @@ export default async function ParentEnrollmentDetailPage({
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
-        <Card className="ctk-panel">
+        <Card>
           <CardHeader>
-            <CardTitle className="ctk-section-title">Student Information</CardTitle>
+            <CardTitle className="text-sm font-semibold">Student Information</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2 text-sm">
             <p>
@@ -170,9 +170,9 @@ export default async function ParentEnrollmentDetailPage({
           </CardContent>
         </Card>
 
-        <Card className="ctk-panel">
+        <Card>
           <CardHeader>
-            <CardTitle className="ctk-section-title">Timeline and Remarks</CardTitle>
+            <CardTitle className="text-sm font-semibold">Timeline and Remarks</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             {timeline.length === 0 ? (
@@ -201,9 +201,9 @@ export default async function ParentEnrollmentDetailPage({
         </Card>
       </div>
 
-      <Card className="ctk-panel">
+      <Card>
         <CardHeader>
-          <CardTitle className="ctk-section-title">Document Checklist</CardTitle>
+          <CardTitle className="text-sm font-semibold">Document Checklist</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
           {requiredDocs.map((documentType) => {

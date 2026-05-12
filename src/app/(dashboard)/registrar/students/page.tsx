@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { PageHeader } from "@/components/shared/page-header";
+
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
@@ -120,8 +120,8 @@ export default function StudentsPage() {
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
-  const [gradeFilter, setGradeFilter] = useState("");
-  const [statusFilter, setStatusFilter] = useState("");
+  const [gradeFilter, setGradeFilter] = useState("__all__");
+  const [statusFilter, setStatusFilter] = useState("__all__");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [statusModal, setStatusModal] = useState<any>(null);
 
@@ -135,8 +135,8 @@ export default function StudentsPage() {
     try {
       const params = new URLSearchParams({ limit: "100" });
       if (debouncedSearch) params.set("search", debouncedSearch);
-      if (gradeFilter) params.set("gradeLevel", gradeFilter);
-      if (statusFilter) params.set("status", statusFilter);
+      if (gradeFilter !== "__all__") params.set("gradeLevel", gradeFilter);
+      if (statusFilter !== "__all__") params.set("status", statusFilter);
       const res = await fetch(`/api/students?${params}`);
       const data = await res.json();
       setStudents(data.students || []);
@@ -157,12 +157,14 @@ export default function StudentsPage() {
           onSuccess={() => fetchStudents()}
         />
       )}
-      <PageHeader
-        title="Student Records"
-        description="Search and view student records"
-      />
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-xl font-bold text-slate-900">Student Records</h1>
+          <p className="text-xs text-slate-500">Search and view student records</p>
+        </div>
+      </div>
 
-      <Card className="ctk-panel">
+      <Card>
         <CardHeader className="pb-3">
           <div className="flex flex-wrap items-center gap-2">
             <div className="relative flex-1 min-w-[200px]">
@@ -178,17 +180,23 @@ export default function StudentsPage() {
               value={gradeFilter}
               onChange={(v) => setGradeFilter(v)}
               placeholder="All Grades"
-              options={GRADE_LEVELS.map((g) => ({ value: g, label: g }))}
+              options={[
+                { value: "__all__", label: "All Grades" },
+                ...GRADE_LEVELS.map((g) => ({ value: g, label: g })),
+              ]}
               className="w-36"
             />
             <FormSelect
               value={statusFilter}
               onChange={(v) => setStatusFilter(v)}
               placeholder="All Status"
-              options={STATUS_OPTIONS.map((s) => ({
-                value: s,
-                label: s.charAt(0).toUpperCase() + s.slice(1),
-              }))}
+              options={[
+                { value: "__all__", label: "All Status" },
+                ...STATUS_OPTIONS.map((s) => ({
+                  value: s,
+                  label: s.charAt(0).toUpperCase() + s.slice(1),
+                })),
+              ]}
               className="w-36"
             />
             <CardTitle className="text-xs text-muted-foreground ml-auto">

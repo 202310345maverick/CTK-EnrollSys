@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { PageHeader } from "@/components/shared/page-header";
+
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
@@ -203,16 +203,16 @@ export default function PaymentsPage() {
 
   return (
     <div className="space-y-4">
-      <PageHeader
-        title="Fee & Payment Management"
-        description="Record and track student payments"
-        actions={
-          <Button onClick={() => setShowModal(true)} size="sm" className="ctk-danger-button h-8 text-xs">
-            <Plus className="h-3.5 w-3.5 mr-1" />
-            Record Payment
-          </Button>
-        }
-      />
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-xl font-bold text-slate-900">Fee & Payment Management</h1>
+          <p className="text-xs text-slate-500">Record and track student payments</p>
+        </div>
+        <Button onClick={() => setShowModal(true)} size="sm" className="ctk-danger-button h-8 text-xs">
+          <Plus className="h-3.5 w-3.5 mr-1" />
+          Record Payment
+        </Button>
+      </div>
 
       <div className="grid gap-3 md:grid-cols-3">
         {[
@@ -220,7 +220,7 @@ export default function PaymentsPage() {
           { label: "Transactions", value: stats.count.toString(), color: "text-foreground" },
           { label: "Average Payment", value: formatCurrency(stats.avg), color: "text-foreground" },
         ].map((s) => (
-          <Card key={s.label} className="ctk-panel">
+          <Card key={s.label}>
             <CardContent className="p-3">
               <p className="text-xs text-muted-foreground">{s.label}</p>
               <p className={`text-xl font-bold mt-0.5 ${s.color}`}>{s.value}</p>
@@ -229,7 +229,7 @@ export default function PaymentsPage() {
         ))}
       </div>
 
-      <Card className="ctk-panel">
+      <Card>
         <CardHeader className="pb-3">
           <div className="flex flex-wrap items-center gap-2">
             <div className="relative flex-1 max-w-xs">

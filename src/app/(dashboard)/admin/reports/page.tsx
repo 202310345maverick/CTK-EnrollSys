@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { PageHeader } from "@/components/shared/page-header";
+import { PageHeader as _PageHeader } from "@/components/shared/page-header";
 import {
   Loader2, Download, FileText, Users, CreditCard, ClipboardList,
   Filter, TableProperties, RefreshCw,
@@ -458,7 +458,10 @@ export default function AdminReportsPage() {
 
   return (
     <div className="space-y-4">
-      <PageHeader title="Admin Reports" description="Generate, filter, and export administrative reports" />
+      <div>
+        <h1 className="text-xl font-bold text-slate-900">Admin Reports</h1>
+        <p className="text-xs text-slate-500">Generate, filter, and export administrative reports</p>
+      </div>
 
       {/* Report type selector */}
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
