@@ -28,6 +28,13 @@ import {
 import { formatCurrency } from "@/lib/utils";
 import { EnrollmentPeriodControl } from "@/components/admin/enrollment-period-control";
 
+const GRADE_LEVEL_ORDER = [
+  "Pre-Kindergarten",
+  "Kindergarten",
+  "Grade 1","Grade 2","Grade 3","Grade 4","Grade 5","Grade 6",
+  "Grade 7","Grade 8","Grade 9","Grade 10",
+];
+
 async function getDashboardData() {
   await dbConnect();
 
@@ -36,6 +43,7 @@ async function getDashboardData() {
 
   const [
     totalUsers,
+    totalParents,
     totalStudents,
     totalEnrollments,
     pendingEnrollments,
@@ -46,11 +54,13 @@ async function getDashboardData() {
     rejectedCount,
     enrolledCount,
     paymentAgg,
+    enrolledPerGradeAgg,
     recentEnrollments,
     recentPayments,
     activeSchoolYear,
   ] = await Promise.all([
     User.countDocuments(),
+    User.countDocuments({ role: "parent" }),
     Student.countDocuments(),
     Enrollment.countDocuments({ isDraft: { $ne: true } }),
     Enrollment.countDocuments({ status: "pending", isDraft: { $ne: true } }),
@@ -70,6 +80,10 @@ async function getDashboardData() {
       { $match: { isVoided: false } },
       { $group: { _id: null, total: { $sum: "$amount" } } },
     ]),
+    Enrollment.aggregate([
+      { $match: { status: { $in: ["approved", "enrolled"] }, isDraft: { $ne: true } } },
+      { $group: { _id: "$gradeLevel", count: { $sum: 1 } } },
+    ]),
     Enrollment.find({ isDraft: { $ne: true } })
       .sort({ createdAt: -1 })
       .limit(5)
@@ -85,8 +99,17 @@ async function getDashboardData() {
 
   const totalPayments = paymentAgg[0]?.total || 0;
 
+  // Build grade-level map sorted by school order
+  const gradeMap = new Map<string, number>(
+    (enrolledPerGradeAgg as { _id: string; count: number }[]).map((g) => [g._id, g.count])
+  );
+  const enrolledPerGrade = GRADE_LEVEL_ORDER
+    .map((grade) => ({ grade, count: gradeMap.get(grade) ?? 0 }))
+    .filter((g) => g.count > 0);
+
   return {
     totalUsers,
+    totalParents,
     totalStudents,
     totalEnrollments,
     pendingEnrollments,
@@ -97,6 +120,7 @@ async function getDashboardData() {
     rejectedCount,
     enrolledCount,
     totalPayments,
+    enrolledPerGrade,
     recentEnrollments,
     recentPayments,
     activeSchoolYear,
@@ -119,6 +143,7 @@ export default async function AdminDashboard() {
   await getServerSession(authOptions);
   const {
     totalUsers,
+    totalParents,
     totalStudents,
     pendingEnrollments,
     approvedToday,
@@ -128,6 +153,7 @@ export default async function AdminDashboard() {
     rejectedCount,
     enrolledCount,
     totalPayments,
+    enrolledPerGrade,
     recentEnrollments,
     recentPayments,
     activeSchoolYear,
@@ -135,13 +161,13 @@ export default async function AdminDashboard() {
 
   const stats = [
     { label: "Total Users", value: totalUsers, icon: UserCog, color: "text-blue-600", border: "border-l-blue-500" },
-    { label: "Total Students", value: totalStudents, icon: Users, color: "text-emerald-600", border: "border-l-emerald-500" },
-    { label: "Pending Enrollments", value: pendingEnrollments, icon: ClipboardList, color: "text-amber-600", border: "border-l-amber-500" },
+    { label: "Total Parents", value: totalParents, icon: Users, color: "text-pink-600", border: "border-l-pink-500" },
+    { label: "Total Students", value: totalStudents, icon: GraduationCap, color: "text-emerald-600", border: "border-l-emerald-500" },
     { label: "Total Collections", value: formatCurrency(totalPayments), icon: CreditCard, color: "text-purple-600", border: "border-l-purple-500" },
+    { label: "Pending Enrollments", value: pendingEnrollments, icon: ClipboardList, color: "text-amber-600", border: "border-l-amber-500" },
     { label: "Approved Today", value: approvedToday, icon: CheckCircle2, color: "text-teal-600", border: "border-l-teal-500" },
-    { label: "Submitted Today", value: submittedToday, icon: TrendingUp, color: "text-cyan-600", border: "border-l-cyan-500" },
     { label: "Under Review", value: underReviewCount, icon: Eye, color: "text-indigo-600", border: "border-l-indigo-500" },
-    { label: "Enrolled", value: enrolledCount, icon: GraduationCap, color: "text-violet-600", border: "border-l-violet-500" },
+    { label: "Enrolled", value: enrolledCount, icon: BarChart3, color: "text-violet-600", border: "border-l-violet-500" },
   ];
 
   const statusBreakdown = [
@@ -198,6 +224,38 @@ export default async function AdminDashboard() {
               <span className={`w-8 text-right font-semibold ${color}`}>{count}</span>
             </div>
           ))}
+        </CardContent>
+      </Card>
+
+      {/* Enrolled per Grade Level */}
+      <Card>
+        <CardHeader className="pb-2 pt-4 px-4">
+          <CardTitle className="text-sm font-semibold flex items-center gap-1.5">
+            <GraduationCap className="h-4 w-4 text-primary" /> Students Enrolled per Grade Level
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="px-4 pb-4">
+          {enrolledPerGrade.length === 0 ? (
+            <p className="py-4 text-center text-xs text-muted-foreground">No enrolled students yet.</p>
+          ) : (
+            <div className="space-y-2">
+              {(() => {
+                const maxCount = Math.max(...enrolledPerGrade.map((g) => g.count));
+                return enrolledPerGrade.map(({ grade, count }) => (
+                  <div key={grade} className="flex items-center gap-3 text-xs">
+                    <span className="w-36 shrink-0 text-muted-foreground">{grade}</span>
+                    <div className="flex-1 rounded-full bg-slate-100 h-2">
+                      <div
+                        className="h-2 rounded-full bg-primary"
+                        style={{ width: `${maxCount > 0 ? Math.max(4, (count / maxCount) * 100) : 0}%` }}
+                      />
+                    </div>
+                    <span className="w-8 text-right font-semibold text-primary">{count}</span>
+                  </div>
+                ));
+              })()}
+            </div>
+          )}
         </CardContent>
       </Card>
 
