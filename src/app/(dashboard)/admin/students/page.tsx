@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Badge, type BadgeProps } from "@/components/ui/badge";
 import { PageHeader } from "@/components/shared/page-header";
 import Link from "next/link";
-import { Search, Eye, Plus, Users, Loader2, RefreshCw } from "lucide-react";
+import { Search, Eye, Plus, Users, Loader2, RefreshCw, GraduationCap } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { FormSelect } from "@/components/ui/form-select";
 
@@ -116,8 +116,9 @@ export default function AdminStudentsPage() {
   const [summary, setSummary] = useState({ total: 0, active: 0, graduated: 0 });
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [gradeFilter, setGradeFilter] = useState("");
-  const [statusFilter, setStatusFilter] = useState("");
+  const [gradeFilter, setGradeFilter] = useState("__all__");
+  const [statusFilter, setStatusFilter] = useState("__all__");
+  const [gradeBreakdown, setGradeBreakdown] = useState<{ grade: string; count: number }[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusModal, setStatusModal] = useState<any>(null);
 
@@ -131,8 +132,8 @@ export default function AdminStudentsPage() {
     try {
       const params = new URLSearchParams();
       if (debouncedSearch) params.set("search", debouncedSearch);
-      if (gradeFilter) params.set("gradeLevel", gradeFilter);
-      if (statusFilter) params.set("status", statusFilter);
+      if (gradeFilter !== "__all__") params.set("gradeLevel", gradeFilter);
+      if (statusFilter !== "__all__") params.set("status", statusFilter);
       params.set("limit", "50");
       const res = await fetch(`/api/students?${params}`);
       const data = await res.json();
@@ -145,17 +146,34 @@ export default function AdminStudentsPage() {
 
   const fetchSummary = useCallback(async () => {
     try {
-      const [totalRes, activeRes, gradRes] = await Promise.all([
+      const GRADE_LEVELS_ORDER = [
+        "Pre-Kindergarten","Kindergarten",
+        "Grade 1","Grade 2","Grade 3","Grade 4","Grade 5","Grade 6",
+        "Grade 7","Grade 8","Grade 9","Grade 10",
+      ];
+      const [totalRes, activeRes, gradRes, allRes] = await Promise.all([
         fetch("/api/students?limit=1"),
         fetch("/api/students?status=active&limit=1"),
         fetch("/api/students?status=graduated&limit=1"),
+        fetch("/api/students?limit=1000"),
       ]);
-      const [td, ad, gd] = await Promise.all([totalRes.json(), activeRes.json(), gradRes.json()]);
+      const [td, ad, gd, allData] = await Promise.all([totalRes.json(), activeRes.json(), gradRes.json(), allRes.json()]);
       setSummary({
         total: td.pagination?.total ?? 0,
         active: ad.pagination?.total ?? 0,
         graduated: gd.pagination?.total ?? 0,
       });
+      // Count students per grade from full list
+      const countMap: Record<string, number> = {};
+      for (const s of allData.students || []) {
+        const g = s.currentGradeLevel;
+        if (g) countMap[g] = (countMap[g] ?? 0) + 1;
+      }
+      setGradeBreakdown(
+        GRADE_LEVELS_ORDER
+          .map((grade) => ({ grade, count: countMap[grade] ?? 0 }))
+          .filter((g) => g.count > 0)
+      );
     } catch {}
   }, []);
 
@@ -199,16 +217,22 @@ export default function AdminStudentsPage() {
               value={gradeFilter}
               onChange={(v) => setGradeFilter(v)}
               placeholder="All Grades"
-              options={GRADE_LEVELS.map((g) => ({ value: g, label: g }))}
+              options={[
+                { value: "__all__", label: "All Grades" },
+                ...GRADE_LEVELS.map((g) => ({ value: g, label: g })),
+              ]}
             />
             <FormSelect
               value={statusFilter}
               onChange={(v) => setStatusFilter(v)}
               placeholder="All Status"
-              options={STATUS_OPTIONS.map((s) => ({
-                value: s,
-                label: s.charAt(0).toUpperCase() + s.slice(1),
-              }))}
+              options={[
+                { value: "__all__", label: "All Status" },
+                ...STATUS_OPTIONS.map((s) => ({
+                  value: s,
+                  label: s.charAt(0).toUpperCase() + s.slice(1),
+                })),
+              ]}
             />
           </div>
 
@@ -228,6 +252,36 @@ export default function AdminStudentsPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Students per Grade Level */}
+      {gradeBreakdown.length > 0 && (
+        <Card className="ctk-panel">
+          <CardHeader className="pb-2 pt-4 px-4">
+            <CardTitle className="text-sm font-semibold flex items-center gap-1.5">
+              <GraduationCap className="h-4 w-4 text-primary" /> Students per Grade Level
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="px-4 pb-4">
+            <div className="space-y-2">
+              {(() => {
+                const maxCount = Math.max(...gradeBreakdown.map((g) => g.count));
+                return gradeBreakdown.map(({ grade, count }) => (
+                  <div key={grade} className="flex items-center gap-3 text-xs">
+                    <span className="w-36 shrink-0 text-muted-foreground">{grade}</span>
+                    <div className="flex-1 rounded-full bg-slate-100 h-2">
+                      <div
+                        className="h-2 rounded-full bg-primary"
+                        style={{ width: `${maxCount > 0 ? Math.max(4, (count / maxCount) * 100) : 0}%` }}
+                      />
+                    </div>
+                    <span className="w-8 text-right font-semibold text-primary">{count}</span>
+                  </div>
+                ));
+              })()}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <Card className="ctk-panel">
         <CardHeader>

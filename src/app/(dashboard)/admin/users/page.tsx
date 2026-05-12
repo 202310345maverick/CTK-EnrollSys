@@ -49,6 +49,7 @@ export default function UsersPage() {
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [roleCounts, setRoleCounts] = useState({ total: 0, parent: 0, registrar: 0, admin: 0 });
 
   const [showCreate, setShowCreate] = useState(false);
   const [createForm, setCreateForm] = useState({ ...EMPTY_CREATE });
@@ -66,7 +67,14 @@ export default function UsersPage() {
     try {
       const res = await fetch("/api/users?limit=200");
       const data = await res.json();
-      setUsers(data.users || []);
+      const list: UserRecord[] = data.users || [];
+      setUsers(list);
+      setRoleCounts({
+        total: list.length,
+        parent: list.filter((u) => u.role === "parent").length,
+        registrar: list.filter((u) => u.role === "registrar").length,
+        admin: list.filter((u) => u.role === "admin").length,
+      });
     } finally {
       setLoading(false);
     }
@@ -222,6 +230,30 @@ export default function UsersPage() {
               ]}
               className="flex-none w-36"
             />
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Role Summary */}
+      <Card>
+        <CardContent className="p-3">
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+            <div className="rounded-xl bg-slate-100 px-4 py-3 text-center">
+              <p className="text-2xl font-bold text-slate-700">{roleCounts.total}</p>
+              <p className="text-xs text-slate-500">Total Users</p>
+            </div>
+            <div className="rounded-xl bg-pink-50 px-4 py-3 text-center">
+              <p className="text-2xl font-bold text-pink-700">{roleCounts.parent}</p>
+              <p className="text-xs text-pink-600">Parents</p>
+            </div>
+            <div className="rounded-xl bg-amber-50 px-4 py-3 text-center">
+              <p className="text-2xl font-bold text-amber-700">{roleCounts.registrar}</p>
+              <p className="text-xs text-amber-600">Registrars</p>
+            </div>
+            <div className="rounded-xl bg-red-50 px-4 py-3 text-center">
+              <p className="text-2xl font-bold text-red-700">{roleCounts.admin}</p>
+              <p className="text-xs text-red-600">Admins</p>
+            </div>
           </div>
         </CardContent>
       </Card>
