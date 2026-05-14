@@ -129,32 +129,48 @@ export default function AdminReportsPage() {
 
   // ── Helpers ─────────────────────────────────────────────────────────────────
 
-  function pdfHeader(doc: any, title: string, reportDate: string, logoBase64: string | null, landscape: boolean) {
+  function pdfHeader(doc: any, title: string, subtitle: string, reportDate: string, logoBase64: string | null) {
     const pageW = doc.internal.pageSize.getWidth();
-    doc.setFillColor(...BRAND_RED);
-    doc.rect(0, 0, pageW, 22, "F");
-    if (logoBase64) { try { doc.addImage(logoBase64, "PNG", 6, 2, 18, 18); } catch { /**/ } }
-    doc.setTextColor(255, 255, 255);
+    if (logoBase64) { try { doc.addImage(logoBase64, "PNG", 8, 5, 18, 18); } catch { /**/ } }
+    const textX = logoBase64 ? 30 : 8;
+    doc.setTextColor(...BRAND_RED);
     doc.setFontSize(13); doc.setFont("helvetica", "bold");
-    doc.text(SCHOOL_NAME, logoBase64 ? 28 : 10, 10);
-    doc.setFontSize(8); doc.setFont("helvetica", "normal");
-    doc.text(SCHOOL_SUBTITLE, logoBase64 ? 28 : 10, 16);
-    doc.setFontSize(9); doc.setFont("helvetica", "bold");
-    doc.text(title, pageW - 8, 10, { align: "right" });
-    doc.setFontSize(7); doc.setFont("helvetica", "normal");
-    doc.text(`Generated: ${reportDate}`, pageW - 8, 16, { align: "right" });
+    doc.text(SCHOOL_NAME, textX, 12);
+    doc.setTextColor(100, 100, 100);
+    doc.setFontSize(7.5); doc.setFont("helvetica", "normal");
+    doc.text("Enrollment Management System  ·  A Catholic School", textX, 18.5);
+    doc.setTextColor(40, 40, 40);
+    doc.setFontSize(10); doc.setFont("helvetica", "bold");
+    doc.text(title, pageW - 8, 11, { align: "right" });
+    doc.setTextColor(110, 110, 110);
+    doc.setFontSize(7); doc.setFont("helvetica", "italic");
+    doc.text(subtitle, pageW - 8, 17, { align: "right" });
+    doc.setFontSize(6.5); doc.setFont("helvetica", "normal");
+    doc.setTextColor(140, 140, 140);
+    doc.text(`Generated: ${reportDate}`, pageW - 8, 22.5, { align: "right" });
+    doc.setDrawColor(...BRAND_RED);
+    doc.setLineWidth(0.8);
+    doc.line(8, 27, pageW - 8, 27);
+    doc.setDrawColor(0); doc.setLineWidth(0.2);
   }
 
   function pdfFooterHook(doc: any) {
     return (hookData: any) => {
       const pageW = doc.internal.pageSize.getWidth();
       const pageH = doc.internal.pageSize.getHeight();
-      doc.setFillColor(...BRAND_RED);
-      doc.rect(0, pageH - 10, pageW, 10, "F");
-      doc.setTextColor(255, 255, 255);
-      doc.setFontSize(7); doc.setFont("helvetica", "normal");
-      doc.text(`${SCHOOL_NAME} · EMS`, pageW / 2, pageH - 4, { align: "center" });
-      doc.text(`Page ${hookData.pageNumber}`, pageW - 8, pageH - 4, { align: "right" });
+      doc.setDrawColor(...BRAND_RED);
+      doc.setLineWidth(0.4);
+      doc.line(8, pageH - 12, pageW - 8, pageH - 12);
+      doc.setTextColor(...BRAND_RED);
+      doc.setFontSize(6.5); doc.setFont("helvetica", "bold");
+      doc.text(SCHOOL_NAME, 8, pageH - 7.5);
+      doc.setTextColor(130, 130, 130);
+      doc.setFont("helvetica", "normal");
+      doc.text(SCHOOL_SUBTITLE, 8, pageH - 3.5);
+      doc.setTextColor(60, 60, 60);
+      doc.setFontSize(7); doc.setFont("helvetica", "bold");
+      doc.text(`Page ${hookData.pageNumber}`, pageW - 8, pageH - 5.5, { align: "right" });
+      doc.setDrawColor(0); doc.setLineWidth(0.2);
     };
   }
 
@@ -243,60 +259,106 @@ export default function AdminReportsPage() {
       const reportDate = new Date().toLocaleDateString("en-PH", { year: "numeric", month: "long", day: "numeric" });
       const logoBase64 = await getLogoBase64();
       const isPayment = reportType === "payment";
-      const landscape = !isPayment;
-      const doc = new jsPDF({ orientation: landscape ? "landscape" : "portrait", unit: "mm", format: "a4" });
+      const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+      const pageW = doc.internal.pageSize.getWidth();
 
       const titleMap: Record<string, string> = {
         enrollment: "Enrollment Summary Report",
-        sf1: "School Form 1 — School Register",
-        sf2: "School Form 2 — Daily Attendance Register",
+        sf1: "SF1 — School Register",
+        sf2: "SF2 — Attendance Register",
         payment: "Payment Collection Report",
       };
-      pdfHeader(doc, titleMap[reportType] || "Report", reportDate, logoBase64, landscape);
+      const subtitleMap: Record<string, string> = {
+        enrollment: "All enrollment applications",
+        sf1: "DepEd School Form 1",
+        sf2: "DepEd School Form 2",
+        payment: "Assessment & payment records",
+      };
 
+      pdfHeader(doc, titleMap[reportType] || "Report", subtitleMap[reportType] || "", reportDate, logoBase64);
       const footerHook = pdfFooterHook(doc);
 
       if (isPayment) {
         const stats = data.payments;
+        let y = 33;
+        doc.setFontSize(8); doc.setFont("helvetica", "bold"); doc.setTextColor(50, 50, 50);
+        doc.text("Payment Summary", 8, y);
         autoTable(doc, {
-          head: [["Metric", "Value"]],
           body: [
-            ["Total Collections", `PHP ${(stats?.totalAmount || 0).toFixed(2)}`],
-            ["Transactions", String(stats?.count || 0)],
-            ["Voided Count", String(stats?.voidedCount || 0)],
-            ["Voided Amount", `PHP ${(stats?.voidedAmount || 0).toFixed(2)}`],
+            ["Total Collections", `₱ ${(stats?.totalAmount || 0).toLocaleString("en-PH", { minimumFractionDigits: 2 })}`],
+            ["Total Transactions", String(stats?.count || 0)],
+            ["Voided Transactions", String(stats?.voidedCount || 0)],
+            ["Voided Amount", `₱ ${(stats?.voidedAmount || 0).toLocaleString("en-PH", { minimumFractionDigits: 2 })}`],
           ],
-          startY: 26, styles: { fontSize: 8, cellPadding: 2.5 },
-          headStyles: { fillColor: BRAND_RED, textColor: [255, 255, 255], fontStyle: "bold" },
-          alternateRowStyles: { fillColor: [253, 240, 240] },
-          margin: { left: 8, right: 8 }, didDrawPage: footerHook,
+          startY: y + 4,
+          styles: { fontSize: 8, cellPadding: 2.5 },
+          columnStyles: {
+            0: { fontStyle: "bold", cellWidth: 55, fillColor: [248, 248, 248] },
+            1: { cellWidth: 55 },
+          },
+          tableLineColor: [220, 220, 220], tableLineWidth: 0.2,
+          margin: { left: 8, right: 8 },
         });
 
-        const y1 = (doc as any).lastAutoTable?.finalY + 6 || 60;
+        const y2 = (doc as any).lastAutoTable?.finalY + 8 || 72;
+        doc.setFontSize(8); doc.setFont("helvetica", "bold"); doc.setTextColor(50, 50, 50);
+        doc.text("Transaction Details", 8, y2);
         autoTable(doc, {
           head: [["Receipt #", "Student Name", "LRN", "Type", "Amount (₱)", "Date", "Recorded By"]],
           body: (stats?.list || []).map((p) => [
-            p.receiptNumber, p.studentName, p.lrn, p.paymentType,
-            p.amount.toFixed(2),
+            p.receiptNumber || "—",
+            p.studentName,
+            p.lrn || "—",
+            p.paymentType,
+            p.amount.toLocaleString("en-PH", { minimumFractionDigits: 2 }),
             p.paymentDate ? new Date(p.paymentDate).toLocaleDateString("en-PH") : "—",
             p.recordedBy,
           ]),
-          startY: y1, styles: { fontSize: 7, cellPadding: 2 },
+          startY: y2 + 4,
+          styles: { fontSize: 7, cellPadding: 2 },
           headStyles: { fillColor: BRAND_RED, textColor: [255, 255, 255], fontStyle: "bold", fontSize: 7 },
-          alternateRowStyles: { fillColor: [253, 240, 240] },
+          alternateRowStyles: { fillColor: [248, 248, 248] },
+          tableLineColor: [220, 220, 220], tableLineWidth: 0.2,
           margin: { left: 8, right: 8 }, didDrawPage: footerHook,
         });
       } else {
+        const rows = data.rows || [];
+        let y = 33;
+        if (data.byGrade?.length) {
+          doc.setFontSize(7.5); doc.setFont("helvetica", "bold"); doc.setTextColor(50, 50, 50);
+          doc.text(`Total Records: ${rows.length}`, 8, y);
+          const gradeText = (data.byGrade || []).map((g) => `${g.grade}: ${g.count}`).join("  ·  ");
+          doc.setFontSize(6.5); doc.setFont("helvetica", "normal"); doc.setTextColor(110, 110, 110);
+          doc.text(gradeText, 8, y + 5, { maxWidth: pageW - 16 });
+          y += 12;
+        }
         autoTable(doc, {
-          head: [["No.", "LRN", "Last Name", "First Name", "M.N.", "Ext.", "Sex", "Birth Date", "Age", "Grade", "Section", "Status", "School Year"]],
-          body: (data.rows || []).map((r) => [
-            r.no, r.lrn, r.lastName, r.firstName, r.middleName, r.suffix,
-            r.sex, r.birthDate, r.age, r.gradeLevel, r.section, r.status.replace("_", " "), r.schoolYear,
+          head: [["#", "LRN", "Last Name", "First Name", "M.N.", "Sex", "Birth Date", "Age", "Grade", "Section", "Status", "School Year"]],
+          body: rows.map((r) => [
+            r.no, r.lrn, r.lastName, r.firstName, r.middleName,
+            r.sex, r.birthDate, r.age, r.gradeLevel, r.section,
+            STATUS_LABELS[r.status] || r.status, r.schoolYear,
           ]),
-          startY: 26, styles: { fontSize: 7, cellPadding: 1.8 },
-          headStyles: { fillColor: BRAND_RED, textColor: [255, 255, 255], fontStyle: "bold", fontSize: 7 },
-          alternateRowStyles: { fillColor: [253, 240, 240] },
-          margin: { left: 6, right: 6 }, didDrawPage: footerHook,
+          startY: y,
+          styles: { fontSize: 6.5, cellPadding: 1.8, overflow: "linebreak" },
+          headStyles: { fillColor: BRAND_RED, textColor: [255, 255, 255], fontStyle: "bold", fontSize: 6.5 },
+          alternateRowStyles: { fillColor: [248, 248, 248] },
+          tableLineColor: [220, 220, 220], tableLineWidth: 0.2,
+          columnStyles: {
+            0: { cellWidth: 7, halign: "center" },
+            1: { cellWidth: 16 },
+            2: { cellWidth: 22 },
+            3: { cellWidth: 20 },
+            4: { cellWidth: 14 },
+            5: { cellWidth: 7, halign: "center" },
+            6: { cellWidth: 16 },
+            7: { cellWidth: 7, halign: "center" },
+            8: { cellWidth: 16 },
+            9: { cellWidth: 13 },
+            10: { cellWidth: 18 },
+            11: { cellWidth: 18 },
+          },
+          margin: { left: 8, right: 8 }, didDrawPage: footerHook,
         });
       }
 
@@ -314,11 +376,10 @@ export default function AdminReportsPage() {
       const { default: autoTable } = await import("jspdf-autotable");
       const reportDate = new Date().toLocaleDateString("en-PH", { year: "numeric", month: "long", day: "numeric" });
       const logoBase64 = await getLogoBase64();
-      const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
+      const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
       const pageW = doc.internal.pageSize.getWidth();
       const pageH = doc.internal.pageSize.getHeight();
 
-      // Group by grade
       const byGrade: Record<string, EnrollmentRow[]> = {};
       data.rows.forEach((r) => {
         if (!byGrade[r.gradeLevel]) byGrade[r.gradeLevel] = [];
@@ -330,44 +391,52 @@ export default function AdminReportsPage() {
         if (!firstPage) doc.addPage();
         firstPage = false;
 
-        // Header
-        doc.setFillColor(...BRAND_RED);
-        doc.rect(0, 0, pageW, 24, "F");
-        if (logoBase64) { try { doc.addImage(logoBase64, "PNG", 5, 2, 20, 20); } catch { /**/ } }
-        doc.setTextColor(255, 255, 255);
-        doc.setFontSize(12); doc.setFont("helvetica", "bold");
-        doc.text(SCHOOL_NAME, logoBase64 ? 30 : 8, 9);
-        doc.setFontSize(8); doc.setFont("helvetica", "normal");
-        doc.text("SCHOOL FORM 1 — SCHOOL REGISTER", logoBase64 ? 30 : 8, 15);
-        doc.setFontSize(8);
-        doc.text(`Grade Level: ${grade}`, logoBase64 ? 30 : 8, 21);
-        doc.text(`Generated: ${reportDate}`, pageW - 8, 9, { align: "right" });
+        pdfHeader(doc, "School Form 1 — School Register", `Grade Level: ${grade}`, reportDate, logoBase64);
 
         autoTable(doc, {
-          head: [["No.", "LRN", "Last Name", "First Name", "M.N.", "Ext.", "Sex", "Birth Date", "Age", "Mother Tongue", "Religion", "Address", "Parent/Guardian", "Contact #", "Remarks"]],
+          head: [["#", "LRN", "Last Name", "First Name", "M.N.", "Ext.", "Sex", "Birth Date", "Age", "Mother Tongue", "Religion", "Address", "Parent/Guardian", "Contact #", "Remarks"]],
           body: students.map((r, i) => [
             i + 1, r.lrn, r.lastName, r.firstName, r.middleName, r.suffix,
             r.sex, r.birthDate, r.age, r.motherTongue, r.religion,
             r.address, r.guardianName, r.guardianContact, "",
           ]),
-          startY: 27,
-          styles: { fontSize: 6.5, cellPadding: 1.5, overflow: "linebreak" },
-          headStyles: { fillColor: [40, 40, 100], textColor: [255, 255, 255], fontStyle: "bold", fontSize: 6.5, halign: "center" },
+          startY: 31,
+          styles: { fontSize: 6, cellPadding: 1.5, overflow: "linebreak" },
+          headStyles: { fillColor: BRAND_RED, textColor: [255, 255, 255], fontStyle: "bold", fontSize: 6, halign: "center" },
+          alternateRowStyles: { fillColor: [248, 248, 248] },
+          tableLineColor: [220, 220, 220], tableLineWidth: 0.2,
           columnStyles: {
-            0: { cellWidth: 7 }, 1: { cellWidth: 16 }, 2: { cellWidth: 20 }, 3: { cellWidth: 18 },
-            4: { cellWidth: 14 }, 5: { cellWidth: 8 }, 6: { cellWidth: 7 }, 7: { cellWidth: 16 },
-            8: { cellWidth: 7 }, 9: { cellWidth: 16 }, 10: { cellWidth: 16 },
-            11: { cellWidth: 40 }, 12: { cellWidth: 24 }, 13: { cellWidth: 18 }, 14: { cellWidth: 12 },
+            0: { cellWidth: 6, halign: "center" },
+            1: { cellWidth: 14 },
+            2: { cellWidth: 19 },
+            3: { cellWidth: 17 },
+            4: { cellWidth: 12 },
+            5: { cellWidth: 6 },
+            6: { cellWidth: 6, halign: "center" },
+            7: { cellWidth: 15 },
+            8: { cellWidth: 6, halign: "center" },
+            9: { cellWidth: 14 },
+            10: { cellWidth: 12 },
+            11: { cellWidth: 22 },
+            12: { cellWidth: 20 },
+            13: { cellWidth: 13 },
+            14: { cellWidth: 10 },
           },
-          alternateRowStyles: { fillColor: [240, 240, 250] },
-          margin: { left: 5, right: 5 },
+          margin: { left: 8, right: 8 },
           didDrawPage: (hookData: any) => {
-            doc.setFillColor(...BRAND_RED);
-            doc.rect(0, pageH - 9, pageW, 9, "F");
-            doc.setTextColor(255, 255, 255);
-            doc.setFontSize(6.5); doc.setFont("helvetica", "normal");
-            doc.text(`${SCHOOL_NAME} · SF1 School Register`, pageW / 2, pageH - 3.5, { align: "center" });
-            doc.text(`Page ${hookData.pageNumber}`, pageW - 6, pageH - 3.5, { align: "right" });
+            doc.setDrawColor(...BRAND_RED);
+            doc.setLineWidth(0.4);
+            doc.line(8, pageH - 12, pageW - 8, pageH - 12);
+            doc.setTextColor(...BRAND_RED);
+            doc.setFontSize(6.5); doc.setFont("helvetica", "bold");
+            doc.text(SCHOOL_NAME, 8, pageH - 7.5);
+            doc.setTextColor(130, 130, 130);
+            doc.setFont("helvetica", "normal");
+            doc.text(`SF1 School Register  ·  Grade ${grade}`, 8, pageH - 3.5);
+            doc.setTextColor(60, 60, 60);
+            doc.setFontSize(7); doc.setFont("helvetica", "bold");
+            doc.text(`Page ${hookData.pageNumber}`, pageW - 8, pageH - 5.5, { align: "right" });
+            doc.setDrawColor(0); doc.setLineWidth(0.2);
           },
         });
       }
@@ -386,7 +455,7 @@ export default function AdminReportsPage() {
       const { default: autoTable } = await import("jspdf-autotable");
       const reportDate = new Date().toLocaleDateString("en-PH", { year: "numeric", month: "long", day: "numeric" });
       const logoBase64 = await getLogoBase64();
-      const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
+      const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
       const pageW = doc.internal.pageSize.getWidth();
       const pageH = doc.internal.pageSize.getHeight();
 
@@ -401,46 +470,43 @@ export default function AdminReportsPage() {
         if (!firstPage) doc.addPage();
         firstPage = false;
 
-        doc.setFillColor(...BRAND_RED);
-        doc.rect(0, 0, pageW, 24, "F");
-        if (logoBase64) { try { doc.addImage(logoBase64, "PNG", 5, 2, 20, 20); } catch { /**/ } }
-        doc.setTextColor(255, 255, 255);
-        doc.setFontSize(12); doc.setFont("helvetica", "bold");
-        doc.text(SCHOOL_NAME, logoBase64 ? 30 : 8, 9);
-        doc.setFontSize(8); doc.setFont("helvetica", "normal");
-        doc.text("SCHOOL FORM 2 — DAILY ATTENDANCE REGISTER", logoBase64 ? 30 : 8, 15);
-        doc.text(`Grade Level: ${grade}`, logoBase64 ? 30 : 8, 21);
-        doc.text(`Generated: ${reportDate}`, pageW - 8, 9, { align: "right" });
+        pdfHeader(doc, "School Form 2 — Attendance Register", `Grade Level: ${grade}`, reportDate, logoBase64);
 
         const dayHeaders = Array.from({ length: 31 }, (_, i) => String(i + 1));
-        const head = [["No.", "LRN", "Last Name", "First Name", "Sex", ...dayHeaders]];
-        const body = students.map((r, i) => [
-          i + 1, r.lrn, r.lastName, r.firstName, r.sex,
-          ...Array(31).fill(""),
-        ]);
-
         autoTable(doc, {
-          head, body,
-          startY: 27,
-          styles: { fontSize: 5.5, cellPadding: 1, halign: "center" },
-          headStyles: { fillColor: [40, 40, 100], textColor: [255, 255, 255], fontStyle: "bold", fontSize: 5.5 },
+          head: [["#", "LRN", "Last Name", "First Name", "Sex", ...dayHeaders]],
+          body: students.map((r, i) => [
+            i + 1, r.lrn, r.lastName, r.firstName, r.sex,
+            ...Array(31).fill(""),
+          ]),
+          startY: 31,
+          styles: { fontSize: 5, cellPadding: 1, halign: "center" },
+          headStyles: { fillColor: BRAND_RED, textColor: [255, 255, 255], fontStyle: "bold", fontSize: 5 },
+          alternateRowStyles: { fillColor: [248, 248, 248] },
+          tableLineColor: [220, 220, 220], tableLineWidth: 0.2,
           columnStyles: {
-            0: { cellWidth: 7 },
-            1: { cellWidth: 16 },
-            2: { cellWidth: 18 },
-            3: { cellWidth: 16 },
-            4: { cellWidth: 6 },
-            ...Object.fromEntries(Array.from({ length: 31 }, (_, i) => [i + 5, { cellWidth: 5.8 }])),
+            0: { cellWidth: 5 },
+            1: { cellWidth: 12, halign: "left" },
+            2: { cellWidth: 16, halign: "left" },
+            3: { cellWidth: 14, halign: "left" },
+            4: { cellWidth: 5 },
+            ...Object.fromEntries(Array.from({ length: 31 }, (_, i) => [i + 5, { cellWidth: 4.5 }])),
           },
-          alternateRowStyles: { fillColor: [240, 240, 250] },
-          margin: { left: 5, right: 5 },
+          margin: { left: 8, right: 8 },
           didDrawPage: (hookData: any) => {
-            doc.setFillColor(...BRAND_RED);
-            doc.rect(0, pageH - 9, pageW, 9, "F");
-            doc.setTextColor(255, 255, 255);
-            doc.setFontSize(6.5); doc.setFont("helvetica", "normal");
-            doc.text(`${SCHOOL_NAME} · SF2 Daily Attendance`, pageW / 2, pageH - 3.5, { align: "center" });
-            doc.text(`Page ${hookData.pageNumber}`, pageW - 6, pageH - 3.5, { align: "right" });
+            doc.setDrawColor(...BRAND_RED);
+            doc.setLineWidth(0.4);
+            doc.line(8, pageH - 12, pageW - 8, pageH - 12);
+            doc.setTextColor(...BRAND_RED);
+            doc.setFontSize(6.5); doc.setFont("helvetica", "bold");
+            doc.text(SCHOOL_NAME, 8, pageH - 7.5);
+            doc.setTextColor(130, 130, 130);
+            doc.setFont("helvetica", "normal");
+            doc.text(`SF2 Daily Attendance Register  ·  Grade ${grade}`, 8, pageH - 3.5);
+            doc.setTextColor(60, 60, 60);
+            doc.setFontSize(7); doc.setFont("helvetica", "bold");
+            doc.text(`Page ${hookData.pageNumber}`, pageW - 8, pageH - 5.5, { align: "right" });
+            doc.setDrawColor(0); doc.setLineWidth(0.2);
           },
         });
       }
