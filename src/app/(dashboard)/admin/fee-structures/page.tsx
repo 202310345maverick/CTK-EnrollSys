@@ -33,6 +33,61 @@ const emptyForm = () => ({
   fees: [emptyFee()],
 });
 
+const calcTotal = (fees: FeeItem[]) => fees.reduce((s, f) => s + (Number(f.amount) || 0), 0);
+
+const updateFee = (arr: FeeItem[], idx: number, field: keyof FeeItem, val: any): FeeItem[] =>
+  arr.map((f, i) => (i === idx ? { ...f, [field]: field === "amount" ? Number(val) : val } : f));
+
+function FeeEditor({ fees, setFees }: { fees: FeeItem[]; setFees: (f: FeeItem[]) => void }) {
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center justify-between">
+        <label className={labelCls}>Fee Items</label>
+        <Button type="button" variant="ghost" size="sm" className="h-6 text-xs text-primary px-1 flex items-center gap-1" onClick={() => setFees([...fees, emptyFee()])}>
+          <PlusCircle className="h-3.5 w-3.5" /> Add Fee
+        </Button>
+      </div>
+      {fees.map((fee, idx) => (
+        <div key={idx} className="flex items-center gap-2">
+          <Input
+            required
+            placeholder="Description"
+            className="h-8 text-sm flex-1"
+            value={fee.description}
+            onChange={(e) => setFees(updateFee(fees, idx, "description", e.target.value))}
+          />
+          <Input
+            required
+            type="number"
+            min="0"
+            placeholder="Amount"
+            className="h-8 text-sm w-28"
+            value={fee.amount || ""}
+            onChange={(e) => setFees(updateFee(fees, idx, "amount", e.target.value))}
+          />
+          <label className="flex items-center gap-1 text-xs shrink-0">
+            <input
+              type="checkbox"
+              checked={fee.isRequired}
+              onChange={(e) => setFees(updateFee(fees, idx, "isRequired", e.target.checked))}
+              className="h-3.5 w-3.5"
+            />
+            Req.
+          </label>
+          {fees.length > 1 && (
+            <Button type="button" variant="ghost" size="icon" className="h-6 w-6 p-0" onClick={() => setFees(fees.filter((_, i) => i !== idx))}>
+              <MinusCircle className="h-3.5 w-3.5 text-red-500" />
+            </Button>
+          )}
+        </div>
+      ))}
+      <p className="text-xs text-muted-foreground pt-1">
+        Total: <span className="font-semibold text-foreground">{formatCurrency(calcTotal(fees))}</span>
+      </p>
+    </div>
+  );
+}
+
 export default function FeeStructuresPage() {
   const [feeStructures, setFeeStructures] = useState<FeeStructure[]>([]);
   const [schoolYears, setSchoolYears] = useState<SchoolYearOption[]>([]);
@@ -66,11 +121,6 @@ export default function FeeStructuresPage() {
   }, []);
 
   useEffect(() => { load(); }, [load]);
-
-  const calcTotal = (fees: FeeItem[]) => fees.reduce((s, f) => s + (Number(f.amount) || 0), 0);
-
-  const updateFee = (arr: FeeItem[], idx: number, field: keyof FeeItem, val: any): FeeItem[] =>
-    arr.map((f, i) => i === idx ? { ...f, [field]: field === "amount" ? Number(val) : val } : f);
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -138,54 +188,6 @@ export default function FeeStructuresPage() {
     await fetch(`/api/fee-structures/${id}`, { method: "DELETE" });
     await load();
   };
-
-  const FeeEditor = ({ fees, setFees }: { fees: FeeItem[]; setFees: (f: FeeItem[]) => void }) => (
-    <div className="space-y-2">
-      <div className="flex items-center justify-between">
-        <label className={labelCls}>Fee Items</label>
-        <Button type="button" variant="ghost" size="sm" className="h-6 text-xs text-primary px-1 flex items-center gap-1" onClick={() => setFees([...fees, emptyFee()])}>
-          <PlusCircle className="h-3.5 w-3.5" /> Add Fee
-        </Button>
-      </div>
-      {fees.map((fee, idx) => (
-        <div key={idx} className="flex items-center gap-2">
-          <Input
-            required
-            placeholder="Description"
-            className="h-8 text-sm flex-1"
-            value={fee.description}
-            onChange={(e) => setFees(updateFee(fees, idx, "description", e.target.value))}
-          />
-          <Input
-            required
-            type="number"
-            min="0"
-            placeholder="Amount"
-            className="h-8 text-sm w-28"
-            value={fee.amount || ""}
-            onChange={(e) => setFees(updateFee(fees, idx, "amount", e.target.value))}
-          />
-          <label className="flex items-center gap-1 text-xs shrink-0">
-            <input
-              type="checkbox"
-              checked={fee.isRequired}
-              onChange={(e) => setFees(updateFee(fees, idx, "isRequired", e.target.checked))}
-              className="h-3.5 w-3.5"
-            />
-            Req.
-          </label>
-          {fees.length > 1 && (
-            <Button type="button" variant="ghost" size="icon" className="h-6 w-6 p-0" onClick={() => setFees(fees.filter((_, i) => i !== idx))}>
-              <MinusCircle className="h-3.5 w-3.5 text-red-500" />
-            </Button>
-          )}
-        </div>
-      ))}
-      <p className="text-xs text-muted-foreground pt-1">
-        Total: <span className="font-semibold text-foreground">{formatCurrency(calcTotal(fees))}</span>
-      </p>
-    </div>
-  );
 
   return (
     <div className="space-y-4 pb-8">
