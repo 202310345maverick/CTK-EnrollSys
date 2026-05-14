@@ -89,7 +89,7 @@ export default function ParentEnrollmentsPage() {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>("");
+  const [statusFilter, setStatusFilter] = useState<string>("__all__");
 
   useEffect(() => {
     fetchEnrollments();
@@ -163,7 +163,7 @@ export default function ParentEnrollmentsPage() {
         .toLowerCase()
         .includes(searchQuery.toLowerCase());
     
-    const matchesStatus = !statusFilter || enrollment.status === statusFilter;
+    const matchesStatus = statusFilter === "__all__" || enrollment.status === statusFilter;
     
     return matchesSearch && matchesStatus;
   });
@@ -211,6 +211,7 @@ export default function ParentEnrollmentsPage() {
           onChange={(v) => setStatusFilter(v)}
           placeholder="All Status"
           options={[
+            { value: "__all__", label: "All Status" },
             { value: "draft", label: "Draft" },
             { value: "pending", label: "Pending" },
             { value: "under_review", label: "Under Review" },

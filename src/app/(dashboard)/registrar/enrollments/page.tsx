@@ -37,9 +37,9 @@ export default function EnrollmentsPage() {
   const [enrollments, setEnrollments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("");
-  const [gradeFilter, setGradeFilter] = useState("");
-  const [typeFilter, setTypeFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState("__all__");
+  const [gradeFilter, setGradeFilter] = useState("__all__");
+  const [typeFilter, setTypeFilter] = useState("__all__");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
 
@@ -55,9 +55,9 @@ export default function EnrollmentsPage() {
     const name = `${e.studentId?.personalInfo?.firstName || ""} ${e.studentId?.personalInfo?.lastName || ""}`.toLowerCase();
     const num = (e.enrollmentNumber || "").toLowerCase();
     const matchesSearch = !search || name.includes(search.toLowerCase()) || num.includes(search.toLowerCase());
-    const matchesStatus = !statusFilter || e.status === statusFilter;
-    const matchesGrade = !gradeFilter || e.gradeLevel === gradeFilter;
-    const matchesType = !typeFilter || e.enrollmentType === typeFilter;
+    const matchesStatus = statusFilter === "__all__" || e.status === statusFilter;
+    const matchesGrade = gradeFilter === "__all__" || e.gradeLevel === gradeFilter;
+    const matchesType = typeFilter === "__all__" || e.enrollmentType === typeFilter;
     const matchesDateFrom = !dateFrom || new Date(e.createdAt) >= new Date(dateFrom);
     const matchesDateTo = !dateTo || new Date(e.createdAt) <= new Date(dateTo + "T23:59:59");
     return matchesSearch && matchesStatus && matchesGrade && matchesType && matchesDateFrom && matchesDateTo;
@@ -65,13 +65,13 @@ export default function EnrollmentsPage() {
 
   const gradeLevels = Array.from(new Set(enrollments.map((e) => e.gradeLevel).filter(Boolean))).sort();
 
-  const hasFilters = search || statusFilter || gradeFilter || typeFilter || dateFrom || dateTo;
+  const hasFilters = search || statusFilter !== "__all__" || gradeFilter !== "__all__" || typeFilter !== "__all__" || dateFrom || dateTo;
 
   const clearFilters = () => {
     setSearch("");
-    setStatusFilter("");
-    setGradeFilter("");
-    setTypeFilter("");
+    setStatusFilter("__all__");
+    setGradeFilter("__all__");
+    setTypeFilter("__all__");
     setDateFrom("");
     setDateTo("");
   };
@@ -99,6 +99,7 @@ export default function EnrollmentsPage() {
           onChange={(v) => setStatusFilter(v)}
           placeholder="All Status"
           options={[
+            { value: "__all__", label: "All Status" },
             { value: "pending", label: "Pending" },
             { value: "under_review", label: "Under Review" },
             { value: "approved", label: "Approved" },
@@ -111,7 +112,7 @@ export default function EnrollmentsPage() {
           value={gradeFilter}
           onChange={(v) => setGradeFilter(v)}
           placeholder="All Grades"
-          options={gradeLevels.map((g) => ({ value: g, label: g }))}
+          options={[{ value: "__all__", label: "All Grades" }, ...gradeLevels.map((g) => ({ value: g, label: g }))]}
           className="w-36"
         />
         <FormSelect
@@ -119,6 +120,7 @@ export default function EnrollmentsPage() {
           onChange={(v) => setTypeFilter(v)}
           placeholder="All Types"
           options={[
+            { value: "__all__", label: "All Types" },
             { value: "new", label: "New" },
             { value: "returning", label: "Returning" },
             { value: "transferee", label: "Transferee" },
