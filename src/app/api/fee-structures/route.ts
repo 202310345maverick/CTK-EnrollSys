@@ -17,9 +17,11 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
     const schoolYearId = searchParams.get("schoolYearId");
+    const gradeLevel = searchParams.get("gradeLevel");
 
     const query: Record<string, unknown> = {};
     if (schoolYearId) query.schoolYearId = schoolYearId;
+    if (gradeLevel) query.gradeLevel = gradeLevel;
 
     const feeStructures = await FeeStructure.find(query)
       .populate("schoolYearId", "name startDate endDate")

@@ -8,10 +8,29 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
   ArrowLeft, CheckCircle, XCircle, Clock, User, FileText, Calendar,
-  AlertCircle, Loader2, ExternalLink, ShieldCheck, RotateCcw, DollarSign,
-  MessageSquare, UploadCloud,
+  AlertCircle, Loader2, ExternalLink, ShieldCheck, RotateCcw,
+  MessageSquare, UploadCloud, Zap,
 } from "lucide-react";
 import { ENROLLMENT_DOCUMENT_LABELS } from "@/lib/enrollment/constants";
+
+function PesoSign({ className }: { className?: string }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+    >
+      <line x1="6" y1="10" x2="16" y2="10" />
+      <line x1="6" y1="13" x2="16" y2="13" />
+      <path d="M8 20V4h5a4 4 0 0 1 0 8H8" />
+    </svg>
+  );
+}
 
 const STATUS_COLORS: Record<string, string> = {
   pending: "bg-amber-100 text-amber-800 border border-amber-200",
@@ -57,6 +76,7 @@ export default function EnrollmentDetailPage() {
   const [feeDescription, setFeeDescription] = useState("");
   const [feeAmount, setFeeAmount] = useState("");
   const [feeBreakdown, setFeeBreakdown] = useState<{ description: string; amount: number }[]>([]);
+  const [feeStructureItems, setFeeStructureItems] = useState<{ description: string; amount: number; isRequired: boolean }[]>([]);
   const [toast, setToast] = useState<{ msg: string; type: "success" | "error" } | null>(null);
   const [balance, setBalance] = useState<{ assessed: number; paid: number; balance: number } | null>(null);
   const [reuploadModal, setReuploadModal] = useState<{ docType: string; label: string } | null>(null);
@@ -84,6 +104,18 @@ export default function EnrollmentDetailPage() {
   };
 
   useEffect(() => { fetchEnrollment(); }, [params.id]);
+
+  useEffect(() => {
+    if (!enrollment?.gradeLevel) return;
+    fetch(`/api/fee-structures?gradeLevel=${encodeURIComponent(enrollment.gradeLevel)}&limit=10`)
+      .then((r) => r.json())
+      .then((data) => {
+        const structures = data.feeStructures || [];
+        const active = structures.find((s: any) => s.isActive) || structures[0];
+        if (active?.fees?.length) setFeeStructureItems(active.fees);
+      })
+      .catch(() => {});
+  }, [enrollment?.gradeLevel]);
 
   useEffect(() => {
     if (!enrollment) return;
@@ -432,7 +464,7 @@ export default function EnrollmentDetailPage() {
           <Card>
             <CardHeader className="pb-2 pt-4 px-4">
               <CardTitle className="flex items-center gap-1.5 text-sm font-semibold">
-                <DollarSign className="h-4 w-4 text-primary" /> Fee Assessment
+                <PesoSign className="h-4 w-4 text-primary" /> Fee Assessment
               </CardTitle>
             </CardHeader>
             <CardContent className="px-4 pb-4 space-y-3">
@@ -453,7 +485,47 @@ export default function EnrollmentDetailPage() {
                   </div>
                 </div>
               )}
-              <p className="text-xs font-medium text-slate-700">Add Fee Items</p>
+
+              {/* Quick-add from fee structure */}
+              {feeStructureItems.length > 0 && (
+                <div>
+                  <p className="text-xs font-medium text-slate-700 mb-1.5 flex items-center gap-1">
+                    <Zap className="h-3 w-3 text-amber-500" /> Quick Add from Fee Structure
+                  </p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {feeStructureItems.map((item, i) => (
+                      <button
+                        key={i}
+                        type="button"
+                        onClick={() => {
+                          setFeeBreakdown((prev) => {
+                            const exists = prev.find((f) => f.description === item.description);
+                            if (exists) return prev;
+                            return [...prev, { description: item.description, amount: item.amount }];
+                          });
+                        }}
+                        className="inline-flex items-center gap-1 rounded-md border border-primary/30 bg-primary/5 px-2 py-1 text-xs font-medium text-primary hover:bg-primary/10 transition-colors"
+                      >
+                        + {item.description}
+                        <span className="text-[10px] text-muted-foreground ml-0.5">{formatCurrency(item.amount)}</span>
+                      </button>
+                    ))}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setFeeBreakdown(
+                          feeStructureItems.map((item) => ({ description: item.description, amount: item.amount }))
+                        );
+                      }}
+                      className="inline-flex items-center gap-1 rounded-md border border-slate-300 bg-slate-50 px-2 py-1 text-xs font-medium text-slate-600 hover:bg-slate-100 transition-colors"
+                    >
+                      Add All
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              <p className="text-xs font-medium text-slate-700">Add Fee Items Manually</p>
               <div className="flex gap-2">
                 <input
                   value={feeDescription}
@@ -499,7 +571,7 @@ export default function EnrollmentDetailPage() {
             <Card>
               <CardHeader className="pb-2 pt-4 px-4">
                 <CardTitle className="flex items-center gap-1.5 text-sm font-semibold">
-                  <DollarSign className="h-4 w-4 text-primary" /> Balance Summary
+                  <PesoSign className="h-4 w-4 text-primary" /> Balance Summary
                 </CardTitle>
               </CardHeader>
               <CardContent className="px-4 pb-4">
