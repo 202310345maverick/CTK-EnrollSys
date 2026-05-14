@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { PageHeader as _PageHeader } from "@/components/shared/page-header";
 import {
   Loader2, Download, FileText, Users, CreditCard, ClipboardList,
-  Filter, TableProperties, RefreshCw,
+  Filter, TableProperties, RefreshCw, X,
 } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import { FormSelect } from "@/components/ui/form-select";
@@ -131,26 +131,26 @@ export default function ReportsPage() {
 
   function pdfHeader(doc: any, title: string, subtitle: string, reportDate: string, logoBase64: string | null) {
     const pageW = doc.internal.pageSize.getWidth();
-    if (logoBase64) { try { doc.addImage(logoBase64, "PNG", 8, 5, 18, 18); } catch { /**/ } }
-    const textX = logoBase64 ? 30 : 8;
+    if (logoBase64) { try { doc.addImage(logoBase64, "PNG", 8, 5, 16, 16); } catch { /**/ } }
+    const textX = logoBase64 ? 27 : 8;
     doc.setTextColor(...BRAND_RED);
-    doc.setFontSize(13); doc.setFont("helvetica", "bold");
-    doc.text(SCHOOL_NAME, textX, 12);
+    doc.setFontSize(12); doc.setFont("helvetica", "bold");
+    doc.text(SCHOOL_NAME, textX, 11);
     doc.setTextColor(100, 100, 100);
-    doc.setFontSize(7.5); doc.setFont("helvetica", "normal");
-    doc.text("Enrollment Management System  ·  A Catholic School", textX, 18.5);
-    doc.setTextColor(40, 40, 40);
-    doc.setFontSize(10); doc.setFont("helvetica", "bold");
-    doc.text(title, pageW - 8, 11, { align: "right" });
-    doc.setTextColor(110, 110, 110);
-    doc.setFontSize(7); doc.setFont("helvetica", "italic");
-    doc.text(subtitle, pageW - 8, 17, { align: "right" });
-    doc.setFontSize(6.5); doc.setFont("helvetica", "normal");
-    doc.setTextColor(140, 140, 140);
-    doc.text(`Generated: ${reportDate}`, pageW - 8, 22.5, { align: "right" });
+    doc.setFontSize(7); doc.setFont("helvetica", "normal");
+    doc.text("Enrollment Management System", textX, 17);
+    doc.setTextColor(30, 30, 30);
+    doc.setFontSize(9); doc.setFont("helvetica", "bold");
+    doc.text(title, pageW - 8, 10, { align: "right" });
+    doc.setTextColor(120, 120, 120);
+    doc.setFontSize(6.5); doc.setFont("helvetica", "italic");
+    doc.text(subtitle, pageW - 8, 16, { align: "right" });
+    doc.setFontSize(6); doc.setFont("helvetica", "normal");
+    doc.setTextColor(150, 150, 150);
+    doc.text(`Generated: ${reportDate}`, pageW - 8, 21, { align: "right" });
     doc.setDrawColor(...BRAND_RED);
-    doc.setLineWidth(0.8);
-    doc.line(8, 27, pageW - 8, 27);
+    doc.setLineWidth(0.7);
+    doc.line(8, 25, pageW - 8, 25);
     doc.setDrawColor(0); doc.setLineWidth(0.2);
   }
 
@@ -280,7 +280,7 @@ export default function ReportsPage() {
 
       if (isPayment) {
         const stats = data.payments;
-        let y = 33;
+        let y = 29;
         doc.setFontSize(8); doc.setFont("helvetica", "bold"); doc.setTextColor(50, 50, 50);
         doc.text("Payment Summary", 8, y);
         autoTable(doc, {
@@ -293,8 +293,8 @@ export default function ReportsPage() {
           startY: y + 4,
           styles: { fontSize: 8, cellPadding: 2.5 },
           columnStyles: {
-            0: { fontStyle: "bold", cellWidth: 55, fillColor: [248, 248, 248] },
-            1: { cellWidth: 55 },
+            0: { fontStyle: "bold", cellWidth: 60, fillColor: [248, 248, 248] },
+            1: { cellWidth: 60 },
           },
           tableLineColor: [220, 220, 220], tableLineWidth: 0.2,
           margin: { left: 8, right: 8 },
@@ -319,11 +319,20 @@ export default function ReportsPage() {
           headStyles: { fillColor: BRAND_RED, textColor: [255, 255, 255], fontStyle: "bold", fontSize: 7 },
           alternateRowStyles: { fillColor: [248, 248, 248] },
           tableLineColor: [220, 220, 220], tableLineWidth: 0.2,
+          columnStyles: {
+            0: { cellWidth: 22 },  // Receipt #
+            1: { cellWidth: 46 },  // Student Name
+            2: { cellWidth: 18 },  // LRN
+            3: { cellWidth: 22 },  // Type
+            4: { cellWidth: 22, halign: "right" },  // Amount
+            5: { cellWidth: 22 },  // Date
+            6: { cellWidth: 42 },  // Recorded By
+          },                       // Total: 194mm
           margin: { left: 8, right: 8 }, didDrawPage: footerHook,
         });
       } else {
         const rows = data.rows || [];
-        let y = 33;
+        let y = 29;
         // Summary bar
         if (data.byGrade?.length) {
           doc.setFontSize(7.5); doc.setFont("helvetica", "bold"); doc.setTextColor(50, 50, 50);
@@ -341,24 +350,24 @@ export default function ReportsPage() {
             STATUS_LABELS[r.status] || r.status, r.schoolYear,
           ]),
           startY: y,
-          styles: { fontSize: 6.5, cellPadding: 1.8, overflow: "linebreak" },
-          headStyles: { fillColor: BRAND_RED, textColor: [255, 255, 255], fontStyle: "bold", fontSize: 6.5 },
+          styles: { fontSize: 7, cellPadding: 2, overflow: "linebreak" },
+          headStyles: { fillColor: BRAND_RED, textColor: [255, 255, 255], fontStyle: "bold", fontSize: 7 },
           alternateRowStyles: { fillColor: [248, 248, 248] },
           tableLineColor: [220, 220, 220], tableLineWidth: 0.2,
           columnStyles: {
-            0: { cellWidth: 7, halign: "center" },
-            1: { cellWidth: 16 },
-            2: { cellWidth: 22 },
-            3: { cellWidth: 20 },
-            4: { cellWidth: 14 },
-            5: { cellWidth: 7, halign: "center" },
-            6: { cellWidth: 16 },
-            7: { cellWidth: 7, halign: "center" },
-            8: { cellWidth: 16 },
-            9: { cellWidth: 13 },
-            10: { cellWidth: 18 },
-            11: { cellWidth: 18 },
-          },
+            0:  { cellWidth: 8,  halign: "center" },  // #
+            1:  { cellWidth: 18 },                    // LRN
+            2:  { cellWidth: 26 },                    // Last Name
+            3:  { cellWidth: 22 },                    // First Name
+            4:  { cellWidth: 14 },                    // M.N.
+            5:  { cellWidth: 8,  halign: "center" },  // Sex
+            6:  { cellWidth: 18 },                    // Birth Date
+            7:  { cellWidth: 8,  halign: "center" },  // Age
+            8:  { cellWidth: 18 },                    // Grade
+            9:  { cellWidth: 14 },                    // Section
+            10: { cellWidth: 22 },                    // Status
+            11: { cellWidth: 18 },                    // School Year
+          },                                          // Total: 194mm
           margin: { left: 8, right: 8 }, didDrawPage: footerHook,
         });
       }
@@ -401,28 +410,28 @@ export default function ReportsPage() {
             r.sex, r.birthDate, r.age, r.motherTongue, r.religion,
             r.address, r.guardianName, r.guardianContact, "",
           ]),
-          startY: 31,
-          styles: { fontSize: 6, cellPadding: 1.5, overflow: "linebreak" },
-          headStyles: { fillColor: BRAND_RED, textColor: [255, 255, 255], fontStyle: "bold", fontSize: 6, halign: "center" },
+          startY: 29,
+          styles: { fontSize: 6.5, cellPadding: 1.8, overflow: "linebreak" },
+          headStyles: { fillColor: BRAND_RED, textColor: [255, 255, 255], fontStyle: "bold", fontSize: 6.5, halign: "center" },
           alternateRowStyles: { fillColor: [248, 248, 248] },
           tableLineColor: [220, 220, 220], tableLineWidth: 0.2,
           columnStyles: {
-            0: { cellWidth: 6, halign: "center" },
-            1: { cellWidth: 14 },
-            2: { cellWidth: 19 },
-            3: { cellWidth: 17 },
-            4: { cellWidth: 12 },
-            5: { cellWidth: 6 },
-            6: { cellWidth: 6, halign: "center" },
-            7: { cellWidth: 15 },
-            8: { cellWidth: 6, halign: "center" },
-            9: { cellWidth: 14 },
-            10: { cellWidth: 12 },
-            11: { cellWidth: 22 },
-            12: { cellWidth: 20 },
-            13: { cellWidth: 13 },
-            14: { cellWidth: 10 },
-          },
+            0:  { cellWidth: 6,  halign: "center" },  // #
+            1:  { cellWidth: 15 },                    // LRN
+            2:  { cellWidth: 20 },                    // Last Name
+            3:  { cellWidth: 18 },                    // First Name
+            4:  { cellWidth: 10 },                    // M.N.
+            5:  { cellWidth: 6  },                    // Ext.
+            6:  { cellWidth: 6,  halign: "center" },  // Sex
+            7:  { cellWidth: 16 },                    // Birth Date
+            8:  { cellWidth: 6,  halign: "center" },  // Age
+            9:  { cellWidth: 14 },                    // Mother Tongue
+            10: { cellWidth: 12 },                    // Religion
+            11: { cellWidth: 30 },                    // Address
+            12: { cellWidth: 18 },                    // Parent/Guardian
+            13: { cellWidth: 13 },                    // Contact #
+            14: { cellWidth: 8  },                    // Remarks
+          },                                          // Total: 178+16=194mm
           margin: { left: 8, right: 8 },
           didDrawPage: (hookData: any) => {
             doc.setDrawColor(...BRAND_RED);
@@ -480,19 +489,19 @@ export default function ReportsPage() {
             i + 1, r.lrn, r.lastName, r.firstName, r.sex,
             ...Array(31).fill(""),
           ]),
-          startY: 31,
-          styles: { fontSize: 5, cellPadding: 1, halign: "center" },
-          headStyles: { fillColor: BRAND_RED, textColor: [255, 255, 255], fontStyle: "bold", fontSize: 5 },
+          startY: 29,
+          styles: { fontSize: 5.5, cellPadding: 1, halign: "center" },
+          headStyles: { fillColor: BRAND_RED, textColor: [255, 255, 255], fontStyle: "bold", fontSize: 5.5 },
           alternateRowStyles: { fillColor: [248, 248, 248] },
           tableLineColor: [220, 220, 220], tableLineWidth: 0.2,
           columnStyles: {
-            0: { cellWidth: 5 },
-            1: { cellWidth: 12, halign: "left" },
-            2: { cellWidth: 16, halign: "left" },
-            3: { cellWidth: 14, halign: "left" },
-            4: { cellWidth: 5 },
-            ...Object.fromEntries(Array.from({ length: 31 }, (_, i) => [i + 5, { cellWidth: 4.5 }])),
-          },
+            0: { cellWidth: 5  },                           // #
+            1: { cellWidth: 14, halign: "left" },           // LRN
+            2: { cellWidth: 17, halign: "left" },           // Last Name
+            3: { cellWidth: 14, halign: "left" },           // First Name
+            4: { cellWidth: 5  },                           // Sex
+            ...Object.fromEntries(Array.from({ length: 31 }, (_, i) => [i + 5, { cellWidth: 4.48 }])),
+          },                                                 // Total: 55 + 31×4.48 = 193.88 ≈ 194mm
           margin: { left: 8, right: 8 },
           didDrawPage: (hookData: any) => {
             doc.setDrawColor(...BRAND_RED);
@@ -561,10 +570,15 @@ export default function ReportsPage() {
             <CardTitle className="text-sm font-semibold flex items-center gap-1.5">
               <Filter className="h-3.5 w-3.5" /> Filters
             </CardTitle>
-            <Button size="sm" className="h-7 px-3 text-xs" onClick={handleRun} disabled={loading}>
-              {loading ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <RefreshCw className="h-3 w-3 mr-1" />}
-              Run Report
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button size="sm" variant="outline" className="h-7 px-3 text-xs" onClick={() => { setFilters({ schoolYearId: "", gradeLevel: "", status: "", dateFrom: "", dateTo: "" }); }} disabled={loading}>
+                <X className="h-3 w-3 mr-1" /> Reset Filters
+              </Button>
+              <Button size="sm" className="h-7 px-3 text-xs" onClick={handleRun} disabled={loading}>
+                {loading ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <RefreshCw className="h-3 w-3 mr-1" />}
+                Run Report
+              </Button>
+            </div>
           </div>
         </CardHeader>
         <CardContent className="px-4 pb-3">
