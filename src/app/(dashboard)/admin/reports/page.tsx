@@ -488,19 +488,19 @@ export default function AdminReportsPage() {
             i + 1, r.lrn, r.lastName, r.firstName, r.sex,
             ...Array(31).fill(""),
           ]),
-          startY: 31,
-          styles: { fontSize: 5, cellPadding: 1, halign: "center" },
-          headStyles: { fillColor: BRAND_RED, textColor: [255, 255, 255], fontStyle: "bold", fontSize: 5 },
+          startY: 29,
+          styles: { fontSize: 5.5, cellPadding: 1, halign: "center" },
+          headStyles: { fillColor: BRAND_RED, textColor: [255, 255, 255], fontStyle: "bold", fontSize: 5.5 },
           alternateRowStyles: { fillColor: [248, 248, 248] },
           tableLineColor: [220, 220, 220], tableLineWidth: 0.2,
           columnStyles: {
-            0: { cellWidth: 5  },                           // #
-            1: { cellWidth: 14, halign: "left" },           // LRN
-            2: { cellWidth: 17, halign: "left" },           // Last Name
-            3: { cellWidth: 14, halign: "left" },           // First Name
-            4: { cellWidth: 5  },                           // Sex
-            ...Object.fromEntries(Array.from({ length: 31 }, (_, i) => [i + 5, { cellWidth: 4.48 }])),
-          },                                                 // Total: 55 + 31×4.48 ≈ 194mm
+            0: { cellWidth: 5  },
+            1: { cellWidth: 14, halign: "left" },
+            2: { cellWidth: 17, halign: "left" },
+            3: { cellWidth: 15, halign: "left" },
+            4: { cellWidth: 5  },
+            ...Object.fromEntries(Array.from({ length: 31 }, (_, i) => [i + 5, { cellWidth: 4.5 }])),
+          },
           margin: { left: 8, right: 8 },
           didDrawPage: (hookData: any) => {
             doc.setDrawColor(...BRAND_RED);
