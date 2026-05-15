@@ -21,7 +21,6 @@ const DOCUMENT_TYPES = [
   { id: "good_moral",           label: "Good Moral Certificate",            required: true  },
   { id: "id_photo",             label: "2x2 ID Picture",                    required: true  },
   { id: "transfer_certificate", label: "Form 137 / Transfer Credentials",   required: false },
-  { id: "medical_certificate",  label: "Medical Certificate",               required: false },
   { id: "other",                label: "Indigency Certificate / Baptismal / Others", required: false },
 ];
 
