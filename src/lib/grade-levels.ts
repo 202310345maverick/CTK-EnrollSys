@@ -1,6 +1,5 @@
-/** Canonical grade levels for Christ the King Catholic School (Pre-K → Grade 10). */
+/** Canonical grade levels for Christ the King Catholic School (Kindergarten → Grade 10). */
 export const GRADE_LEVELS = [
-  "Pre-Kindergarten",
   "Kindergarten",
   "Grade 1",
   "Grade 2",

@@ -35,11 +35,13 @@ const MONTHLY_INCOME_OPTIONS = [
 ];
 
 const GRADE_LEVELS = [
-  "Pre-Kindergarten",
   "Kindergarten",
   "Grade 1","Grade 2","Grade 3","Grade 4","Grade 5","Grade 6",
   "Grade 7","Grade 8","Grade 9","Grade 10",
 ];
+
+// Document types not required for Kindergarten
+const KINDER_EXEMPT_DOCS = new Set(["report_card", "good_moral"]);
 
 // ── Zod schema ────────────────────────────────────────────────────────────────
 const schema = z.object({
@@ -115,6 +117,7 @@ export default function NewEnrollmentPage() {
   });
 
   const isCatholic = watch("isCatholic");
+  const gradeLevel = watch("gradeLevel");
   const watchedValues = watch();
 
   // On mount: fetch the single existing draft and restore it
@@ -280,9 +283,10 @@ export default function NewEnrollmentPage() {
         setIsSubmitting(false);
         return;
       }
-      // Check required documents
+      // Check required documents (Kindergarten doesn't need report card or good moral)
+      const isKindergarten = data.gradeLevel === "Kindergarten";
       const missingDocs = DOCUMENT_TYPES.filter(
-        (d) => d.required && !uploadedDocs[d.id]
+        (d) => d.required && !uploadedDocs[d.id] && !(isKindergarten && KINDER_EXEMPT_DOCS.has(d.id))
       );
       if (missingDocs.length > 0) {
         toast({
@@ -737,7 +741,8 @@ export default function NewEnrollmentPage() {
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-gray-800">
                         {doc.label}
-                        {doc.required && <span className="ml-1 text-red-500 text-xs">*</span>}
+                        {doc.required && !(gradeLevel === "Kindergarten" && KINDER_EXEMPT_DOCS.has(doc.id)) && <span className="ml-1 text-red-500 text-xs">*</span>}
+                        {gradeLevel === "Kindergarten" && KINDER_EXEMPT_DOCS.has(doc.id) && <span className="ml-1 text-gray-400 text-xs">(not required for Kindergarten)</span>}
                       </p>
                       {uploaded && (
                         <div className="flex items-center gap-1 mt-0.5 text-xs text-green-600">

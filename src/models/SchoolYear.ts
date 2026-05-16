@@ -45,7 +45,6 @@ const SchoolYearSchema = new Schema<ISchoolYear>(
     gradeLevels: {
       type: [String],
       default: [
-        "Pre-Kindergarten",
         "Kindergarten",
         "Grade 1",
         "Grade 2",

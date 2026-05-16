@@ -28,7 +28,7 @@ const labelCls = "block text-xs font-medium text-gray-700";
 const emptyFee = (): FeeItem => ({ description: "", amount: 0, isRequired: true });
 const emptyForm = () => ({
   schoolYearId: "",
-  gradeLevel: "Pre-Kindergarten",
+  gradeLevel: "Kindergarten",
   isActive: true,
   fees: [emptyFee()],
 });
