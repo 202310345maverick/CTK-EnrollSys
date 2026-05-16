@@ -41,7 +41,7 @@ const GRADE_LEVELS = [
 ];
 
 // Document types not required for Kindergarten
-const KINDER_EXEMPT_DOCS = new Set(["report_card", "good_moral"]);
+const KINDER_EXEMPT_DOCS = new Set(["report_card", "good_moral", "transfer_certificate"]);
 
 // ── Zod schema ────────────────────────────────────────────────────────────────
 const schema = z.object({
