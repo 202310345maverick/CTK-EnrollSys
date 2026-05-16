@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { ArrowLeft, Loader2, Send, Upload, X, CheckCircle, RefreshCw, Trash2 } from "lucide-react";
+import { ArrowLeft, Loader2, Send, Upload, X, CheckCircle, RefreshCw, Trash2, Download } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -610,6 +610,76 @@ export default function NewEnrollmentPage() {
                 </div>
               )}
             </div>
+
+            {/* Non-Catholic waiver notice + optional upload */}
+            {isCatholic === "no" && (
+              <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 space-y-3">
+                <div>
+                  <p className="text-xs font-semibold text-amber-800">Non-Catholic Agreement Required</p>
+                  <p className="text-xs text-amber-700 mt-0.5">
+                    As a non-Catholic student enrolling in CTK, a signed agreement form is required.
+                    You may upload the signed form now, or bring it in person when you pay.
+                  </p>
+                </div>
+                <a
+                  href="/non-catholic-agreement.docx"
+                  download
+                  className="inline-flex items-center gap-1.5 text-xs font-medium text-amber-800 underline underline-offset-2 hover:text-amber-900"
+                >
+                  <Download className="h-3.5 w-3.5" />
+                  Download Agreement Form (DOCX)
+                </a>
+                <div>
+                  <p className="text-xs text-amber-700 mb-1.5">Upload signed waiver <span className="text-gray-500">(optional — you may submit in person at payment)</span></p>
+                  {uploadedDocs["non_catholic_agreement"] ? (
+                    <div className="flex items-center justify-between rounded-lg border border-green-300 bg-green-50 p-2">
+                      <div className="flex items-center gap-1 text-xs text-green-700">
+                        <CheckCircle className="h-3.5 w-3.5" />
+                        <span className="truncate max-w-[200px]">{uploadedFiles["non_catholic_agreement"]?.name}</span>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="h-7 text-xs ml-2"
+                        onClick={() => {
+                          setUploadedFiles((p) => { const n = { ...p }; delete n["non_catholic_agreement"]; return n; });
+                          setUploadedDocs((p)  => { const n = { ...p }; delete n["non_catholic_agreement"]; return n; });
+                        }}
+                      >
+                        <X className="h-3 w-3 mr-1" />Remove
+                      </Button>
+                    </div>
+                  ) : (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="h-7 text-xs border-amber-300 text-amber-800 hover:bg-amber-100"
+                      disabled={uploadingId === "non_catholic_agreement"}
+                      onClick={() => {
+                        const input = document.createElement("input");
+                        input.type = "file";
+                        input.accept = "image/*,application/pdf,.doc,.docx";
+                        input.onchange = (e) => {
+                          const file = (e.target as HTMLInputElement).files?.[0];
+                          if (file) handleFileSelect("non_catholic_agreement", file);
+                        };
+                        input.click();
+                      }}
+                    >
+                      {uploadingId === "non_catholic_agreement"
+                        ? <><Loader2 className="h-3 w-3 mr-1 animate-spin" />Uploading...</>
+                        : <><Upload className="h-3 w-3 mr-1" />Upload Signed Waiver</>
+                      }
+                    </Button>
+                  )}
+                  {uploadErrors["non_catholic_agreement"] && (
+                    <p className="mt-1 text-xs text-red-600">{uploadErrors["non_catholic_agreement"]}</p>
+                  )}
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
 

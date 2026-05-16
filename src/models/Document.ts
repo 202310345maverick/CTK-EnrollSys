@@ -4,7 +4,7 @@ export interface IDocument extends Document {
   _id: mongoose.Types.ObjectId;
   studentId: mongoose.Types.ObjectId;
   enrollmentId?: mongoose.Types.ObjectId;
-  type: "psa_birth_certificate" | "report_card" | "id_photo" | "good_moral" | "transfer_certificate" | "other";
+  type: "psa_birth_certificate" | "report_card" | "id_photo" | "good_moral" | "transfer_certificate" | "non_catholic_agreement" | "other";
   fileName: string;
   originalName: string;
   fileSize: number;
@@ -40,6 +40,7 @@ const DocumentSchema = new Schema<IDocument>(
         "id_photo",
         "good_moral",
         "transfer_certificate",
+        "non_catholic_agreement",
         "other",
       ],
       required: true,

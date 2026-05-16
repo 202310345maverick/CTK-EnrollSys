@@ -23,7 +23,7 @@ export interface IEnrollment extends Document {
     remarks?: string;
   }[];
   documents: {
-    type: "psa_birth_certificate" | "report_card" | "id_photo" | "good_moral" | "transfer_certificate" | "other";
+    type: "psa_birth_certificate" | "report_card" | "id_photo" | "good_moral" | "transfer_certificate" | "non_catholic_agreement" | "other";
     documentId: mongoose.Types.ObjectId;
     status: "pending" | "verified" | "rejected";
     remarks?: string;
@@ -103,6 +103,7 @@ const EnrollmentSchema = new Schema<IEnrollment>(
             "id_photo",
             "good_moral",
             "transfer_certificate",
+            "non_catholic_agreement",
             "other",
           ],
           required: true,

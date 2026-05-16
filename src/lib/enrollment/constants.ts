@@ -4,6 +4,7 @@ export const ENROLLMENT_DOCUMENT_TYPES = [
   "good_moral",
   "id_photo",
   "transfer_certificate",
+  "non_catholic_agreement",
   "other",
 ] as const;
 
@@ -15,6 +16,7 @@ export const ENROLLMENT_DOCUMENT_LABELS: Record<EnrollmentDocumentType, string> 
   good_moral: "Good Moral Certificate",
   id_photo: "2x2 ID Photo",
   transfer_certificate: "Transfer Credentials (Form 137)",
+  non_catholic_agreement: "Non-Catholic Agreement / Waiver",
   other: "Other Supporting Document",
 };
 
