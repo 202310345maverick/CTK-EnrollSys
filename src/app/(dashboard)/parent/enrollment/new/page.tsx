@@ -403,7 +403,7 @@ export default function NewEnrollmentPage() {
         </div>
       </div>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+      <form onSubmit={handleSubmit(onSubmit)} autoComplete="off" className="space-y-4">
         {/* ── Student Information ───────────────────────────────── */}
         <Card>
           <CardHeader className="pb-2 pt-4 px-4">
