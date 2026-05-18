@@ -98,19 +98,19 @@ export default function ParentDashboardDocuments({
         return (
           <div
             key={document.type}
-            className="flex items-center justify-between rounded-lg border border-slate-100 bg-slate-50/70 px-3 py-2"
+            className="flex flex-col gap-2 rounded-lg border border-slate-100 bg-slate-50/70 px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between"
           >
-            <div className="flex items-center gap-2">
-              <div className={cn("rounded-lg p-1.5", isUploaded ? "bg-emerald-100" : "bg-orange-100")}>
+            <div className="flex min-w-0 items-center gap-2">
+              <div className={cn("shrink-0 rounded-lg p-1.5", isUploaded ? "bg-emerald-100" : "bg-orange-100")}>
                 {isUploaded ? (
                   <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
                 ) : (
                   <CircleAlert className="h-3.5 w-3.5 text-orange-500" />
                 )}
               </div>
-              <div>
-                <p className="text-xs font-medium text-slate-800">{document.label}</p>
-                <p className="text-xs text-slate-500">
+              <div className="min-w-0">
+                <p className="truncate text-xs font-medium text-slate-800">{document.label}</p>
+                <p className="truncate text-xs text-slate-500">
                   {isUploaded
                     ? `Uploaded${uploadedDate ? `: ${uploadedDate}` : ""}${document.filename ? ` • ${document.filename}` : ""}`
                     : "Not uploaded yet"}
@@ -118,15 +118,15 @@ export default function ParentDashboardDocuments({
               </div>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex shrink-0 items-center gap-2">
               {document.downloadUrl ? (
                 <a
                   href={document.downloadUrl}
                   target="_blank"
                   rel="noreferrer"
-                  className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline"
+                  className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
                 >
-                  <ExternalLink className="h-4 w-4" />
+                  <ExternalLink className="h-3.5 w-3.5" />
                   View
                 </a>
               ) : null}
@@ -146,12 +146,12 @@ export default function ParentDashboardDocuments({
               >
                 {uploadingType === document.type ? (
                   <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Uploading...
+                    <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                    Uploading…
                   </>
                 ) : (
                   <>
-                    <Upload className="mr-2 h-4 w-4" />
+                    <Upload className="mr-1.5 h-3.5 w-3.5" />
                     {isUploaded ? "Replace" : "Upload"}
                   </>
                 )}

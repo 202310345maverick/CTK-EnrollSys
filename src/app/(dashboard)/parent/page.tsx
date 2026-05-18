@@ -181,9 +181,9 @@ export default async function ParentDashboard() {
                 }),
               },
             ].map((item) => (
-              <div key={item.label} className="space-y-0.5">
+              <div key={item.label} className="space-y-0.5 min-w-0">
                 <p className="text-xs text-red-100/80">{item.label}</p>
-                <p className="text-xs font-semibold">{item.value}</p>
+                <p className="truncate text-xs font-semibold">{item.value}</p>
               </div>
             ))}
           </div>
@@ -205,7 +205,7 @@ export default async function ParentDashboard() {
       )}
 
       {/* Main Grid */}
-      <div className="grid gap-4 xl:grid-cols-[1fr_1fr]">
+      <div className="grid gap-4 lg:grid-cols-2">
         {/* Required Documents */}
         <Card>
           <CardHeader className="pb-2 pt-4 px-4">
@@ -237,27 +237,15 @@ export default async function ParentDashboard() {
               <CardTitle className="text-sm font-semibold">Enrollment Status Description</CardTitle>
             </CardHeader>
             <CardContent className="px-4 pb-4">
-              <div className="overflow-x-auto">
-              <table className="w-full text-xs">
-                <thead>
-                  <tr className="border-b">
-                    <th className="pb-1.5 text-left font-semibold text-slate-700 w-28">Status</th>
-                    <th className="pb-1.5 text-left font-semibold text-slate-700">Description</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y">
-                  {STATUS_DESCRIPTIONS.map((row) => (
-                    <tr key={row.status}>
-                      <td className="py-1.5 pr-3 align-top">
-                        <Badge variant={getStatusBadgeVariant(row.status.toLowerCase().replace(" ", "_"))} className="text-xs">
-                          {row.status}
-                        </Badge>
-                      </td>
-                      <td className="py-1.5 text-slate-600 align-top">{row.description}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+              <div className="space-y-2">
+                {STATUS_DESCRIPTIONS.map((row) => (
+                  <div key={row.status} className="flex flex-col gap-1 rounded-lg border border-slate-100 bg-slate-50/50 px-3 py-2 sm:flex-row sm:items-start sm:gap-3">
+                    <Badge variant={getStatusBadgeVariant(row.status.toLowerCase().replace(" ", "_"))} className="w-fit shrink-0 text-xs">
+                      {row.status}
+                    </Badge>
+                    <p className="text-xs text-slate-600">{row.description}</p>
+                  </div>
+                ))}
               </div>
             </CardContent>
           </Card>
