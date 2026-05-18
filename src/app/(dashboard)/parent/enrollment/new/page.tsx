@@ -636,7 +636,7 @@ export default function NewEnrollmentPage() {
                 <div>
                   <p className="text-xs text-amber-700 mb-1.5">Upload signed waiver <span className="text-gray-500">(optional — you may submit in person at payment)</span></p>
                   {uploadedDocs["non_catholic_agreement"] ? (
-                    <div className="flex items-center justify-between rounded-lg border border-green-300 bg-green-50 p-2">
+                    <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-green-300 bg-green-50 p-2">
                       <div className="flex items-center gap-1 text-xs text-green-700">
                         <CheckCircle className="h-3.5 w-3.5" />
                         <span className="truncate max-w-[200px]">{uploadedFiles["non_catholic_agreement"]?.name}</span>
@@ -737,8 +737,8 @@ export default function NewEnrollmentPage() {
                 const uploaded = !!uploadedDocs[doc.id];
                 const isUploading = uploadingId === doc.id;
                 return (
-                  <div key={doc.id} className={`flex items-center justify-between rounded-lg border p-3 ${uploaded ? "border-green-300 bg-green-50" : uploadErrors[doc.id] ? "border-red-300 bg-red-50" : "border-gray-200"}`}>
-                    <div className="flex-1 min-w-0">
+                  <div key={doc.id} className={`flex flex-col gap-2 rounded-lg border p-3 sm:flex-row sm:items-center sm:justify-between ${uploaded ? "border-green-300 bg-green-50" : uploadErrors[doc.id] ? "border-red-300 bg-red-50" : "border-gray-200"}`}>
+                    <div className="min-w-0">
                       <p className="text-sm font-medium text-gray-800">
                         {doc.label}
                         {doc.required && !(gradeLevel === "Kindergarten" && KINDER_EXEMPT_DOCS.has(doc.id)) && <span className="ml-1 text-red-500 text-xs">*</span>}

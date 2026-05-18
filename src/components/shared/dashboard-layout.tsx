@@ -198,7 +198,7 @@ export default function DashboardLayout({
       </aside>
 
       {/* Main Content */}
-      <div className="pl-0 md:pl-[218px]">
+      <div className="min-w-0 overflow-x-hidden pl-0 md:pl-[218px]">
         {/* Header */}
         <header className="sticky top-0 z-40 flex h-16 items-center justify-between border-b border-black/10 bg-[#f6f6f7] px-4 md:px-6">
           <div className="flex items-center gap-3">
@@ -244,7 +244,7 @@ export default function DashboardLayout({
         </header>
 
         {/* Page Content */}
-        <main className="p-5 md:p-6">{children}</main>
+        <main className="min-w-0 overflow-x-hidden p-5 md:p-6">{children}</main>
       </div>
     </div>
   );

@@ -144,7 +144,7 @@ export default async function ParentDashboard() {
     : null;
 
   return (
-    <div className="space-y-4 pb-8">
+    <div className="min-w-0 space-y-4 pb-8">
       <AutoRefresh intervalMs={30000} />
       {/* Page Header */}
       <div>
