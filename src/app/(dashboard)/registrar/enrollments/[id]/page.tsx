@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import {
   ArrowLeft, CheckCircle, XCircle, Clock, User, FileText, Calendar,
   AlertCircle, Loader2, ExternalLink, ShieldCheck, RotateCcw,
-  MessageSquare, UploadCloud, Zap,
+  MessageSquare, UploadCloud, Zap, BrainCircuit, ChevronDown, ChevronUp,
 } from "lucide-react";
 import { ENROLLMENT_DOCUMENT_LABELS } from "@/lib/enrollment/constants";
 
@@ -81,6 +81,7 @@ export default function EnrollmentDetailPage() {
   const [balance, setBalance] = useState<{ assessed: number; paid: number; balance: number } | null>(null);
   const [reuploadModal, setReuploadModal] = useState<{ docType: string; label: string } | null>(null);
   const [reuploadReason, setReuploadReason] = useState("");
+  const [expandedAiDoc, setExpandedAiDoc] = useState<string | null>(null);
 
   const showToast = (msg: string, type: "success" | "error" = "success") => {
     setToast({ msg, type });
@@ -369,86 +370,148 @@ export default function EnrollmentDetailPage() {
                     const docId = doc.documentId as any;
                     const label = ENROLLMENT_DOCUMENT_LABELS[doc.type as keyof typeof ENROLLMENT_DOCUMENT_LABELS] || doc.type;
                     const fileUrl = docId?._id ? `/api/documents/${docId._id}/view` : (docId?.secureUrl || docId?.cloudinaryUrl);
+                    const ai = docId?.aiAnalysis;
+                    const aiKey = `${i}-${doc.type}`;
+                    const isAiExpanded = expandedAiDoc === aiKey;
                     return (
-                      <div key={i} className="flex items-center gap-3 rounded-lg border bg-slate-50/50 px-3 py-2">
-                        <div className="flex-1 min-w-0">
-                          <p className="text-xs font-medium">{label}</p>
-                          <p className={`mt-0.5 inline-flex rounded px-1.5 py-0.5 text-xs font-medium capitalize ${
-                            doc.status === "verified"
-                              ? "bg-emerald-100 text-emerald-700 border border-emerald-200"
-                              : doc.status === "rejected"
-                              ? "bg-red-100 text-red-700 border border-red-200"
-                              : "bg-amber-100 text-amber-700 border border-amber-200"
-                          }`}>
-                            {doc.status}
-                          </p>
-                          {doc.remarks && <p className="mt-0.5 text-xs text-muted-foreground italic">{doc.remarks}</p>}
-                          {doc.status !== "verified" && (
-                            <input
-                              type="text"
-                              className="mt-1 w-full rounded border border-slate-200 px-2 py-1 text-xs placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-[#b4040d]"
-                              placeholder="Add rejection note (optional)..."
-                              value={docRemarks[doc.type] ?? ""}
-                              onChange={(e) => setDocRemarks((p) => ({ ...p, [doc.type]: e.target.value }))}
-                            />
-                          )}
-                        </div>
-                        <div className="flex items-center gap-1 shrink-0">
-                          {fileUrl && (
-                            <a href={fileUrl} target="_blank" rel="noreferrer">
-                              <Button variant="outline" size="sm" className="h-6 px-1.5 text-xs">
-                                <ExternalLink className="h-3 w-3" />
+                      <div key={i} className="rounded-lg border bg-slate-50/50">
+                        <div className="flex items-center gap-3 px-3 py-2">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <p className="text-xs font-medium">{label}</p>
+                              {ai && ai.status !== "skipped" && (
+                                <span
+                                  className={`inline-flex items-center gap-0.5 rounded px-1.5 py-0.5 text-[10px] font-semibold cursor-pointer select-none ${
+                                    ai.status === "passed"
+                                      ? "bg-emerald-100 text-emerald-700 border border-emerald-200"
+                                      : ai.status === "flagged"
+                                      ? "bg-red-100 text-red-700 border border-red-200"
+                                      : ai.status === "error"
+                                      ? "bg-slate-100 text-slate-500 border border-slate-200"
+                                      : "bg-amber-100 text-amber-700 border border-amber-200"
+                                  }`}
+                                  onClick={() => setExpandedAiDoc(isAiExpanded ? null : aiKey)}
+                                  title="Click to see AI analysis details"
+                                >
+                                  <BrainCircuit className="h-2.5 w-2.5" />
+                                  {ai.status === "passed" ? "AI OK" : ai.status === "flagged" ? "AI Flagged" : ai.status === "error" ? "AI Error" : "AI Review"}
+                                  {isAiExpanded ? <ChevronUp className="h-2.5 w-2.5" /> : <ChevronDown className="h-2.5 w-2.5" />}
+                                </span>
+                              )}
+                            </div>
+                            <p className={`mt-0.5 inline-flex rounded px-1.5 py-0.5 text-xs font-medium capitalize ${
+                              doc.status === "verified"
+                                ? "bg-emerald-100 text-emerald-700 border border-emerald-200"
+                                : doc.status === "rejected"
+                                ? "bg-red-100 text-red-700 border border-red-200"
+                                : "bg-amber-100 text-amber-700 border border-amber-200"
+                            }`}>
+                              {doc.status}
+                            </p>
+                            {doc.remarks && <p className="mt-0.5 text-xs text-muted-foreground italic">{doc.remarks}</p>}
+                            {doc.status !== "verified" && (
+                              <input
+                                type="text"
+                                className="mt-1 w-full rounded border border-slate-200 px-2 py-1 text-xs placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-[#b4040d]"
+                                placeholder="Add rejection note (optional)..."
+                                value={docRemarks[doc.type] ?? ""}
+                                onChange={(e) => setDocRemarks((p) => ({ ...p, [doc.type]: e.target.value }))}
+                              />
+                            )}
+                          </div>
+                          <div className="flex items-center gap-1 shrink-0">
+                            {fileUrl && (
+                              <a href={fileUrl} target="_blank" rel="noreferrer">
+                                <Button variant="outline" size="sm" className="h-6 px-1.5 text-xs">
+                                  <ExternalLink className="h-3 w-3" />
+                                </Button>
+                              </a>
+                            )}
+                            {doc.status !== "verified" && (
+                              <Button
+                                size="sm"
+                                className="h-6 px-1.5 text-xs bg-emerald-600 hover:bg-emerald-700"
+                                onClick={() => updateDocStatus(doc.type, "verified")}
+                                disabled={saving}
+                              >
+                                <ShieldCheck className="h-3 w-3" />
                               </Button>
-                            </a>
-                          )}
-                          {doc.status !== "verified" && (
-                            <Button
-                              size="sm"
-                              className="h-6 px-1.5 text-xs bg-emerald-600 hover:bg-emerald-700"
-                              onClick={() => updateDocStatus(doc.type, "verified")}
-                              disabled={saving}
-                            >
-                              <ShieldCheck className="h-3 w-3" />
-                            </Button>
-                          )}
-                          {doc.status !== "rejected" && (
-                            <Button
-                              size="sm"
-                              variant="destructive"
-                              className="h-6 px-1.5 text-xs"
-                              onClick={() => updateDocStatus(doc.type, "rejected", docRemarks[doc.type] || "Document rejected — please re-upload")}
-                              disabled={saving}
-                            >
-                              <XCircle className="h-3 w-3" />
-                            </Button>
-                          )}
-                          {doc.status !== "rejected" && (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="h-6 px-1.5 text-xs text-amber-700 border-amber-300 hover:bg-amber-50"
-                              onClick={() => {
-                                setReuploadModal({ docType: doc.type, label });
-                                setReuploadReason("");
-                              }}
-                              title="Request Re-upload"
-                              disabled={saving}
-                            >
-                              <UploadCloud className="h-3 w-3" />
-                            </Button>
-                          )}
-                          {doc.status === "rejected" && (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="h-6 px-1.5 text-xs"
-                              onClick={() => updateDocStatus(doc.type, "pending")}
-                              disabled={saving}
-                            >
-                              <RotateCcw className="h-3 w-3" />
-                            </Button>
-                          )}
+                            )}
+                            {doc.status !== "rejected" && (
+                              <Button
+                                size="sm"
+                                variant="destructive"
+                                className="h-6 px-1.5 text-xs"
+                                onClick={() => updateDocStatus(doc.type, "rejected", docRemarks[doc.type] || "Document rejected — please re-upload")}
+                                disabled={saving}
+                              >
+                                <XCircle className="h-3 w-3" />
+                              </Button>
+                            )}
+                            {doc.status !== "rejected" && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-6 px-1.5 text-xs text-amber-700 border-amber-300 hover:bg-amber-50"
+                                onClick={() => {
+                                  setReuploadModal({ docType: doc.type, label });
+                                  setReuploadReason("");
+                                }}
+                                title="Request Re-upload"
+                                disabled={saving}
+                              >
+                                <UploadCloud className="h-3 w-3" />
+                              </Button>
+                            )}
+                            {doc.status === "rejected" && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-6 px-1.5 text-xs"
+                                onClick={() => updateDocStatus(doc.type, "pending")}
+                                disabled={saving}
+                              >
+                                <RotateCcw className="h-3 w-3" />
+                              </Button>
+                            )}
+                          </div>
                         </div>
+                        {/* AI analysis details panel */}
+                        {ai && isAiExpanded && (
+                          <div className="border-t border-slate-200 bg-white px-3 py-2.5 rounded-b-lg space-y-1.5">
+                            <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-500 flex items-center gap-1"><BrainCircuit className="h-3 w-3" /> AI Analysis</p>
+                            <div className="flex flex-wrap gap-1.5">
+                              {typeof ai.confidence === "number" && (
+                                <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] text-slate-600">
+                                  Confidence: {Math.round(ai.confidence * 100)}%
+                                </span>
+                              )}
+                              {ai.documentTypeDetected && (
+                                <span className={`rounded px-1.5 py-0.5 text-[10px] ${ai.documentTypeMatch ? "bg-emerald-100 text-emerald-700" : "bg-red-100 text-red-700"}`}>
+                                  Detected: {ai.documentTypeDetected.replace(/_/g, " ")}
+                                  {ai.documentTypeMatch === false ? " ✗ mismatch" : " ✓"}
+                                </span>
+                              )}
+                              {typeof ai.studentNameFound === "boolean" && (
+                                <span className={`rounded px-1.5 py-0.5 text-[10px] ${ai.studentNameFound ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"}`}>
+                                  Name: {ai.studentNameFound ? "found ✓" : "not found ⚠"}
+                                </span>
+                              )}
+                              {ai.qualityFlags?.map((flag: string) => (
+                                <span key={flag} className="rounded bg-red-50 border border-red-200 px-1.5 py-0.5 text-[10px] text-red-600">
+                                  ⚠ {flag.replace(/_/g, " ")}
+                                </span>
+                              ))}
+                            </div>
+                            {ai.extractedText && (
+                              <details className="group">
+                                <summary className="cursor-pointer text-[10px] text-primary font-medium list-none">Show extracted text ▾</summary>
+                                <pre className="mt-1 max-h-28 overflow-y-auto whitespace-pre-wrap rounded bg-slate-50 p-2 text-[10px] leading-relaxed text-slate-600">{ai.extractedText}</pre>
+                              </details>
+                            )}
+                            {ai.error && <p className="text-[10px] text-red-500">Error: {ai.error}</p>}
+                          </div>
+                        )}
                       </div>
                     );
                   })}

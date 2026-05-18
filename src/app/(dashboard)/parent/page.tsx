@@ -64,7 +64,7 @@ async function getParentDashboardData(userId: string) {
     Enrollment.find({ submittedBy: userId, isDraft: { $ne: true } })
       .sort({ createdAt: -1 })
       .populate("studentId", "personalInfo")
-      .populate("documents.documentId", "secureUrl cloudinaryUrl originalName fileName createdAt")
+      .populate("documents.documentId", "secureUrl cloudinaryUrl originalName fileName createdAt aiAnalysis")
       .lean(),
   ]);
 
@@ -90,7 +90,7 @@ async function getParentDashboardData(userId: string) {
     const docRows = (latest?.documents ?? []).map((document) => {
       const dt = String(document.type);
       const docId = document.documentId as unknown as
-        | { _id?: string; secureUrl?: string; originalName?: string; fileName?: string; createdAt?: string | Date }
+        | { _id?: string; secureUrl?: string; originalName?: string; fileName?: string; createdAt?: string | Date; aiAnalysis?: { status: string; qualityFlags?: string[] } | null }
         | undefined;
       return {
         type: dt,
@@ -99,6 +99,7 @@ async function getParentDashboardData(userId: string) {
         uploadedAt: docId?.createdAt ?? null,
         downloadUrl: docId?._id ? `/api/documents/${docId._id}/view` : docId?.secureUrl ?? null,
         filename: docId?.originalName ?? docId?.fileName ?? null,
+        aiAnalysis: docId?.aiAnalysis ?? null,
       };
     });
 

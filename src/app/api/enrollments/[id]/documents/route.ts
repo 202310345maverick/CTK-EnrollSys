@@ -8,6 +8,7 @@ import Enrollment from "@/models/Enrollment";
 import Student from "@/models/Student";
 import Document from "@/models/Document";
 import { ENROLLMENT_DOCUMENT_TYPES } from "@/lib/enrollment/constants";
+import { analyzeDocument } from "@/lib/ai-document-verify";
 
 export async function GET(
   request: NextRequest,
@@ -29,10 +30,8 @@ export async function GET(
     const isAdminOrRegistrar = session.user.role === "admin" || session.user.role === "registrar";
 
     if (!isAdminOrRegistrar) {
-      // For parents, check they own the enrollment
       const isOwner = enrollment.submittedBy?.toString() === session.user.id;
       if (!isOwner) {
-        // Also check if the student belongs to this user
         const student = enrollment.studentId
           ? await Student.findOne({ _id: enrollment.studentId, userId: session.user.id })
           : null;
@@ -156,9 +155,26 @@ export async function POST(
     ];
     await enrollment.save();
 
+    // Run AI analysis asynchronously — fetch student name for name matching
+    const student = await Student.findById(studentId).select("personalInfo").lean() as any;
+    const studentName = student
+      ? `${student.personalInfo?.firstName ?? ""} ${student.personalInfo?.lastName ?? ""}`.trim()
+      : undefined;
+
+    analyzeDocument({
+      imageUrl: result.secure_url,
+      mimeType: file.type,
+      expectedDocumentType: documentType,
+      studentName: studentName || undefined,
+    })
+      .then((analysis) =>
+        Document.findByIdAndUpdate(createdDocument._id, { aiAnalysis: analysis })
+      )
+      .catch((err) => console.error("[AI] Document analysis failed:", err));
+
     const refreshedEnrollment = await Enrollment.findById(enrollment._id)
       .populate("studentId", "personalInfo")
-      .populate("documents.documentId", "secureUrl originalName fileName createdAt")
+      .populate("documents.documentId", "secureUrl originalName fileName createdAt aiAnalysis")
       .lean();
 
     return NextResponse.json({

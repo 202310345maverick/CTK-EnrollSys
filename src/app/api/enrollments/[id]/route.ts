@@ -29,7 +29,7 @@ export async function GET(
       .populate("studentId")
       .populate("schoolYearId", "name")
       .populate("statusHistory.changedBy", "profile.firstName profile.lastName email role")
-      .populate("documents.documentId", "secureUrl originalName fileName createdAt")
+      .populate("documents.documentId", "secureUrl originalName fileName createdAt aiAnalysis")
       .lean();
 
     if (!enrollment) {

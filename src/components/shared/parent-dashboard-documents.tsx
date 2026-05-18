@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ExternalLink, Loader2, Upload, CheckCircle2, CircleAlert } from "lucide-react";
+import { ExternalLink, Loader2, Upload, CheckCircle2, CircleAlert, BrainCircuit } from "lucide-react";
 
 import { ENROLLMENT_DOCUMENT_LABELS, type EnrollmentDocumentType } from "@/lib/enrollment/constants";
 import { cn } from "@/lib/utils";
@@ -17,6 +17,7 @@ type DashboardDocument = {
   uploadedAt?: string | Date | null;
   downloadUrl?: string | null;
   filename?: string | null;
+  aiAnalysis?: { status: string; qualityFlags?: string[] } | null;
 };
 
 type ParentDashboardDocumentsProps = {
@@ -115,6 +116,18 @@ export default function ParentDashboardDocuments({
                     ? `Uploaded${uploadedDate ? `: ${uploadedDate}` : ""}${document.filename ? ` • ${document.filename}` : ""}`
                     : "Not uploaded yet"}
                 </p>
+                {document.aiAnalysis && document.aiAnalysis.status !== "skipped" && (
+                  <span className={`mt-0.5 inline-flex items-center gap-0.5 rounded px-1 py-0.5 text-[10px] font-semibold ${
+                    document.aiAnalysis.status === "passed"
+                      ? "bg-emerald-50 text-emerald-700"
+                      : document.aiAnalysis.status === "flagged"
+                      ? "bg-red-50 text-red-600"
+                      : "bg-amber-50 text-amber-600"
+                  }`}>
+                    <BrainCircuit className="h-2.5 w-2.5" />
+                    {document.aiAnalysis.status === "passed" ? "AI OK" : document.aiAnalysis.status === "flagged" ? "AI Flagged" : "AI Review"}
+                  </span>
+                )}
               </div>
             </div>
 

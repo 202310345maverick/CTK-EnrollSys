@@ -23,6 +23,7 @@ export type ChildDocument = {
   uploadedAt: string | Date | null;
   downloadUrl: string | null;
   filename: string | null;
+  aiAnalysis?: { status: string; qualityFlags?: string[] } | null;
 };
 
 export type ChildEnrollmentData = {
