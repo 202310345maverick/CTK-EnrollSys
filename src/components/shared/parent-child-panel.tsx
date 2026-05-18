@@ -2,11 +2,18 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { FileText, PlusCircle, ChevronDown } from "lucide-react";
+import { FileText, PlusCircle } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import ParentDashboardDocuments from "@/components/shared/parent-dashboard-documents";
 
 export type ChildDocument = {
@@ -70,20 +77,18 @@ export default function ParentChildPanel({ childData }: { childData: ChildEnroll
       {/* Child selector + New Enrollment button */}
       <div className="flex items-center gap-3">
         {childData.length > 1 ? (
-          <div className="relative min-w-0 flex-1">
-            <select
-              value={selectedId}
-              onChange={(e) => setSelectedId(e.target.value)}
-              className="w-full appearance-none truncate rounded-lg border border-slate-200 bg-white py-2 pl-3 pr-8 text-sm font-medium text-slate-800 shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
-            >
+          <Select value={selectedId} onValueChange={setSelectedId}>
+            <SelectTrigger className="min-w-0 flex-1 h-9 text-sm font-medium">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
               {childData.map((c) => (
-                <option key={c.studentId} value={c.studentId}>
+                <SelectItem key={c.studentId} value={c.studentId}>
                   {c.studentName}
-                </option>
+                </SelectItem>
               ))}
-            </select>
-            <ChevronDown className="pointer-events-none absolute right-2 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-          </div>
+            </SelectContent>
+          </Select>
         ) : (
           <p className="min-w-0 flex-1 truncate text-sm font-semibold text-slate-700">
             {selected?.studentName}
