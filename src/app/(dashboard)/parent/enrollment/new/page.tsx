@@ -368,7 +368,7 @@ export default function NewEnrollmentPage() {
   const errorCls = "mt-0.5 text-xs text-red-500";
 
   return (
-    <div className="max-w-4xl mx-auto space-y-4 p-4 pb-16">
+    <div className="max-w-4xl mx-auto space-y-4 pb-16">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>

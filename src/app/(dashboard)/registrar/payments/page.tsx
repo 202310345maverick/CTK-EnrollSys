@@ -203,12 +203,12 @@ export default function PaymentsPage() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-xl font-bold text-slate-900">Fee & Payment Management</h1>
           <p className="text-xs text-slate-500">Record and track student payments</p>
         </div>
-        <Button onClick={() => setShowModal(true)} size="sm" className="ctk-danger-button h-8 text-xs">
+        <Button onClick={() => setShowModal(true)} size="sm" className="ctk-danger-button h-8 text-xs self-start sm:self-auto">
           <Plus className="h-3.5 w-3.5 mr-1" />
           Record Payment
         </Button>
@@ -264,8 +264,9 @@ export default function PaymentsPage() {
               <p className="text-sm text-muted-foreground">No payments found</p>
             </div>
           ) : (
-            <Table>
-              <TableHeader>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
                 <TableRow className="bg-muted/40">
                   <TableHead className="text-xs">Receipt #</TableHead>
                   <TableHead className="text-xs">Student</TableHead>
@@ -322,6 +323,7 @@ export default function PaymentsPage() {
                 ))}
               </TableBody>
             </Table>
+            </div>
           )}
         </CardContent>
       </Card>

@@ -300,8 +300,9 @@ export default function AdminStudentsPage() {
               No student records found.
             </div>
           ) : (
-            <Table className="ctk-table">
-              <TableHeader>
+            <div className="overflow-x-auto">
+              <Table className="ctk-table">
+                <TableHeader>
                 <TableRow className="bg-muted/50">
                   <TableHead>Student ID</TableHead>
                   <TableHead>Name</TableHead>
@@ -350,6 +351,7 @@ export default function AdminStudentsPage() {
                 ))}
               </TableBody>
             </Table>
+            </div>
           )}
         </CardContent>
       </Card>
