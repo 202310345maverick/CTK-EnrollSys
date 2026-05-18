@@ -83,7 +83,7 @@ export default function ParentDashboardDocuments({
   };
 
   return (
-    <div className="space-y-3">
+    <div className="min-w-0 space-y-3">
       {documents.map((document) => {
         const isUploaded = document.status === "pending" || document.status === "verified";
         const uploadedDate =

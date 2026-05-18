@@ -207,7 +207,7 @@ export default async function ParentDashboard() {
       {/* Main Grid */}
       <div className="grid gap-4 lg:grid-cols-2">
         {/* Required Documents */}
-        <Card>
+        <Card className="min-w-0 overflow-hidden">
           <CardHeader className="pb-2 pt-4 px-4">
             <CardTitle className="flex items-center gap-1.5 text-sm font-semibold">
               <FileText className="h-4 w-4 text-primary" />
@@ -230,9 +230,9 @@ export default async function ParentDashboard() {
         </Card>
 
         {/* Right Column */}
-        <div className="space-y-4">
+        <div className="min-w-0 space-y-4">
           {/* Enrollment Status Description */}
-          <Card>
+          <Card className="min-w-0 overflow-hidden">
             <CardHeader className="pb-2 pt-4 px-4">
               <CardTitle className="text-sm font-semibold">Enrollment Status Description</CardTitle>
             </CardHeader>
@@ -251,7 +251,7 @@ export default async function ParentDashboard() {
           </Card>
 
           {/* Enrollment History */}
-          <Card>
+          <Card className="min-w-0 overflow-hidden">
             <CardHeader className="pb-2 pt-4 px-4">
               <CardTitle className="text-sm font-semibold">Enrollment History</CardTitle>
             </CardHeader>
@@ -259,39 +259,29 @@ export default async function ParentDashboard() {
               {data.allEnrollments.length === 0 ? (
                 <p className="py-4 text-center text-xs text-muted-foreground">No enrollment history yet.</p>
               ) : (
-                <div className="overflow-x-auto">
-                <table className="w-full text-xs">
-                  <thead>
-                    <tr className="border-b">
-                      <th className="pb-1.5 text-left font-semibold text-slate-700">ID</th>
-                      <th className="pb-1.5 text-left font-semibold text-slate-700">Grade</th>
-                      <th className="pb-1.5 text-left font-semibold text-slate-700">Date</th>
-                      <th className="pb-1.5 text-left font-semibold text-slate-700">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y">
-                    {data.allEnrollments.map((enrollment) => (
-                      <tr key={String(enrollment._id)}>
-                        <td className="py-1.5 pr-2 font-mono text-slate-700">
-                          <Link href={`/parent/enrollments/${enrollment._id}`} className="hover:underline text-primary">
-                            {enrollment.enrollmentNumber}
-                          </Link>
-                        </td>
-                        <td className="py-1.5 pr-2 text-slate-600">{enrollment.gradeLevel || "—"}</td>
-                        <td className="py-1.5 pr-2 text-slate-500">
+                <div className="space-y-2">
+                  {data.allEnrollments.map((enrollment) => (
+                    <Link
+                      key={String(enrollment._id)}
+                      href={`/parent/enrollments/${enrollment._id}`}
+                      className="flex items-center justify-between gap-2 rounded-lg border border-slate-100 bg-slate-50/50 px-3 py-2 hover:bg-slate-100/70 transition-colors"
+                    >
+                      <div className="min-w-0 flex-1 space-y-0.5">
+                        <p className="truncate font-mono text-xs font-semibold text-primary">
+                          {enrollment.enrollmentNumber}
+                        </p>
+                        <p className="truncate text-xs text-slate-500">
+                          {enrollment.gradeLevel || "—"} &middot;{" "}
                           {new Date(enrollment.createdAt).toLocaleDateString("en-PH", {
                             month: "short", day: "numeric", year: "numeric",
                           })}
-                        </td>
-                        <td className="py-1.5">
-                          <Badge variant={getStatusBadgeVariant(enrollment.status)} className="text-xs">
-                            {getStatusLabel(enrollment.status)}
-                          </Badge>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                        </p>
+                      </div>
+                      <Badge variant={getStatusBadgeVariant(enrollment.status)} className="shrink-0 text-xs">
+                        {getStatusLabel(enrollment.status)}
+                      </Badge>
+                    </Link>
+                  ))}
                 </div>
               )}
             </CardContent>
