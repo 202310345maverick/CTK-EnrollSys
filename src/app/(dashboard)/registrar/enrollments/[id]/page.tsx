@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -87,23 +87,20 @@ export default function EnrollmentDetailPage() {
     setTimeout(() => setToast(null), 3000);
   };
 
-  const fetchEnrollment = () => {
+  const fetchEnrollment = useCallback(() => {
     fetch(`/api/enrollments/${params.id}`)
       .then((r) => r.json())
       .then((data) => {
         if (data.enrollment) {
           setEnrollment(data.enrollment);
           setRemarks(data.enrollment?.remarks || "");
-        } else if (!enrollment) {
-          // Only clear on initial load (enrollment was never set); preserve existing state on refetch errors
-          setEnrollment(null);
         }
       })
       .catch(console.error)
       .finally(() => setLoading(false));
-  };
+  }, [params.id]);
 
-  useEffect(() => { fetchEnrollment(); }, [params.id]);
+  useEffect(() => { fetchEnrollment(); }, [fetchEnrollment]);
 
   useEffect(() => {
     if (!enrollment?.gradeLevel) return;

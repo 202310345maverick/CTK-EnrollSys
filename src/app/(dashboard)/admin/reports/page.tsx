@@ -118,7 +118,8 @@ export default function AdminReportsPage() {
   }, [buildUrl]);
 
   // Load school years on mount only
-  useEffect(() => { load(reportType, filters); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, []);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { load(reportType, filters); }, []);
 
   const handleRun = () => load(reportType, filters);
 
