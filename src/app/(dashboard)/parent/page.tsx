@@ -36,10 +36,31 @@ async function getParentDashboardData(userId: string) {
 
   const latestEnrollment = enrollments[0] || null;
 
+  // Group enrollments by student
+  const perStudentData = (students as Array<{ _id: unknown; personalInfo?: { firstName?: string; lastName?: string }; currentGradeLevel?: string }>).map((student) => {
+    const studentEnrollments = enrollments.filter(
+      (e) => String((e.studentId as { _id?: unknown } | null)?._id ?? e.studentId) === String(student._id)
+    );
+    return {
+      student,
+      latestEnrollment: studentEnrollments[0] ?? null,
+      enrollments: studentEnrollments,
+    };
+  });
+
+  // Enrollments not matched to a known student (edge case)
+  const unmatchedEnrollments = enrollments.filter(
+    (e) => !(students as Array<{ _id: unknown }>).some(
+      (s) => String(s._id) === String((e.studentId as { _id?: unknown } | null)?._id ?? e.studentId)
+    )
+  );
+
   return {
     studentsCount: students.length,
     latestEnrollment,
     allEnrollments: enrollments,
+    perStudentData,
+    unmatchedEnrollments,
   };
 }
 
@@ -89,59 +110,6 @@ export default async function ParentDashboard() {
   if (!userId) return null;
 
   const data = await getParentDashboardData(userId);
-  const currentEnrollment = data.latestEnrollment;
-
-  const requiredDocs = currentEnrollment?.enrollmentType
-    ? getRequiredDocumentTypes(currentEnrollment.enrollmentType as "new" | "returning" | "transferee")
-    : [];
-
-  const uploadedDocs = new Map(
-    (currentEnrollment?.documents || []).map((document) => [document.type, document])
-  );
-
-  const latestStudent = currentEnrollment?.studentId as
-    | { personalInfo?: { firstName?: string; lastName?: string } }
-    | undefined;
-
-  const documentRows = requiredDocs.map((documentType) => {
-    const uploadedDocument = uploadedDocs.get(documentType);
-    return {
-      type: documentType,
-      label: formatDocumentTypeLabel(documentType),
-      status: (uploadedDocument?.status || "missing") as "pending" | "verified" | "rejected" | "missing",
-      uploadedAt:
-        uploadedDocument?.documentId && typeof uploadedDocument.documentId === "object"
-          ? (uploadedDocument.documentId as { createdAt?: string | Date }).createdAt || null
-          : null,
-      downloadUrl:
-        uploadedDocument?.documentId && typeof uploadedDocument.documentId === "object"
-          ? (uploadedDocument.documentId as unknown as { _id?: string; secureUrl?: string })._id
-            ? `/api/documents/${(uploadedDocument.documentId as unknown as { _id: string })._id}/view`
-            : (uploadedDocument.documentId as unknown as { secureUrl?: string }).secureUrl || null
-          : null,
-    };
-  });
-
-  const submittedDocumentRows = (currentEnrollment?.documents || []).map((document) => {
-    const documentType = String(document.type);
-    const documentId = document.documentId as unknown as
-      | { _id?: string; secureUrl?: string; originalName?: string; fileName?: string; createdAt?: string | Date }
-      | undefined;
-    return {
-      type: documentType,
-      label: formatDocumentTypeLabel(documentType),
-      status: (document.status || "pending") as "pending" | "verified" | "rejected" | "missing",
-      uploadedAt: documentId?.createdAt || null,
-      downloadUrl: documentId?._id
-        ? `/api/documents/${documentId._id}/view`
-        : documentId?.secureUrl || null,
-      filename: documentId?.originalName || documentId?.fileName || null,
-    };
-  });
-
-  const latestStatusRemark = currentEnrollment?.statusHistory?.length
-    ? currentEnrollment.statusHistory[currentEnrollment.statusHistory.length - 1]?.remarks
-    : null;
 
   return (
     <div className="min-w-0 space-y-4 pb-8">
@@ -152,82 +120,169 @@ export default async function ParentDashboard() {
         <p className="text-xs text-slate-500">Track your child&apos;s enrollment journey and important updates.</p>
       </div>
 
-      {/* Current Enrollment Banner */}
-      {currentEnrollment ? (
-        <section className="overflow-hidden rounded-lg border border-red-200 bg-[#b4040d] text-white shadow-sm">
-          <div className="flex flex-wrap items-start justify-between gap-2 px-4 py-3">
-            <div className="space-y-0.5">
-              <h2 className="text-sm font-semibold">Current Enrollment Status</h2>
-              <p className="text-xs text-red-100/90">
-                {latestStatusRemark || currentEnrollment.remarks || "No remarks yet from the registrar."}
-              </p>
-            </div>
-            <Badge className="border-0 bg-white/20 px-2 py-0.5 text-xs font-medium text-white" variant="neutral">
-              {getStatusLabel(currentEnrollment.status)}
-            </Badge>
-          </div>
-          <div className="grid grid-cols-2 gap-3 border-t border-white/20 bg-black/10 px-4 py-3 md:grid-cols-4">
-            {[
-              { label: "Enrollment ID", value: currentEnrollment.enrollmentNumber },
-              {
-                label: "Student Name",
-                value: `${latestStudent?.personalInfo?.firstName || ""} ${latestStudent?.personalInfo?.lastName || ""}`.trim() || "—",
-              },
-              { label: "Grade Level", value: currentEnrollment.gradeLevel || "—" },
-              {
-                label: "Submitted",
-                value: new Date(currentEnrollment.submittedAt || currentEnrollment.createdAt).toLocaleDateString("en-PH", {
-                  year: "numeric", month: "short", day: "numeric",
-                }),
-              },
-            ].map((item) => (
-              <div key={item.label} className="space-y-0.5 min-w-0">
-                <p className="text-xs text-red-100/80">{item.label}</p>
-                <p className="truncate text-xs font-semibold">{item.value}</p>
-              </div>
-            ))}
-          </div>
-        </section>
-      ) : (
-        <Card className="border border-dashed">
-          <CardContent className="flex flex-col items-center justify-center py-10 text-center">
-            <FileText className="mb-2 h-8 w-8 text-muted-foreground" />
-            <p className="text-sm font-medium">No Enrollments Yet</p>
-            <p className="mt-1 text-xs text-muted-foreground">Start your first enrollment application.</p>
-            <Button asChild size="sm" className="mt-3">
-              <Link href="/parent/enrollment/new">
-                <PlusCircle className="mr-1.5 h-4 w-4" />
-                Start New Enrollment
-              </Link>
-            </Button>
-          </CardContent>
-        </Card>
-      )}
+      {/* Children Enrollment Status */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <h2 className="text-sm font-semibold text-slate-700">Children Enrollment Status</h2>
+          <Button asChild size="sm" variant="outline" className="h-7 gap-1.5 text-xs">
+            <Link href="/parent/enrollment/new">
+              <PlusCircle className="h-3.5 w-3.5" />
+              New Enrollment
+            </Link>
+          </Button>
+        </div>
+
+        {data.perStudentData.length === 0 && data.unmatchedEnrollments.length === 0 ? (
+          <Card className="border border-dashed">
+            <CardContent className="flex flex-col items-center justify-center py-10 text-center">
+              <FileText className="mb-2 h-8 w-8 text-muted-foreground" />
+              <p className="text-sm font-medium">No Enrollments Yet</p>
+              <p className="mt-1 text-xs text-muted-foreground">Start your first enrollment application.</p>
+              <Button asChild size="sm" className="mt-3">
+                <Link href="/parent/enrollment/new">
+                  <PlusCircle className="mr-1.5 h-4 w-4" />
+                  Start New Enrollment
+                </Link>
+              </Button>
+            </CardContent>
+          </Card>
+        ) : (
+          <>
+            {data.perStudentData.map(({ student, latestEnrollment: childEnrollment }) => {
+              if (!childEnrollment) return null;
+              const childName = `${student.personalInfo?.firstName ?? ""} ${student.personalInfo?.lastName ?? ""}`.trim() || "Unknown Child";
+              const latestRemark = childEnrollment.statusHistory?.length
+                ? childEnrollment.statusHistory[childEnrollment.statusHistory.length - 1]?.remarks
+                : null;
+              return (
+                <section key={String(student._id)} className="overflow-hidden rounded-lg border border-red-200 bg-[#b4040d] text-white shadow-sm">
+                  <div className="flex flex-wrap items-start justify-between gap-2 px-4 py-3">
+                    <div className="min-w-0 space-y-0.5">
+                      <h3 className="truncate text-sm font-semibold">{childName}</h3>
+                      <p className="text-xs text-red-100/90">
+                        {latestRemark ?? childEnrollment.remarks ?? "No remarks yet from the registrar."}
+                      </p>
+                    </div>
+                    <Badge className="shrink-0 border-0 bg-white/20 px-2 py-0.5 text-xs font-medium text-white" variant="neutral">
+                      {getStatusLabel(childEnrollment.status)}
+                    </Badge>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3 border-t border-white/20 bg-black/10 px-4 py-3 md:grid-cols-4">
+                    {[
+                      { label: "Enrollment ID", value: childEnrollment.enrollmentNumber },
+                      { label: "Grade Level", value: childEnrollment.gradeLevel ?? "—" },
+                      {
+                        label: "Submitted",
+                        value: new Date(childEnrollment.submittedAt ?? childEnrollment.createdAt).toLocaleDateString("en-PH", {
+                          year: "numeric", month: "short", day: "numeric",
+                        }),
+                      },
+                      { label: "Status", value: getStatusLabel(childEnrollment.status) },
+                    ].map((item) => (
+                      <div key={item.label} className="min-w-0 space-y-0.5">
+                        <p className="text-xs text-red-100/80">{item.label}</p>
+                        <p className="truncate text-xs font-semibold">{item.value}</p>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              );
+            })}
+            {/* Students with no enrollment */}
+            {data.perStudentData.filter(({ latestEnrollment: e }) => !e).map(({ student }) => {
+              const childName = `${student.personalInfo?.firstName ?? ""} ${student.personalInfo?.lastName ?? ""}`.trim() || "Unknown Child";
+              return (
+                <div key={String(student._id)} className="flex items-center justify-between gap-3 rounded-lg border border-dashed border-slate-300 bg-white px-4 py-3">
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-medium text-slate-700">{childName}</p>
+                    <p className="text-xs text-muted-foreground">No enrollment submitted yet</p>
+                  </div>
+                  <Button asChild size="sm" variant="outline" className="shrink-0 h-7 text-xs">
+                    <Link href="/parent/enrollment/new">
+                      <PlusCircle className="mr-1 h-3.5 w-3.5" />
+                      Enroll
+                    </Link>
+                  </Button>
+                </div>
+              );
+            })}
+          </>
+        )}
+      </div>
 
       {/* Main Grid */}
       <div className="grid gap-4 lg:grid-cols-2">
-        {/* Required Documents */}
-        <Card className="min-w-0 overflow-hidden">
-          <CardHeader className="pb-2 pt-4 px-4">
-            <CardTitle className="flex items-center gap-1.5 text-sm font-semibold">
-              <FileText className="h-4 w-4 text-primary" />
-              Required Documents
-            </CardTitle>
-            <p className="text-xs text-muted-foreground">Upload missing documents below</p>
-          </CardHeader>
-          <CardContent className="px-4 pb-4">
-            {requiredDocs.length === 0 ? (
-              <p className="py-6 text-center text-xs text-muted-foreground">
+        {/* Required Documents — one section per child with an enrollment */}
+        <div className="min-w-0 space-y-4">
+          {data.perStudentData.filter(({ latestEnrollment: e }) => !!e).map(({ student, latestEnrollment: childEnrollment }) => {
+            if (!childEnrollment) return null;
+            const childName = `${student.personalInfo?.firstName ?? ""} ${student.personalInfo?.lastName ?? ""}`.trim() || "Unknown Child";
+            const childRequiredDocs = childEnrollment.enrollmentType
+              ? getRequiredDocumentTypes(childEnrollment.enrollmentType as "new" | "returning" | "transferee")
+              : [];
+            const childUploadedDocs = new Map(
+              (childEnrollment.documents ?? []).map((d) => [d.type, d])
+            );
+            const childDocRows = (childEnrollment.documents ?? []).map((document) => {
+              const documentType = String(document.type);
+              const documentId = document.documentId as unknown as
+                | { _id?: string; secureUrl?: string; originalName?: string; fileName?: string; createdAt?: string | Date }
+                | undefined;
+              return {
+                type: documentType,
+                label: formatDocumentTypeLabel(documentType),
+                status: (document.status ?? "pending") as "pending" | "verified" | "rejected" | "missing",
+                uploadedAt: documentId?.createdAt ?? null,
+                downloadUrl: documentId?._id
+                  ? `/api/documents/${documentId._id}/view`
+                  : documentId?.secureUrl ?? null,
+                filename: documentId?.originalName ?? documentId?.fileName ?? null,
+              };
+            });
+            const childMissingDocs = childRequiredDocs
+              .filter((dt) => !childUploadedDocs.has(dt))
+              .map((dt) => ({
+                type: dt,
+                label: formatDocumentTypeLabel(dt),
+                status: "missing" as const,
+                uploadedAt: null,
+                downloadUrl: null,
+                filename: null,
+              }));
+            const allChildDocs = childDocRows.length > 0 ? childDocRows : [...childMissingDocs];
+
+            return (
+              <Card key={String(student._id)} className="min-w-0 overflow-hidden">
+                <CardHeader className="pb-2 pt-4 px-4">
+                  <CardTitle className="flex items-center gap-1.5 text-sm font-semibold">
+                    <FileText className="h-4 w-4 text-primary" />
+                    {childName} — Documents
+                  </CardTitle>
+                  <p className="text-xs text-muted-foreground">Upload missing documents below</p>
+                </CardHeader>
+                <CardContent className="px-4 pb-4">
+                  {allChildDocs.length === 0 ? (
+                    <p className="py-6 text-center text-xs text-muted-foreground">
+                      No documents required for this enrollment type.
+                    </p>
+                  ) : (
+                    <ParentDashboardDocuments
+                      enrollmentId={String(childEnrollment._id)}
+                      documents={allChildDocs}
+                    />
+                  )}
+                </CardContent>
+              </Card>
+            );
+          })}
+          {data.perStudentData.every(({ latestEnrollment: e }) => !e) && (
+            <Card className="min-w-0 overflow-hidden">
+              <CardContent className="py-8 text-center text-xs text-muted-foreground">
                 Submit an enrollment to view required documents.
-              </p>
-            ) : (
-              <ParentDashboardDocuments
-                enrollmentId={String(currentEnrollment?._id || "")}
-                documents={submittedDocumentRows.length > 0 ? submittedDocumentRows : documentRows}
-              />
-            )}
-          </CardContent>
-        </Card>
+              </CardContent>
+            </Card>
+          )}
+        </div>
 
         {/* Right Column */}
         <div className="min-w-0 space-y-4">
