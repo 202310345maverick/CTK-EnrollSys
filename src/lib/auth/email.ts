@@ -227,6 +227,13 @@ export async function sendStatusChangeEmail({
         <tr><td style="padding:6px 12px;color:#555;font-size:14px;"><strong>New Status:</strong></td><td style="padding:6px 12px;font-size:14px;font-weight:bold;color:${statusColor};">${statusLabel}</td></tr>
         ${remarks ? `<tr><td style="padding:6px 12px;color:#555;font-size:14px;"><strong>Remarks:</strong></td><td style="padding:6px 12px;color:#333;font-size:14px;">${remarks}</td></tr>` : ""}
       </table>
+      ${newStatus === "approved" ? `
+      <table cellpadding="0" cellspacing="0" style="background:#fffbeb;border:1px solid #fbbf24;border-radius:6px;padding:16px;margin:16px 0;width:100%;">
+        <tr><td style="padding:8px 12px;color:#92400e;font-size:14px;">
+          <strong>📋 Next Step: Proceed to the Registrar's Office</strong><br>
+          <span style="color:#78350f;">Your enrollment has been approved. Please visit the Registrar's Office to settle your school fees and complete the enrollment process. Kindly bring a valid ID and a copy of this email.</span>
+        </td></tr>
+      </table>` : ""}
       ${link ? `<p style="color:#333;line-height:1.6;"><a href="${link}" style="background:#b4040d;color:#fff;padding:10px 20px;border-radius:5px;text-decoration:none;font-weight:bold;">View Enrollment</a></p>` : ""}
       <p style="color:#333;line-height:1.6;">God bless,<br><strong>Christ the King Catholic School</strong></p>
     `;
