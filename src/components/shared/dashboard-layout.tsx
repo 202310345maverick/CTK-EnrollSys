@@ -244,7 +244,7 @@ export default function DashboardLayout({
         </header>
 
         {/* Page Content */}
-        <main className="min-w-0 overflow-x-hidden p-5 md:p-6">{children}</main>
+        <main className="min-w-0 p-5 md:p-6">{children}</main>
       </div>
     </div>
   );
