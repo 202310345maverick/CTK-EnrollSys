@@ -94,7 +94,7 @@ export default function NotificationBell() {
           )}
         </button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-80 p-0" sideOffset={8}>
+      <DropdownMenuContent align="end" className="w-[min(20rem,calc(100vw-1rem))] p-0" sideOffset={8}>
         {/* Header */}
         <div className="flex items-center justify-between border-b px-4 py-3">
           <h3 className="text-sm font-semibold text-slate-900">Notifications</h3>
@@ -144,7 +144,7 @@ export default function NotificationBell() {
         {/* Footer */}
         <div className="border-t px-4 py-2">
           <a
-            href="/parent"
+            href="/dashboard"
             className="block text-center text-xs text-[#b4040d] hover:underline"
             onClick={() => setOpen(false)}
           >

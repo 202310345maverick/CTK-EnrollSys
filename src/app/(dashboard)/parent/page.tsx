@@ -237,6 +237,7 @@ export default async function ParentDashboard() {
               <CardTitle className="text-sm font-semibold">Enrollment Status Description</CardTitle>
             </CardHeader>
             <CardContent className="px-4 pb-4">
+              <div className="overflow-x-auto">
               <table className="w-full text-xs">
                 <thead>
                   <tr className="border-b">
@@ -257,6 +258,7 @@ export default async function ParentDashboard() {
                   ))}
                 </tbody>
               </table>
+              </div>
             </CardContent>
           </Card>
 
@@ -269,6 +271,7 @@ export default async function ParentDashboard() {
               {data.allEnrollments.length === 0 ? (
                 <p className="py-4 text-center text-xs text-muted-foreground">No enrollment history yet.</p>
               ) : (
+                <div className="overflow-x-auto">
                 <table className="w-full text-xs">
                   <thead>
                     <tr className="border-b">
@@ -301,6 +304,7 @@ export default async function ParentDashboard() {
                     ))}
                   </tbody>
                 </table>
+                </div>
               )}
             </CardContent>
           </Card>

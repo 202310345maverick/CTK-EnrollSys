@@ -27,6 +27,7 @@ import {
 } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import { EnrollmentPeriodControl } from "@/components/admin/enrollment-period-control";
+import AutoRefresh from "@/components/shared/auto-refresh";
 
 const GRADE_LEVEL_ORDER = [
   "Kindergarten",
@@ -180,6 +181,7 @@ export default async function AdminDashboard() {
 
   return (
     <div className="space-y-4 pb-8">
+      <AutoRefresh intervalMs={30000} />
       <div>
         <h1 className="text-xl font-bold text-gray-900">Admin Dashboard</h1>
         <p className="text-xs text-slate-500">System overview · {approvedToday} approved today</p>

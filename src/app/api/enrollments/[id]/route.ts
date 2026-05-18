@@ -206,7 +206,7 @@ export async function PUT(
     }
 
     // Fire-and-forget notifications
-    const appUrl = (process.env.NEXT_PUBLIC_APP_URL ?? process.env.NEXTAUTH_URL ?? "").replace(/\/$/, "");
+    const appUrl = (process.env.NEXT_PUBLIC_APP_URL ?? "").replace(/\/$/, "");
     void Promise.resolve().then(async () => {
       if (isAdmin && body.status && body.status !== "draft") {
         const parent = await User.findById(enrollment.submittedBy).select("email profile").lean();

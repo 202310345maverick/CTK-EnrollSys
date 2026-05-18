@@ -83,7 +83,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="h-screen overflow-hidden flex">
+    <div className="min-h-dvh flex flex-col lg:flex-row">
       <div className="hidden lg:flex lg:w-2/5 bg-gradient-to-br from-maroon to-maroon-dark p-8 flex-col justify-between">
         <div>
           <div className="flex items-center gap-3">

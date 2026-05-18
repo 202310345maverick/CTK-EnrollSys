@@ -215,7 +215,8 @@ export default function StudentsPage() {
               <p className="text-sm text-muted-foreground">No students found</p>
             </div>
           ) : (
-            <Table>
+            <div className="overflow-x-auto">
+              <Table>
               <TableHeader>
                 <TableRow className="bg-muted/40">
                   <TableHead className="text-xs">Student</TableHead>
@@ -272,7 +273,7 @@ export default function StudentsPage() {
                   </TableRow>
                 ))}
               </TableBody>
-            </Table>
+            </Table></div>
           )}
         </CardContent>
       </Card>

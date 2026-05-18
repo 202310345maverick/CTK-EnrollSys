@@ -127,7 +127,7 @@ export default function EnrollmentsPage() {
           ]}
           className="w-36"
         />
-        <div className="flex items-center gap-1.5">
+        <div className="flex flex-wrap items-center gap-1.5">
           <input
             type="date"
             value={dateFrom}
@@ -177,7 +177,8 @@ export default function EnrollmentsPage() {
               <p className="text-xs text-muted-foreground">Try adjusting your filters</p>
             </div>
           ) : (
-            <Table>
+            <div className="overflow-x-auto">
+              <Table>
               <TableHeader>
                 <TableRow className="bg-slate-50">
                   <TableHead className="text-xs">Student</TableHead>
@@ -225,7 +226,7 @@ export default function EnrollmentsPage() {
                   </TableRow>
                 ))}
               </TableBody>
-            </Table>
+            </Table></div>
           )}
         </CardContent>
       </Card>
