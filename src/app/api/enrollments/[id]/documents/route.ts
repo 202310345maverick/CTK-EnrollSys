@@ -162,7 +162,7 @@ export async function POST(
       : undefined;
 
     analyzeDocument({
-      imageUrl: result.secure_url,
+      cloudinaryPublicId: result.public_id,
       mimeType: file.type,
       expectedDocumentType: documentType,
       studentName: studentName || undefined,

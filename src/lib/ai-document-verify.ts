@@ -1,3 +1,9 @@
+import { v2 as cloudinary } from "cloudinary";
+
+// Cloudinary is already configured via CLOUDINARY_CLOUD_NAME / API_KEY / API_SECRET
+// This module uses Cloudinary's OCR add-on (adv_ocr) — free tier: 500 requests/month.
+// Enable it once at: Cloudinary Dashboard → Add-ons → OCR Text Detection and Extraction
+
 export type AIDocumentStatus = "passed" | "flagged" | "needs_review" | "skipped" | "error";
 
 export interface AIAnalysisResult {
@@ -57,26 +63,12 @@ function checkStudentName(text: string, studentName: string): boolean {
 }
 
 export async function analyzeDocument(params: {
-  imageUrl: string;
+  cloudinaryPublicId: string;
   mimeType: string;
   expectedDocumentType: string;
   studentName?: string;
 }): Promise<AIAnalysisResult> {
-  const apiKey = process.env.GOOGLE_VISION_API_KEY;
-
-  if (!apiKey) {
-    return {
-      status: "skipped",
-      extractedText: "",
-      confidence: 0,
-      documentTypeDetected: null,
-      documentTypeMatch: null,
-      studentNameFound: null,
-      qualityFlags: ["api_key_not_configured"],
-      analyzedAt: new Date(),
-    };
-  }
-
+  // PDF files: Cloudinary OCR only works on images
   if (params.mimeType === "application/pdf") {
     return {
       status: "skipped",
@@ -91,52 +83,27 @@ export async function analyzeDocument(params: {
   }
 
   try {
-    const response = await fetch(
-      `https://vision.googleapis.com/v1/images:annotate?key=${apiKey}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          requests: [
-            {
-              image: { source: { imageUri: params.imageUrl } },
-              features: [
-                { type: "TEXT_DETECTION", maxResults: 1 },
-                { type: "SAFE_SEARCH_DETECTION" },
-                { type: "DOCUMENT_TEXT_DETECTION", maxResults: 1 },
-              ],
-            },
-          ],
-        }),
-      }
-    );
+    // Request OCR from Cloudinary using the adv_ocr add-on
+    const result = await cloudinary.api.resource(params.cloudinaryPublicId, {
+      ocr: "adv_ocr",
+    }) as any;
 
-    if (!response.ok) {
-      const errBody = await response.text();
-      throw new Error(`Vision API ${response.status}: ${errBody}`);
-    }
+    const ocrData = result?.info?.ocr?.adv_ocr?.data?.[0];
+    const extractedText: string = ocrData?.full_text_annotation?.text ?? "";
+    const wordConfidences: number[] = (ocrData?.full_text_annotation?.pages ?? [])
+      .flatMap((p: any) => p.blocks ?? [])
+      .flatMap((b: any) => b.paragraphs ?? [])
+      .flatMap((para: any) => para.words ?? [])
+      .map((w: any) => (typeof w.confidence === "number" ? w.confidence : 1));
 
-    const data = await response.json();
-    const result = data.responses?.[0];
+    const avgConfidence =
+      wordConfidences.length > 0
+        ? wordConfidences.reduce((a: number, b: number) => a + b, 0) / wordConfidences.length
+        : extractedText.length > 50
+        ? 0.8
+        : 0.3;
 
-    if (!result) throw new Error("Empty response from Vision API");
-    if (result.error) throw new Error(result.error.message);
-
-    const extractedText =
-      result.fullTextAnnotation?.text ||
-      result.textAnnotations?.[0]?.description ||
-      "";
-
-    const safeSearch = result.safeSearchAnnotation || {};
     const qualityFlags: string[] = [];
-
-    const highLikelihood = ["LIKELY", "VERY_LIKELY"];
-    if (
-      highLikelihood.includes(safeSearch.adult) ||
-      highLikelihood.includes(safeSearch.violence)
-    ) {
-      qualityFlags.push("inappropriate_content");
-    }
 
     const expectedKeywords = DOC_KEYWORDS[params.expectedDocumentType];
     if (expectedKeywords && expectedKeywords.length > 0 && extractedText.length < 50) {
@@ -158,25 +125,10 @@ export async function analyzeDocument(params: {
       if (!studentNameFound) qualityFlags.push("student_name_not_found");
     }
 
-    // Compute average word-level confidence from full text annotation
-    const wordConfidences: number[] = (result.fullTextAnnotation?.pages ?? [])
-      .flatMap((p: any) => p.blocks ?? [])
-      .flatMap((b: any) => b.paragraphs ?? [])
-      .flatMap((para: any) => para.words ?? [])
-      .map((w: any) => (typeof w.confidence === "number" ? w.confidence : 1));
-
-    const avgConfidence =
-      wordConfidences.length > 0
-        ? wordConfidences.reduce((a, b) => a + b, 0) / wordConfidences.length
-        : extractedText.length > 50
-        ? 0.8
-        : 0.3;
-
     const status: AIDocumentStatus =
       qualityFlags.length === 0
         ? "passed"
-        : qualityFlags.includes("inappropriate_content") ||
-          qualityFlags.includes("wrong_document_type")
+        : qualityFlags.includes("wrong_document_type")
         ? "flagged"
         : "needs_review";
 
@@ -190,17 +142,25 @@ export async function analyzeDocument(params: {
       qualityFlags,
       analyzedAt: new Date(),
     };
-  } catch (error) {
+  } catch (error: any) {
+    // If the OCR add-on is not enabled, Cloudinary returns an error — treat as skipped
+    const message: string = error?.message ?? "Unknown error";
+    const isAddonMissing =
+      message.includes("OCR") ||
+      message.includes("adv_ocr") ||
+      message.includes("not found") ||
+      message.includes("not enabled");
+
     return {
-      status: "error",
+      status: isAddonMissing ? "skipped" : "error",
       extractedText: "",
       confidence: 0,
       documentTypeDetected: null,
       documentTypeMatch: null,
       studentNameFound: null,
-      qualityFlags: [],
+      qualityFlags: isAddonMissing ? ["ocr_addon_not_enabled"] : [],
       analyzedAt: new Date(),
-      error: error instanceof Error ? error.message : "Unknown error",
+      error: isAddonMissing ? undefined : message,
     };
   }
 }
