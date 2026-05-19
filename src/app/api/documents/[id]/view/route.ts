@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth/options";
 import dbConnect from "@/lib/db/connection";
 import DocumentModel from "@/models/Document";
 import Student from "@/models/Student";
+import { v2 as cloudinary } from "cloudinary";
 
 export async function GET(
   req: NextRequest,
@@ -23,7 +24,6 @@ export async function GET(
 
   const role = session.user.role;
 
-  // Parents can only access documents for their own students
   if (role === "parent") {
     const student = await Student.findOne({
       _id: doc.studentId,
@@ -32,10 +32,7 @@ export async function GET(
     if (!student) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
-  }
-
-  // Admins and registrars have unrestricted access
-  if (role !== "admin" && role !== "registrar" && role !== "parent") {
+  } else if (role !== "admin" && role !== "registrar") {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
@@ -44,21 +41,18 @@ export async function GET(
     return NextResponse.json({ error: "File URL not found" }, { status: 404 });
   }
 
-  // Proxy the file through the server so raw Cloudinary URLs are never exposed
-  const upstream = await fetch(fileUrl);
-  if (!upstream.ok) {
-    return NextResponse.json({ error: "Failed to fetch file" }, { status: 502 });
+  // Generate a short-lived signed URL from Cloudinary (1 hour)
+  // This avoids proxying the file through Next.js which can fail
+  try {
+    const signedUrl = cloudinary.url(doc.cloudinaryId, {
+      resource_type: "image",
+      type: "upload",
+      sign_url: true,
+      expires_at: Math.floor(Date.now() / 1000) + 3600,
+    });
+    return NextResponse.redirect(signedUrl, { status: 302 });
+  } catch {
+    // Fallback to stored secure URL if signing fails
+    return NextResponse.redirect(fileUrl, { status: 302 });
   }
-
-  const contentType = upstream.headers.get("content-type") || doc.mimeType || "application/octet-stream";
-  const buffer = await upstream.arrayBuffer();
-
-  return new NextResponse(buffer, {
-    status: 200,
-    headers: {
-      "Content-Type": contentType,
-      "Content-Disposition": `inline; filename="${doc.originalName || doc.fileName}"`,
-      "Cache-Control": "private, max-age=3600",
-    },
-  });
 }

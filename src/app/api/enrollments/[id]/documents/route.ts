@@ -118,7 +118,7 @@ export async function POST(
     });
 
     if (existingDocument) {
-      await deleteFromCloudinary(existingDocument.cloudinaryId);
+      await deleteFromCloudinary(existingDocument.cloudinaryId, "image");
       await Document.findByIdAndDelete(existingDocument._id);
       enrollment.documents = (enrollment.documents || []).filter(
         (document: { type: string }) => document.type !== documentType
@@ -126,12 +126,15 @@ export async function POST(
     }
 
     const buffer = Buffer.from(await file.arrayBuffer());
+    // Upload everything as "image" so Cloudinary OCR add-on works on PDFs too
     const result = await uploadToCloudinary(buffer, {
       folder: `ctk-enrollsys/enrollments/${params.id}`,
       public_id: `${documentType}_${Date.now()}`,
       resource_type: "image",
+      ocr: "adv_ocr",
     });
 
+    const cloudinaryResourceType = "image";
     const createdDocument = await Document.create({
       studentId,
       enrollmentId: enrollment._id,
@@ -169,9 +172,11 @@ export async function POST(
             : undefined;
           return analyzeDocument({
             cloudinaryPublicId: publicId,
+            cloudinaryResourceType,
             mimeType,
             expectedDocumentType: docType,
             studentName: studentName || undefined,
+            uploadOcrInfo: result.info,
           });
         })
         .then((analysis) => Document.findByIdAndUpdate(docId, { aiAnalysis: analysis }))

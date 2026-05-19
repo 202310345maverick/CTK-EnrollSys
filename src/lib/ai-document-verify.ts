@@ -1,8 +1,9 @@
 import { v2 as cloudinary } from "cloudinary";
 
 // Cloudinary is already configured via CLOUDINARY_CLOUD_NAME / API_KEY / API_SECRET
-// This module uses Cloudinary's OCR add-on (adv_ocr) — free tier: 500 requests/month.
-// Enable it once at: Cloudinary Dashboard → Add-ons → OCR Text Detection and Extraction
+// Uses Cloudinary's OCR add-on (adv_ocr) triggered at upload time.
+// Enable at: Cloudinary Dashboard → Add-ons → OCR Text Detection and Extraction
+// Free tier: 500 requests/month
 
 export type AIDocumentStatus = "passed" | "flagged" | "needs_review" | "skipped" | "error";
 
@@ -26,76 +27,95 @@ const DOC_KEYWORDS: Record<string, string[]> = {
   report_card: [
     "REPORT CARD", "SCHOOL FORM", "GRADES", "DEPARTMENT OF EDUCATION", "DEPED", "SF9", "SF 9",
   ],
-  good_moral: [
-    "GOOD MORAL", "CHARACTER", "CONDUCT", "CERTIFICATE", "HEREBY CERTIFY",
-  ],
-  transfer_certificate: [
-    "TRANSFER CERTIFICATE", "HONORABLE DISMISSAL", "CERTIFICATE OF TRANSFER",
-  ],
-  non_catholic_agreement: [
-    "NON-CATHOLIC", "NON CATHOLIC", "AGREEMENT", "PERMISSION", "CONSENT",
-  ],
+  good_moral: ["GOOD MORAL", "CHARACTER", "CONDUCT", "CERTIFICATE", "HEREBY CERTIFY"],
+  transfer_certificate: ["TRANSFER CERTIFICATE", "HONORABLE DISMISSAL", "CERTIFICATE OF TRANSFER"],
+  non_catholic_agreement: ["NON-CATHOLIC", "NON CATHOLIC", "AGREEMENT", "PERMISSION", "CONSENT"],
   id_photo: [],
   other: [],
 };
 
 function detectDocumentType(text: string): string | null {
-  const upperText = text.toUpperCase();
+  const upper = text.toUpperCase();
   let bestMatch: string | null = null;
   let bestScore = 0;
   for (const [docType, keywords] of Object.entries(DOC_KEYWORDS)) {
-    if (keywords.length === 0) continue;
-    const score = keywords.filter((k) => upperText.includes(k)).length;
-    if (score > bestScore) {
-      bestScore = score;
-      bestMatch = docType;
-    }
+    if (!keywords.length) continue;
+    const score = keywords.filter((k) => upper.includes(k)).length;
+    if (score > bestScore) { bestScore = score; bestMatch = docType; }
   }
   return bestScore > 0 ? bestMatch : null;
 }
 
 function checkStudentName(text: string, studentName: string): boolean {
-  const upperText = text.toUpperCase();
-  const nameParts = studentName.toUpperCase().split(/\s+/).filter((p) => p.length > 2);
-  if (nameParts.length === 0) return false;
-  const matchCount = nameParts.filter((p) => upperText.includes(p)).length;
-  return matchCount >= Math.ceil(nameParts.length / 2);
+  const upper = text.toUpperCase();
+  const parts = studentName.toUpperCase().split(/\s+/).filter((p) => p.length > 2);
+  if (!parts.length) return false;
+  return parts.filter((p) => upper.includes(p)).length >= Math.ceil(parts.length / 2);
+}
+
+function extractFromOcrInfo(ocrInfo: any): { text: string; confidence: number } {
+  const ocrData = ocrInfo?.ocr?.adv_ocr?.data?.[0];
+  const text: string = ocrData?.full_text_annotation?.text ?? "";
+  const wordConfidences: number[] = (ocrData?.full_text_annotation?.pages ?? [])
+    .flatMap((p: any) => p.blocks ?? [])
+    .flatMap((b: any) => b.paragraphs ?? [])
+    .flatMap((para: any) => para.words ?? [])
+    .map((w: any) => (typeof w.confidence === "number" ? w.confidence : 1));
+  const confidence =
+    wordConfidences.length > 0
+      ? wordConfidences.reduce((a: number, b: number) => a + b, 0) / wordConfidences.length
+      : text.length > 50 ? 0.8 : 0.3;
+  return { text, confidence };
 }
 
 export async function analyzeDocument(params: {
   cloudinaryPublicId: string;
+  cloudinaryResourceType?: string;
   mimeType: string;
   expectedDocumentType: string;
   studentName?: string;
+  uploadOcrInfo?: any; // OCR info from upload result (preferred, avoids extra API call)
 }): Promise<AIAnalysisResult> {
-  // PDFs are uploaded as resource_type "image" to enable Cloudinary OCR support
-
   try {
-    // Request OCR from Cloudinary using the adv_ocr add-on
-    const result = await cloudinary.api.resource(params.cloudinaryPublicId, {
-      ocr: "adv_ocr",
-      resource_type: "image",
-    }) as any;
+    let extractedText = "";
+    let confidence = 0;
 
-    const ocrData = result?.info?.ocr?.adv_ocr?.data?.[0];
-    const extractedText: string = ocrData?.full_text_annotation?.text ?? "";
-    const wordConfidences: number[] = (ocrData?.full_text_annotation?.pages ?? [])
-      .flatMap((p: any) => p.blocks ?? [])
-      .flatMap((b: any) => b.paragraphs ?? [])
-      .flatMap((para: any) => para.words ?? [])
-      .map((w: any) => (typeof w.confidence === "number" ? w.confidence : 1));
-
-    const avgConfidence =
-      wordConfidences.length > 0
-        ? wordConfidences.reduce((a: number, b: number) => a + b, 0) / wordConfidences.length
-        : extractedText.length > 50
-        ? 0.8
-        : 0.3;
+    // If OCR info was passed from the upload result, use it directly
+    if (params.uploadOcrInfo?.ocr?.adv_ocr) {
+      const extracted = extractFromOcrInfo(params.uploadOcrInfo);
+      extractedText = extracted.text;
+      confidence = extracted.confidence;
+    } else {
+      // Fallback: call Cloudinary explicit to trigger OCR on existing resource
+      try {
+        const explicit = await cloudinary.uploader.explicit(
+          params.cloudinaryPublicId,
+          { type: "upload", resource_type: (params.cloudinaryResourceType || "image") as any, ocr: "adv_ocr" }
+        ) as any;
+        const extracted = extractFromOcrInfo(explicit.info);
+        extractedText = extracted.text;
+        confidence = extracted.confidence;
+      } catch (ocrErr: any) {
+        const msg: string = ocrErr?.message ?? "";
+        const isAddonMissing = msg.includes("OCR") || msg.includes("adv_ocr") || msg.includes("not enabled");
+        return {
+          status: isAddonMissing ? "skipped" : "error",
+          extractedText: "",
+          confidence: 0,
+          documentTypeDetected: null,
+          documentTypeMatch: null,
+          studentNameFound: null,
+          qualityFlags: isAddonMissing ? ["ocr_addon_not_enabled"] : [],
+          analyzedAt: new Date(),
+          error: isAddonMissing ? undefined : msg,
+        };
+      }
+    }
 
     const qualityFlags: string[] = [];
-
     const expectedKeywords = DOC_KEYWORDS[params.expectedDocumentType];
-    if (expectedKeywords && expectedKeywords.length > 0 && extractedText.length < 50) {
+
+    if (expectedKeywords?.length && extractedText.length < 50) {
       qualityFlags.push("blank_or_unreadable");
     }
 
@@ -104,7 +124,7 @@ export async function analyzeDocument(params: {
     if (documentTypeDetected !== null) {
       documentTypeMatch = documentTypeDetected === params.expectedDocumentType;
       if (!documentTypeMatch) qualityFlags.push("wrong_document_type");
-    } else if (expectedKeywords && expectedKeywords.length > 0 && extractedText.length > 50) {
+    } else if (expectedKeywords?.length && extractedText.length > 50) {
       qualityFlags.push("document_type_unclear");
     }
 
@@ -115,16 +135,14 @@ export async function analyzeDocument(params: {
     }
 
     const status: AIDocumentStatus =
-      qualityFlags.length === 0
-        ? "passed"
-        : qualityFlags.includes("wrong_document_type")
-        ? "flagged"
-        : "needs_review";
+      qualityFlags.length === 0 ? "passed"
+      : qualityFlags.includes("wrong_document_type") ? "flagged"
+      : "needs_review";
 
     return {
       status,
       extractedText: extractedText.slice(0, 2000),
-      confidence: Math.round(avgConfidence * 100) / 100,
+      confidence: Math.round(confidence * 100) / 100,
       documentTypeDetected,
       documentTypeMatch,
       studentNameFound,
@@ -132,24 +150,16 @@ export async function analyzeDocument(params: {
       analyzedAt: new Date(),
     };
   } catch (error: any) {
-    // If the OCR add-on is not enabled, Cloudinary returns an error — treat as skipped
-    const message: string = error?.message ?? "Unknown error";
-    const isAddonMissing =
-      message.includes("OCR") ||
-      message.includes("adv_ocr") ||
-      message.includes("not found") ||
-      message.includes("not enabled");
-
     return {
-      status: isAddonMissing ? "skipped" : "error",
+      status: "error",
       extractedText: "",
       confidence: 0,
       documentTypeDetected: null,
       documentTypeMatch: null,
       studentNameFound: null,
-      qualityFlags: isAddonMissing ? ["ocr_addon_not_enabled"] : [],
+      qualityFlags: [],
       analyzedAt: new Date(),
-      error: isAddonMissing ? undefined : message,
+      error: error?.message ?? "Unknown error",
     };
   }
 }
