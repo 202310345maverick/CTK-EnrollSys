@@ -41,11 +41,10 @@ export async function GET(
     return NextResponse.json({ error: "File URL not found" }, { status: 404 });
   }
 
-  // Generate a short-lived signed URL from Cloudinary (1 hour)
-  // This avoids proxying the file through Next.js which can fail
+  const isRaw = fileUrl.includes("/raw/upload/") || doc.mimeType === "application/pdf";
   try {
     const signedUrl = cloudinary.url(doc.cloudinaryId, {
-      resource_type: "image",
+      resource_type: isRaw ? "raw" : "image",
       type: "upload",
       sign_url: true,
       expires_at: Math.floor(Date.now() / 1000) + 3600,
