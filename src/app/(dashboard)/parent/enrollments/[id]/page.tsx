@@ -245,7 +245,7 @@ export default async function ParentEnrollmentDetailPage({
                   </Badge>
                   {file?.secureUrl || (file as any)?._id ? (
                     <a
-                      href={(file as any)?._id ? `/api/documents/${(file as any)._id}/view` : file.secureUrl}
+                      href={(file as any)?.secureUrl || file.secureUrl}
                       target="_blank"
                       rel="noreferrer"
                       className="inline-flex items-center text-sm font-medium text-primary hover:underline"
@@ -271,7 +271,7 @@ export default async function ParentEnrollmentDetailPage({
                 </p>
                 {(document.documentId as any)?._id || (document.documentId as any)?.secureUrl ? (
                   <a
-                    href={(document.documentId as any)?._id ? `/api/documents/${(document.documentId as any)._id}/view` : (document.documentId as any).secureUrl}
+                    href={(document.documentId as any)?.secureUrl}
                     target="_blank"
                     rel="noreferrer"
                     className="inline-flex items-center text-sm font-medium text-primary hover:underline"

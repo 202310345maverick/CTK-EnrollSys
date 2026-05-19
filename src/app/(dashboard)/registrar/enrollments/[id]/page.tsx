@@ -369,7 +369,7 @@ export default function EnrollmentDetailPage() {
                   {enrollment.documents?.map((doc: any, i: number) => {
                     const docId = doc.documentId as any;
                     const label = ENROLLMENT_DOCUMENT_LABELS[doc.type as keyof typeof ENROLLMENT_DOCUMENT_LABELS] || doc.type;
-                    const fileUrl = docId?._id ? `/api/documents/${docId._id}/view` : (docId?.secureUrl || docId?.cloudinaryUrl);
+                    const fileUrl = docId?.secureUrl || docId?.cloudinaryUrl;
                     const ai = docId?.aiAnalysis;
                     const aiKey = `${i}-${doc.type}`;
                     const isAiExpanded = expandedAiDoc === aiKey;

@@ -99,7 +99,7 @@ async function getParentDashboardData(userId: string) {
         label: formatDocumentTypeLabel(dt),
         status: (document.status ?? "pending") as "pending" | "verified" | "rejected" | "missing",
         uploadedAt: docId?.createdAt ?? null,
-        downloadUrl: docId?._id ? `/api/documents/${docId._id}/view` : docId?.secureUrl ?? null,
+        downloadUrl: docId?.secureUrl ?? null,
         filename: docId?.originalName ?? docId?.fileName ?? null,
         aiAnalysis: docId?.aiAnalysis ?? null,
       };
