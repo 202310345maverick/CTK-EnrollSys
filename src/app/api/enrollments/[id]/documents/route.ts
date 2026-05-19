@@ -155,22 +155,27 @@ export async function POST(
     ];
     await enrollment.save();
 
-    // Run AI analysis asynchronously — fetch student name for name matching
-    const student = await Student.findById(studentId).select("personalInfo").lean() as any;
-    const studentName = student
-      ? `${student.personalInfo?.firstName ?? ""} ${student.personalInfo?.lastName ?? ""}`.trim()
-      : undefined;
-
-    analyzeDocument({
-      cloudinaryPublicId: result.public_id,
-      mimeType: file.type,
-      expectedDocumentType: documentType,
-      studentName: studentName || undefined,
-    })
-      .then((analysis) =>
-        Document.findByIdAndUpdate(createdDocument._id, { aiAnalysis: analysis })
-      )
-      .catch((err) => console.error("[AI] Document analysis failed:", err));
+    // Run AI analysis fully async — never blocks the upload response
+    const docId = createdDocument._id;
+    const publicId = result.public_id;
+    const mimeType = file.type;
+    const docType = documentType;
+    setImmediate(() => {
+      Student.findById(studentId).select("personalInfo").lean()
+        .then((student: any) => {
+          const studentName = student
+            ? `${student.personalInfo?.firstName ?? ""} ${student.personalInfo?.lastName ?? ""}`.trim()
+            : undefined;
+          return analyzeDocument({
+            cloudinaryPublicId: publicId,
+            mimeType,
+            expectedDocumentType: docType,
+            studentName: studentName || undefined,
+          });
+        })
+        .then((analysis) => Document.findByIdAndUpdate(docId, { aiAnalysis: analysis }))
+        .catch((err: unknown) => console.error("[AI] Document analysis failed:", err));
+    });
 
     const refreshedEnrollment = await Enrollment.findById(enrollment._id)
       .populate("studentId", "personalInfo")
