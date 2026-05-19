@@ -4,8 +4,6 @@ import { authOptions } from "@/lib/auth/options";
 import dbConnect from "@/lib/db/connection";
 import DocumentModel from "@/models/Document";
 import Student from "@/models/Student";
-import { v2 as cloudinary } from "cloudinary";
-
 export async function GET(
   req: NextRequest,
   { params }: { params: { id: string } }
@@ -41,17 +39,6 @@ export async function GET(
     return NextResponse.json({ error: "File URL not found" }, { status: 404 });
   }
 
-  const isRaw = fileUrl.includes("/raw/upload/") || doc.mimeType === "application/pdf";
-  try {
-    const signedUrl = cloudinary.url(doc.cloudinaryId, {
-      resource_type: isRaw ? "raw" : "image",
-      type: "upload",
-      sign_url: true,
-      expires_at: Math.floor(Date.now() / 1000) + 3600,
-    });
-    return NextResponse.redirect(signedUrl, { status: 302 });
-  } catch {
-    // Fallback to stored secure URL if signing fails
-    return NextResponse.redirect(fileUrl, { status: 302 });
-  }
+  // Redirect directly to the Cloudinary secure URL
+  return NextResponse.redirect(fileUrl, { status: 302 });
 }
