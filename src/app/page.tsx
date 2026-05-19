@@ -1,9 +1,22 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
+import { getServerSession } from "next-auth";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
 import { Users, FileText, Shield, Clock } from "lucide-react";
+import { authOptions } from "@/lib/auth/options";
 
-export default function HomePage() {
+export default async function HomePage() {
+  const session = await getServerSession(authOptions);
+  if (session?.user?.role) {
+    const roleMap: Record<string, string> = {
+      admin: "/admin",
+      registrar: "/registrar/enrollments",
+      parent: "/parent",
+    };
+    const dest = roleMap[session.user.role];
+    if (dest) redirect(dest);
+  }
   return (
     <div className="min-h-screen">
       {/* Header */}

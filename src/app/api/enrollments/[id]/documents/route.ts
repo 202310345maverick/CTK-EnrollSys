@@ -129,6 +129,7 @@ export async function POST(
     const result = await uploadToCloudinary(buffer, {
       folder: `ctk-enrollsys/enrollments/${params.id}`,
       public_id: `${documentType}_${Date.now()}`,
+      resource_type: "image",
     });
 
     const createdDocument = await Document.create({

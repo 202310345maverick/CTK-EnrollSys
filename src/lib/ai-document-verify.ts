@@ -68,24 +68,13 @@ export async function analyzeDocument(params: {
   expectedDocumentType: string;
   studentName?: string;
 }): Promise<AIAnalysisResult> {
-  // PDF files: Cloudinary OCR only works on images
-  if (params.mimeType === "application/pdf") {
-    return {
-      status: "skipped",
-      extractedText: "",
-      confidence: 0,
-      documentTypeDetected: null,
-      documentTypeMatch: null,
-      studentNameFound: null,
-      qualityFlags: ["pdf_not_supported"],
-      analyzedAt: new Date(),
-    };
-  }
+  // PDFs are uploaded as resource_type "image" to enable Cloudinary OCR support
 
   try {
     // Request OCR from Cloudinary using the adv_ocr add-on
     const result = await cloudinary.api.resource(params.cloudinaryPublicId, {
       ocr: "adv_ocr",
+      resource_type: "image",
     }) as any;
 
     const ocrData = result?.info?.ocr?.adv_ocr?.data?.[0];
