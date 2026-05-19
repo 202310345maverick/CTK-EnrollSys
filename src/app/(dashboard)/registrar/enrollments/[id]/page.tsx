@@ -12,6 +12,7 @@ import {
   MessageSquare, UploadCloud, Zap, BrainCircuit, ChevronDown, ChevronUp,
 } from "lucide-react";
 import { ENROLLMENT_DOCUMENT_LABELS } from "@/lib/enrollment/constants";
+import { DocumentViewer } from "@/components/shared/document-viewer";
 
 function PesoSign({ className }: { className?: string }) {
   return (
@@ -421,11 +422,7 @@ export default function EnrollmentDetailPage() {
                           </div>
                           <div className="flex items-center gap-1 shrink-0">
                             {fileUrl && (
-                              <a href={fileUrl} target="_blank" rel="noreferrer">
-                                <Button variant="outline" size="sm" className="h-6 px-1.5 text-xs">
-                                  <ExternalLink className="h-3 w-3" />
-                                </Button>
-                              </a>
+                              <DocumentViewer url={fileUrl} name={docId?.originalName || label} mime={docId?.mimeType} asButton />
                             )}
                             {doc.status !== "verified" && (
                               <Button

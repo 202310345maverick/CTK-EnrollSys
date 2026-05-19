@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { getServerSession } from "next-auth";
 import { ArrowLeft, CalendarClock, CheckCircle2, CircleAlert, FileText } from "lucide-react";
+import { DocumentViewer } from "@/components/shared/document-viewer";
 
 import { authOptions } from "@/lib/auth/options";
 import dbConnect from "@/lib/db/connection";
@@ -243,16 +244,8 @@ export default async function ParentEnrollmentDetailPage({
                   <Badge variant={status === "rejected" ? "danger" : status === "missing" ? "warning" : "success"}>
                     {statusLabel}
                   </Badge>
-                  {file?.secureUrl || (file as any)?._id ? (
-                    <a
-                      href={(file as any)?.secureUrl || file.secureUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="inline-flex items-center text-sm font-medium text-primary hover:underline"
-                    >
-                      <FileText className="mr-1 h-4 w-4" />
-                      View
-                    </a>
+                  {(file as any)?.secureUrl || file.secureUrl ? (
+                    <DocumentViewer url={(file as any)?.secureUrl || file.secureUrl} name={(file as any)?.originalName || documentType} mime={(file as any)?.mimeType} />
                   ) : null}
                 </div>
               </div>
@@ -269,16 +262,8 @@ export default async function ParentEnrollmentDetailPage({
                 <p className="text-sm text-muted-foreground capitalize">
                   Additional: {ENROLLMENT_DOCUMENT_LABELS[document.type as (typeof ENROLLMENT_DOCUMENT_TYPES)[number]] || document.type}
                 </p>
-                {(document.documentId as any)?._id || (document.documentId as any)?.secureUrl ? (
-                  <a
-                    href={(document.documentId as any)?.secureUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex items-center text-sm font-medium text-primary hover:underline"
-                  >
-                    <FileText className="mr-1 h-4 w-4" />
-                    View
-                  </a>
+                {(document.documentId as any)?.secureUrl ? (
+                  <DocumentViewer url={(document.documentId as any)?.secureUrl} name={(document.documentId as any)?.originalName || document.type} mime={(document.documentId as any)?.mimeType} />
                 ) : null}
               </div>
             ))}
