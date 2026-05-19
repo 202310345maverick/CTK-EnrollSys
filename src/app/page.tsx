@@ -11,7 +11,7 @@ export default async function HomePage() {
   if (session?.user?.role) {
     const roleMap: Record<string, string> = {
       admin: "/admin",
-      registrar: "/registrar/enrollments",
+      registrar: "/registrar",
       parent: "/parent",
     };
     const dest = roleMap[session.user.role];
