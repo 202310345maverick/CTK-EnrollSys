@@ -282,7 +282,7 @@ export async function PUT(
               studentName,
               documentType,
               remarks: docRemarks,
-              link: `${appUrl}/parent/enrollments/${enrollment._id}`,
+              link: `${appUrl}/parent`,
             });
             await createNotification({
               userId: enrollment.submittedBy.toString(),

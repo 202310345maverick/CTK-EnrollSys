@@ -2,6 +2,7 @@ import Link from "next/link";
 import { getServerSession } from "next-auth";
 import { ArrowLeft, CalendarClock, CheckCircle2, CircleAlert, FileText } from "lucide-react";
 import { DocumentViewer } from "@/components/shared/document-viewer";
+import { DocumentUploadButton } from "@/components/shared/document-upload-button";
 
 import { authOptions } from "@/lib/auth/options";
 import dbConnect from "@/lib/db/connection";
@@ -181,8 +182,8 @@ export default async function ParentEnrollmentDetailPage({
             ) : (
               timeline.map((entry: any, index: number) => (
                 <div key={`${entry.status}-${entry.changedAt}-${index}`} className="flex gap-3">
-                  <div className="mt-1 rounded-full bg-primary/10 p-1.5">
-                    <CalendarClock className="h-3.5 w-3.5 text-primary" />
+                  <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/10">
+                    <CalendarClock className="h-4 w-4 text-primary" />
                   </div>
                   <div className="space-y-1">
                     <p className="text-sm font-semibold">
@@ -244,9 +245,16 @@ export default async function ParentEnrollmentDetailPage({
                   <Badge variant={status === "rejected" ? "danger" : status === "missing" ? "warning" : "success"}>
                     {statusLabel}
                   </Badge>
-                  {(file as any)?.secureUrl || file.secureUrl ? (
+                  {(file as any)?.secureUrl || file?.secureUrl ? (
                     <DocumentViewer url={(file as any)?.secureUrl || file.secureUrl} name={(file as any)?.originalName || documentType} mime={(file as any)?.mimeType} />
                   ) : null}
+                  {(status === "missing" || status === "rejected") && (
+                    <DocumentUploadButton
+                      enrollmentId={String(enrollment._id)}
+                      documentType={documentType}
+                      isMissing={status === "missing"}
+                    />
+                  )}
                 </div>
               </div>
             );
