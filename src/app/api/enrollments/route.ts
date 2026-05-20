@@ -541,6 +541,14 @@ export async function POST(request: NextRequest) {
       },
     ];
     enrollment.documents = [];
+    if (body?.preferences && typeof body.preferences === "object") {
+      const prefs = body.preferences as Record<string, unknown>;
+      (enrollment as any).preferences = {
+        bookOption: prefs.bookOption ?? undefined,
+        bookRentalAgreed: prefs.bookRentalAgreed ?? undefined,
+        peUniform: prefs.peUniform ?? undefined,
+      };
+    }
     await enrollment.save();
 
     await Document.deleteMany({

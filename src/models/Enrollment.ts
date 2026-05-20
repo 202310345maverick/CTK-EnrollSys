@@ -40,6 +40,11 @@ export interface IEnrollment extends Document {
   submittedAt?: Date;
   processedBy?: mongoose.Types.ObjectId;
   enrollmentDate?: Date;
+  preferences?: {
+    bookOption?: "purchase_new" | "purchase_secondhand" | "rental";
+    bookRentalAgreed?: boolean;
+    peUniform?: "add" | "skip";
+  };
   remarks?: string;
   createdAt: Date;
   updatedAt: Date;
@@ -139,6 +144,17 @@ const EnrollmentSchema = new Schema<IEnrollment>(
     },
     enrollmentDate: Date,
     remarks: String,
+    preferences: {
+      bookOption: {
+        type: String,
+        enum: ["purchase_new", "purchase_secondhand", "rental"],
+      },
+      bookRentalAgreed: Boolean,
+      peUniform: {
+        type: String,
+        enum: ["add", "skip"],
+      },
+    },
   },
   {
     timestamps: true,

@@ -71,9 +71,15 @@ const schema = z.object({
   parentOccupation: z.string().optional(),
   parentAddress:  z.string().optional(),
   monthlyIncome:  z.string().min(1, "Monthly income is required"),
+  bookOption:     z.enum(["purchase_new", "purchase_secondhand", "rental"], { required_error: "Please select a book option" }),
+  bookRentalAgreed: z.boolean().optional(),
+  peUniform:      z.enum(["add", "skip"], { required_error: "Please choose a PE uniform option" }),
 }).refine((d) => !(d.isCatholic === "no" && !d.religion), {
   message: "Please specify religion",
   path: ["religion"],
+}).refine((d) => !(d.bookOption === "rental" && !d.bookRentalAgreed), {
+  message: "You must agree to the rental terms",
+  path: ["bookRentalAgreed"],
 });
 
 type FormData = z.infer<typeof schema>;
@@ -119,6 +125,8 @@ export default function NewEnrollmentPage() {
   const isCatholic = watch("isCatholic");
   const gradeLevel = watch("gradeLevel");
   const watchedValues = watch();
+  const watchBookOption = watch("bookOption");
+  const watchPeUniform = watch("peUniform");
 
   // On mount: fetch the single existing draft and restore it
   useEffect(() => {
@@ -323,6 +331,11 @@ export default function NewEnrollmentPage() {
         parentOccupation: data.parentOccupation,
         parentAddress:  data.parentAddress,
         uploadedDocuments: Object.values(uploadedDocs),
+        preferences: {
+          bookOption: data.bookOption,
+          bookRentalAgreed: data.bookOption === "rental" ? data.bookRentalAgreed : undefined,
+          peUniform: data.peUniform,
+        },
       };
 
       // Capture draftId then clear refs so auto-save cannot fire after submission
@@ -826,6 +839,116 @@ export default function NewEnrollmentPage() {
                 );
               })}
             </div>
+          </CardContent>
+        </Card>
+
+
+        {/* ── Book & PE Uniform Preferences ───────────────────── */}
+        <Card>
+          <CardHeader className="px-4 pt-4 pb-2">
+            <CardTitle className="text-sm font-semibold">Book & Uniform Preferences</CardTitle>
+          </CardHeader>
+          <CardContent className="px-4 pb-4 space-y-5">
+
+            {/* Book Option */}
+            <div className="space-y-2">
+              <p className="text-xs font-medium text-foreground">Books <span className="text-red-500">*</span></p>
+              <div className="grid grid-cols-1 gap-2">
+                {[
+                  { value: "purchase_new",       label: "Buying — Purchase of New Books",            desc: null },
+                  { value: "purchase_secondhand", label: "Buying — Purchase of Second Hand Textbooks", desc: null },
+                  { value: "rental",              label: "Rental",                                     desc: null },
+                ].map(({ value, label }) => (
+                  <label
+                    key={value}
+                    className={`flex items-center gap-3 rounded-lg border p-3 cursor-pointer transition-colors ${
+                      watchBookOption === value ? "border-[#b4040d] bg-red-50" : "border-slate-200 hover:border-slate-300"
+                    }`}
+                  >
+                    <Controller
+                      name="bookOption"
+                      control={control}
+                      render={({ field }) => (
+                        <input
+                          type="radio"
+                          className="accent-[#b4040d]"
+                          value={value}
+                          checked={field.value === value}
+                          onChange={() => field.onChange(value)}
+                        />
+                      )}
+                    />
+                    <span className="text-xs font-medium">{label}</span>
+                  </label>
+                ))}
+              </div>
+              {errors.bookOption && <p className="text-xs text-red-500">{errors.bookOption.message}</p>}
+
+              {/* Rental Terms */}
+              {watchBookOption === "rental" && (
+                <div className="mt-2 rounded-lg border border-amber-200 bg-amber-50 p-3 space-y-2">
+                  <p className="text-xs font-semibold text-amber-800">Book Rental Terms & Agreement</p>
+                  <ul className="text-xs text-amber-700 space-y-1 list-disc list-inside">
+                    <li>Books are provided on a rental basis for the current school year only.</li>
+                    <li>Students are responsible for keeping books in good condition.</li>
+                    <li>Damaged or lost books must be replaced or paid for by the student/guardian.</li>
+                    <li>Books must be returned at the end of the school year in satisfactory condition.</li>
+                    <li>Rental fees are non-refundable once the books have been issued.</li>
+                  </ul>
+                  <Controller
+                    name="bookRentalAgreed"
+                    control={control}
+                    render={({ field }) => (
+                      <label className="flex items-center gap-2 mt-1 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          className="accent-[#b4040d]"
+                          checked={!!field.value}
+                          onChange={(e) => field.onChange(e.target.checked)}
+                        />
+                        <span className="text-xs text-amber-800 font-medium">I have read and agree to the book rental terms above.</span>
+                      </label>
+                    )}
+                  />
+                  {errors.bookRentalAgreed && <p className="text-xs text-red-500">{errors.bookRentalAgreed.message}</p>}
+                </div>
+              )}
+            </div>
+
+            {/* PE Uniform */}
+            <div className="space-y-2">
+              <p className="text-xs font-medium text-foreground">PE Uniform <span className="text-red-500">*</span></p>
+              <div className="grid grid-cols-2 gap-2">
+                {[
+                  { value: "add",  label: "Add PE Uniform" },
+                  { value: "skip", label: "No PE Uniform"  },
+                ].map(({ value, label }) => (
+                  <label
+                    key={value}
+                    className={`flex items-center gap-3 rounded-lg border p-3 cursor-pointer transition-colors ${
+                      watchPeUniform === value ? "border-[#b4040d] bg-red-50" : "border-slate-200 hover:border-slate-300"
+                    }`}
+                  >
+                    <Controller
+                      name="peUniform"
+                      control={control}
+                      render={({ field }) => (
+                        <input
+                          type="radio"
+                          className="accent-[#b4040d]"
+                          value={value}
+                          checked={field.value === value}
+                          onChange={() => field.onChange(value)}
+                        />
+                      )}
+                    />
+                    <span className="text-xs font-medium">{label}</span>
+                  </label>
+                ))}
+              </div>
+              {errors.peUniform && <p className="text-xs text-red-500">{errors.peUniform.message}</p>}
+            </div>
+
           </CardContent>
         </Card>
 

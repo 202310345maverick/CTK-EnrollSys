@@ -655,6 +655,44 @@ export default function EnrollmentDetailPage() {
 
         {/* Right column */}
         <div className="space-y-4">
+          {/* Student Preferences */}
+          {(enrollment.preferences?.bookOption || enrollment.preferences?.peUniform) && (
+            <Card>
+              <CardHeader className="pb-2 pt-4 px-4">
+                <CardTitle className="flex items-center gap-1.5 text-sm font-semibold">
+                  📚 Student Preferences
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="px-4 pb-4 space-y-2 text-sm">
+                {enrollment.preferences?.bookOption && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Book Option</span>
+                    <span className="font-medium">
+                      {enrollment.preferences.bookOption === "purchase_new" && "Purchase New Books"}
+                      {enrollment.preferences.bookOption === "purchase_secondhand" && "Purchase Second-Hand Textbooks"}
+                      {enrollment.preferences.bookOption === "rental" && "Rental"}
+                    </span>
+                  </div>
+                )}
+                {enrollment.preferences?.bookOption === "rental" && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Rental Agreement</span>
+                    <span className={enrollment.preferences?.bookRentalAgreed ? "text-green-600 font-medium" : "text-red-500 font-medium"}>
+                      {enrollment.preferences?.bookRentalAgreed ? "Agreed" : "Not Agreed"}
+                    </span>
+                  </div>
+                )}
+                {enrollment.preferences?.peUniform && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">PE Uniform</span>
+                    <span className="font-medium">
+                      {enrollment.preferences.peUniform === "add" ? "Add PE Uniform" : "Skip PE Uniform"}
+                    </span>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
           {/* Review Actions */}
           {canReview && (
             <Card>
