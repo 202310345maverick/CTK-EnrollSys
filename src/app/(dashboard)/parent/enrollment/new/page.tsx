@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { useForm, Controller } from "react-hook-form";
+import { useForm, Controller, FieldErrors } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { ArrowLeft, Loader2, Send, Upload, X, CheckCircle, RefreshCw, Trash2, Download } from "lucide-react";
@@ -94,6 +94,47 @@ type UploadedDoc = {
 };
 
 const DEFAULT_VALUES = { isCatholic: "yes" as const, enrollmentType: "new" as const };
+
+
+// ── Scroll-to-error helpers ────────────────────────────────────────────────────
+const FIELD_SECTION_MAP: Partial<Record<keyof FormData, string>> = {
+  enrollmentType: "section-student",
+  gradeLevel:     "section-student",
+  studentNo:      "section-student",
+  lastName:       "section-student",
+  firstName:      "section-student",
+  middleName:     "section-student",
+  birthDate:      "section-student",
+  birthPlace:     "section-student",
+  gender:         "section-student",
+  street:         "section-student",
+  barangay:       "section-student",
+  city:           "section-student",
+  province:       "section-student",
+  zipCode:        "section-student",
+  contactNo:      "section-student",
+  numberOfSiblings: "section-student",
+  lastSchoolAttended: "section-student",
+  isCatholic:     "section-student",
+  religion:       "section-student",
+  guardianName:   "section-guardian",
+  parentOccupation: "section-guardian",
+  parentAddress:  "section-guardian",
+  monthlyIncome:  "section-guardian",
+  bookOption:     "section-preferences",
+  bookRentalAgreed: "section-preferences",
+  peUniform:      "section-preferences",
+};
+
+const SECTION_ORDER = ["section-student", "section-guardian", "section-documents", "section-preferences"];
+
+function scrollToSection(sectionId: string) {
+  const el = document.getElementById(sectionId);
+  if (!el) return;
+  el.scrollIntoView({ behavior: "smooth", block: "start" });
+  el.classList.add("ring-2", "ring-red-400", "ring-offset-2", "transition-shadow");
+  setTimeout(() => el.classList.remove("ring-2", "ring-red-400", "ring-offset-2"), 2500);
+}
 
 export default function NewEnrollmentPage() {
   const router = useRouter();
@@ -302,6 +343,7 @@ export default function NewEnrollmentPage() {
           description: `Please upload: ${missingDocs.map((d) => d.label).join(", ")}`,
           variant: "destructive",
         });
+        scrollToSection("section-documents");
         return;
       }
 
@@ -377,6 +419,16 @@ export default function NewEnrollmentPage() {
     }
   };
 
+  const onInvalid = (errs: FieldErrors<FormData>) => {
+    const errorFields = Object.keys(errs) as (keyof FormData)[];
+    for (const sectionId of SECTION_ORDER) {
+      if (errorFields.some((f) => FIELD_SECTION_MAP[f] === sectionId)) {
+        scrollToSection(sectionId);
+        break;
+      }
+    }
+  };
+
   const labelCls = "block text-xs font-medium text-gray-700";
   const errorCls = "mt-0.5 text-xs text-red-500";
 
@@ -416,9 +468,9 @@ export default function NewEnrollmentPage() {
         </div>
       </div>
 
-      <form onSubmit={handleSubmit(onSubmit)} autoComplete="off" className="space-y-4">
+      <form onSubmit={handleSubmit(onSubmit, onInvalid)} autoComplete="off" className="space-y-4">
         {/* ── Student Information ───────────────────────────────── */}
-        <Card>
+        <Card id="section-student" className="scroll-mt-4">
           <CardHeader className="pb-2 pt-4 px-4">
             <CardTitle className="text-sm font-semibold">Student Information</CardTitle>
           </CardHeader>
@@ -701,7 +753,7 @@ export default function NewEnrollmentPage() {
         </Card>
 
         {/* ── Parent / Guardian Information ───────────────────── */}
-        <Card>
+        <Card id="section-guardian" className="scroll-mt-4">
           <CardHeader className="pb-2 pt-4 px-4">
             <CardTitle className="text-sm font-semibold">Parent / Guardian Information</CardTitle>
           </CardHeader>
@@ -740,7 +792,7 @@ export default function NewEnrollmentPage() {
         </Card>
 
         {/* ── Documents ────────────────────────────────────────── */}
-        <Card>
+        <Card id="section-documents" className="scroll-mt-4">
           <CardHeader className="pb-2 pt-4 px-4">
             <CardTitle className="text-sm font-semibold">Required Documents</CardTitle>
           </CardHeader>
@@ -844,7 +896,7 @@ export default function NewEnrollmentPage() {
 
 
         {/* ── Book & PE Uniform Preferences ───────────────────── */}
-        <Card>
+        <Card id="section-preferences" className="scroll-mt-4">
           <CardHeader className="px-4 pt-4 pb-2">
             <CardTitle className="text-sm font-semibold">Book & Uniform Preferences</CardTitle>
           </CardHeader>
