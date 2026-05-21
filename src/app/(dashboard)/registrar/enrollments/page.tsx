@@ -44,7 +44,7 @@ export default function EnrollmentsPage() {
   const [dateTo, setDateTo] = useState("");
 
   useEffect(() => {
-    fetch("/api/enrollments")
+    fetch("/api/enrollments?limit=200")
       .then((r) => r.json())
       .then((data) => setEnrollments(data.enrollments || []))
       .catch(console.error)

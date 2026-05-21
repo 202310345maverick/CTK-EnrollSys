@@ -68,6 +68,7 @@ const formatCurrency = (n: number) =>
 
 export default function EnrollmentDetailPage() {
   const params = useParams();
+  const enrollmentId = Array.isArray(params.id) ? params.id[0] : (params.id as string);
   const router = useRouter();
   const [enrollment, setEnrollment] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -83,6 +84,7 @@ export default function EnrollmentDetailPage() {
   const [reuploadModal, setReuploadModal] = useState<{ docType: string; label: string } | null>(null);
   const [reuploadReason, setReuploadReason] = useState("");
   const [expandedAiDoc, setExpandedAiDoc] = useState<string | null>(null);
+  const [fetchError, setFetchError] = useState<string | null>(null);
 
   const showToast = (msg: string, type: "success" | "error" = "success") => {
     setToast({ msg, type });
@@ -90,17 +92,24 @@ export default function EnrollmentDetailPage() {
   };
 
   const fetchEnrollment = useCallback(() => {
-    fetch(`/api/enrollments/${params.id}`)
-      .then((r) => r.json())
-      .then((data) => {
+    setFetchError(null);
+    fetch(`/api/enrollments/${enrollmentId}`)
+      .then(async (r) => {
+        const data = await r.json();
+        if (!r.ok) {
+          setFetchError(data.error || `Error ${r.status}`);
+          return;
+        }
         if (data.enrollment) {
           setEnrollment(data.enrollment);
           setRemarks(data.enrollment?.remarks || "");
+        } else {
+          setFetchError("Enrollment not found");
         }
       })
-      .catch(console.error)
+      .catch((err) => setFetchError(err?.message || "Failed to load enrollment"))
       .finally(() => setLoading(false));
-  }, [params.id]);
+  }, [enrollmentId]);
 
   useEffect(() => { fetchEnrollment(); }, [fetchEnrollment]);
 
@@ -118,13 +127,13 @@ export default function EnrollmentDetailPage() {
 
   useEffect(() => {
     if (!enrollment) return;
-    fetch(`/api/enrollments/${params.id}/balance`)
+    fetch(`/api/enrollments/${enrollmentId}/balance`)
       .then((r) => r.json())
       .then((data) => {
         if (data.assessed !== undefined) setBalance(data);
       })
       .catch(() => {});
-  }, [enrollment, params.id]);
+  }, [enrollment, enrollmentId]);
 
   const updateStatus = async (status: string) => {
     if (!remarks.trim() && (status === "rejected")) {
@@ -133,7 +142,7 @@ export default function EnrollmentDetailPage() {
     }
     setSaving(true);
     try {
-      const res = await fetch(`/api/enrollments/${params.id}`, {
+      const res = await fetch(`/api/enrollments/${enrollmentId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status, remarks }),
@@ -152,7 +161,7 @@ export default function EnrollmentDetailPage() {
   const updateDocStatus = async (docType: string, status: "verified" | "rejected" | "pending", docRemarks?: string) => {
     setSaving(true);
     try {
-      const res = await fetch(`/api/enrollments/${params.id}`, {
+      const res = await fetch(`/api/enrollments/${enrollmentId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ documentUpdate: { documentType: docType, status, remarks: docRemarks } }),
@@ -183,7 +192,7 @@ export default function EnrollmentDetailPage() {
     setSaving(true);
     const totalAmount = feeBreakdown.reduce((s, f) => s + f.amount, 0);
     try {
-      const res = await fetch(`/api/enrollments/${params.id}`, {
+      const res = await fetch(`/api/enrollments/${enrollmentId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ assessedFees: { totalAmount, breakdown: feeBreakdown } }),
@@ -203,7 +212,7 @@ export default function EnrollmentDetailPage() {
   const saveNote = async () => {
     setSaving(true);
     try {
-      const res = await fetch(`/api/enrollments/${params.id}`, {
+      const res = await fetch(`/api/enrollments/${enrollmentId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ remarks }),
@@ -238,7 +247,25 @@ export default function EnrollmentDetailPage() {
         <Card>
           <CardContent className="py-10 text-center">
             <AlertCircle className="mx-auto mb-2 h-8 w-8 text-muted-foreground" />
-            <p className="text-sm text-muted-foreground">Enrollment not found</p>
+            <p className="text-sm font-medium text-slate-700">
+              {fetchError === "Enrollment not found" || !fetchError
+                ? "Enrollment not found"
+                : "Failed to load enrollment"}
+            </p>
+            {fetchError && fetchError !== "Enrollment not found" && (
+              <p className="mt-1 text-xs text-red-500">{fetchError}</p>
+            )}
+            <p className="mt-2 text-xs text-muted-foreground">
+              This enrollment may have been deleted or you may not have access.
+            </p>
+            <Button
+              size="sm"
+              variant="outline"
+              className="mt-4 h-7 text-xs"
+              onClick={() => { setLoading(true); fetchEnrollment(); }}
+            >
+              Retry
+            </Button>
           </CardContent>
         </Card>
       </div>

@@ -43,7 +43,11 @@ export async function GET(
     }
 
     return NextResponse.json({ enrollment });
-  } catch (error) {
+  } catch (error: any) {
+    // Handle invalid ObjectId format
+    if (error?.name === "CastError" || error?.kind === "ObjectId") {
+      return NextResponse.json({ error: "Invalid enrollment ID" }, { status: 400 });
+    }
     logger.error("Error fetching enrollment", { route: "GET /api/enrollments/[id]", error: String(error) });
     return NextResponse.json({ error: "Failed to fetch enrollment" }, { status: 500 });
   }

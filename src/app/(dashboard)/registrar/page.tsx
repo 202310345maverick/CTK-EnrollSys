@@ -222,7 +222,7 @@ export default async function RegistrarDashboard() {
                       <span className={`rounded-full border px-2 py-0.5 text-xs font-medium capitalize ${statusClass}`}>
                         {enrollment.status.replace("_", " ")}
                       </span>
-                      <Link href={`/registrar/enrollments/${enrollment._id}`}>
+                      <Link href={`/registrar/enrollments/${String(enrollment._id)}`}>
                         <Button size="sm" className="h-6 px-2 text-xs bg-[#b4040d] hover:bg-[#b4040d]/90">
                           <Eye className="mr-1 h-3 w-3" /> Review
                         </Button>
