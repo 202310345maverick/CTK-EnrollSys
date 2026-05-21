@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import {
   ArrowLeft, CheckCircle, XCircle, Clock, User, FileText, Calendar,
   AlertCircle, Loader2, ExternalLink, ShieldCheck, RotateCcw,
-  MessageSquare, UploadCloud, Zap, BrainCircuit, ChevronDown, ChevronUp,
+  MessageSquare, UploadCloud, Zap, BrainCircuit, ChevronDown, ChevronUp, BookOpen,
 } from "lucide-react";
 import { ENROLLMENT_DOCUMENT_LABELS } from "@/lib/enrollment/constants";
 import { DocumentViewer } from "@/components/shared/document-viewer";
@@ -376,31 +376,20 @@ export default function EnrollmentDetailPage() {
                     const isAiExpanded = expandedAiDoc === aiKey;
                     return (
                       <div key={i} className="rounded-lg border bg-slate-50/50">
-                        <div className="flex items-center gap-3 px-3 py-2">
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-1.5 flex-wrap">
-                              <p className="text-xs font-medium">{label}</p>
-                              {ai && ai.status !== "skipped" && (
-                                <span
-                                  className={`inline-flex items-center gap-0.5 rounded px-1.5 py-0.5 text-[10px] font-semibold cursor-pointer select-none ${
-                                    ai.status === "passed"
-                                      ? "bg-emerald-100 text-emerald-700 border border-emerald-200"
-                                      : ai.status === "flagged"
-                                      ? "bg-red-100 text-red-700 border border-red-200"
-                                      : ai.status === "error"
-                                      ? "bg-slate-100 text-slate-500 border border-slate-200"
-                                      : "bg-amber-100 text-amber-700 border border-amber-200"
-                                  }`}
-                                  onClick={() => setExpandedAiDoc(isAiExpanded ? null : aiKey)}
-                                  title="Click to see AI analysis details"
-                                >
-                                  <BrainCircuit className="h-2.5 w-2.5" />
-                                  {ai.status === "passed" ? "AI OK" : ai.status === "flagged" ? "AI Flagged" : ai.status === "error" ? "AI Error" : "AI Review"}
-                                  {isAiExpanded ? <ChevronUp className="h-2.5 w-2.5" /> : <ChevronDown className="h-2.5 w-2.5" />}
-                                </span>
-                              )}
-                            </div>
-                            <p className={`mt-0.5 inline-flex rounded px-1.5 py-0.5 text-xs font-medium capitalize ${
+                        <div className="px-3 py-2.5 space-y-2">
+                          {/* Header row: clickable doc type + status badge + AI badge */}
+                          <div className="flex items-center gap-2 flex-wrap">
+                            {fileUrl ? (
+                              <DocumentViewer
+                                url={fileUrl}
+                                name={docId?.originalName || label}
+                                mime={docId?.mimeType}
+                                label={label}
+                              />
+                            ) : (
+                              <span className="text-xs font-semibold text-slate-700">{label}</span>
+                            )}
+                            <span className={`inline-flex rounded px-1.5 py-0.5 text-xs font-medium capitalize ${
                               doc.status === "verified"
                                 ? "bg-emerald-100 text-emerald-700 border border-emerald-200"
                                 : doc.status === "rejected"
@@ -408,70 +397,90 @@ export default function EnrollmentDetailPage() {
                                 : "bg-amber-100 text-amber-700 border border-amber-200"
                             }`}>
                               {doc.status}
-                            </p>
-                            {doc.remarks && <p className="mt-0.5 text-xs text-muted-foreground italic">{doc.remarks}</p>}
-                            {doc.status !== "verified" && (
-                              <input
-                                type="text"
-                                className="mt-1 w-full rounded border border-slate-200 px-2 py-1 text-xs placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-[#b4040d]"
-                                placeholder="Add rejection note (optional)..."
-                                value={docRemarks[doc.type] ?? ""}
-                                onChange={(e) => setDocRemarks((p) => ({ ...p, [doc.type]: e.target.value }))}
-                              />
+                            </span>
+                            {ai && ai.status !== "skipped" && (
+                              <span
+                                className={`inline-flex items-center gap-0.5 rounded px-1.5 py-0.5 text-[10px] font-semibold cursor-pointer select-none ${
+                                  ai.status === "passed"
+                                    ? "bg-emerald-100 text-emerald-700 border border-emerald-200"
+                                    : ai.status === "flagged"
+                                    ? "bg-red-100 text-red-700 border border-red-200"
+                                    : ai.status === "error"
+                                    ? "bg-slate-100 text-slate-500 border border-slate-200"
+                                    : "bg-amber-100 text-amber-700 border border-amber-200"
+                                }`}
+                                onClick={() => setExpandedAiDoc(isAiExpanded ? null : aiKey)}
+                                title="Click to see AI analysis details"
+                              >
+                                <BrainCircuit className="h-2.5 w-2.5" />
+                                {ai.status === "passed" ? "AI OK" : ai.status === "flagged" ? "AI Flagged" : ai.status === "error" ? "AI Error" : "AI Review"}
+                                {isAiExpanded ? <ChevronUp className="h-2.5 w-2.5" /> : <ChevronDown className="h-2.5 w-2.5" />}
+                              </span>
                             )}
                           </div>
-                          <div className="flex items-center gap-1 shrink-0">
-                            {fileUrl && (
-                              <DocumentViewer url={fileUrl} name={docId?.originalName || label} mime={docId?.mimeType} asButton />
-                            )}
-                            {doc.status !== "verified" && (
-                              <Button
-                                size="sm"
-                                className="h-6 px-1.5 text-xs bg-emerald-600 hover:bg-emerald-700"
-                                onClick={() => updateDocStatus(doc.type, "verified")}
-                                disabled={saving}
-                              >
-                                <ShieldCheck className="h-3 w-3" />
-                              </Button>
-                            )}
-                            {doc.status !== "rejected" && (
-                              <Button
-                                size="sm"
-                                variant="destructive"
-                                className="h-6 px-1.5 text-xs"
-                                onClick={() => updateDocStatus(doc.type, "rejected", docRemarks[doc.type] || "Document rejected — please re-upload")}
-                                disabled={saving}
-                              >
-                                <XCircle className="h-3 w-3" />
-                              </Button>
-                            )}
-                            {doc.status !== "rejected" && (
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="h-6 px-1.5 text-xs text-amber-700 border-amber-300 hover:bg-amber-50"
-                                onClick={() => {
-                                  setReuploadModal({ docType: doc.type, label });
-                                  setReuploadReason("");
-                                }}
-                                title="Request Re-upload"
-                                disabled={saving}
-                              >
-                                <UploadCloud className="h-3 w-3" />
-                              </Button>
-                            )}
-                            {doc.status === "rejected" && (
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="h-6 px-1.5 text-xs"
-                                onClick={() => updateDocStatus(doc.type, "pending")}
-                                disabled={saving}
-                              >
-                                <RotateCcw className="h-3 w-3" />
-                              </Button>
-                            )}
-                          </div>
+
+                          {/* Remarks display */}
+                          {doc.remarks && <p className="text-xs text-muted-foreground italic">{doc.remarks}</p>}
+
+                          {/* Actions below the document link */}
+                          {canReview && (
+                            <div className="pt-1 border-t border-slate-200 space-y-2">
+                              {doc.status !== "verified" && (
+                                <input
+                                  type="text"
+                                  className="w-full rounded border border-slate-200 px-2 py-1 text-xs placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-[#b4040d]"
+                                  placeholder="Add rejection note (optional)..."
+                                  value={docRemarks[doc.type] ?? ""}
+                                  onChange={(e) => setDocRemarks((p) => ({ ...p, [doc.type]: e.target.value }))}
+                                />
+                              )}
+                              <div className="flex flex-wrap gap-1.5">
+                                {doc.status !== "verified" && (
+                                  <Button
+                                    size="sm"
+                                    className="h-7 gap-1 text-xs bg-emerald-600 hover:bg-emerald-700"
+                                    onClick={() => updateDocStatus(doc.type, "verified")}
+                                    disabled={saving}
+                                  >
+                                    <ShieldCheck className="h-3 w-3" /> Approve
+                                  </Button>
+                                )}
+                                {doc.status !== "rejected" && (
+                                  <Button
+                                    size="sm"
+                                    variant="destructive"
+                                    className="h-7 gap-1 text-xs"
+                                    onClick={() => updateDocStatus(doc.type, "rejected", docRemarks[doc.type] || "Document rejected — please re-upload")}
+                                    disabled={saving}
+                                  >
+                                    <XCircle className="h-3 w-3" /> Reject
+                                  </Button>
+                                )}
+                                {doc.status !== "rejected" && (
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="h-7 gap-1 text-xs text-amber-700 border-amber-300 hover:bg-amber-50"
+                                    onClick={() => { setReuploadModal({ docType: doc.type, label }); setReuploadReason(""); }}
+                                    disabled={saving}
+                                  >
+                                    <UploadCloud className="h-3 w-3" /> Request Re-upload
+                                  </Button>
+                                )}
+                                {doc.status === "rejected" && (
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="h-7 gap-1 text-xs"
+                                    onClick={() => updateDocStatus(doc.type, "pending")}
+                                    disabled={saving}
+                                  >
+                                    <RotateCcw className="h-3 w-3" /> Reset to Pending
+                                  </Button>
+                                )}
+                              </div>
+                            </div>
+                          )}
                         </div>
                         {/* AI analysis details panel */}
                         {ai && isAiExpanded && (
@@ -660,7 +669,7 @@ export default function EnrollmentDetailPage() {
             <Card>
               <CardHeader className="pb-2 pt-4 px-4">
                 <CardTitle className="flex items-center gap-1.5 text-sm font-semibold">
-                  📚 Student Preferences
+                  <BookOpen className="h-4 w-4 text-primary" /> Student Preferences
                 </CardTitle>
               </CardHeader>
               <CardContent className="px-4 pb-4 space-y-2 text-sm">
