@@ -253,7 +253,7 @@ export default function EnrollmentDetailPage() {
     <div className="space-y-4 pb-8">
       {/* Re-upload Modal */}
       {reuploadModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60">
           <div className="w-full max-w-sm rounded-xl bg-white p-5 shadow-xl">
             <h3 className="mb-1 text-sm font-semibold">Request Re-upload</h3>
             <p className="mb-3 text-xs text-muted-foreground">
