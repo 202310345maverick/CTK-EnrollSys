@@ -34,6 +34,8 @@ export default function PaymentsPage() {
   const [enrollments, setEnrollments] = useState<any[]>([]);
   const [loadingEnrollments, setLoadingEnrollments] = useState(false);
   const [showVoided, setShowVoided] = useState(false);
+  const clearFilters = () => { setSearch(""); setShowVoided(false); };
+  const hasActiveFilters = search !== "" || showVoided;
 
   // Student search state
   const [studentSearch, setStudentSearch] = useState("");
@@ -250,6 +252,11 @@ export default function PaymentsPage() {
               />
               Show voided
             </label>
+            {hasActiveFilters && (
+              <Button size="sm" variant="ghost" className="h-8 gap-1 text-xs text-muted-foreground" onClick={clearFilters}>
+                <X className="h-3 w-3" /> Clear Filters
+              </Button>
+            )}
             <CardDescription className="ml-auto text-xs">{filtered.length} record{filtered.length !== 1 ? "s" : ""}</CardDescription>
           </div>
         </CardHeader>

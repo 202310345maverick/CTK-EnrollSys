@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge, type BadgeProps } from "@/components/ui/badge";
 import Link from "next/link";
-import { Search, Eye, Plus, Users, Loader2, RefreshCw, GraduationCap } from "lucide-react";
+import { Search, Eye, Plus, Users, Loader2, RefreshCw, GraduationCap, X } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { FormSelect } from "@/components/ui/form-select";
 
@@ -120,6 +120,8 @@ export default function AdminStudentsPage() {
   const [gradeBreakdown, setGradeBreakdown] = useState<{ grade: string; count: number }[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusModal, setStatusModal] = useState<any>(null);
+  const clearFilters = () => { setSearch(""); setGradeFilter("__all__"); setStatusFilter("__all__"); };
+  const hasActiveFilters = search !== "" || gradeFilter !== "__all__" || statusFilter !== "__all__";
 
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedSearch(search), 500);
@@ -233,6 +235,11 @@ export default function AdminStudentsPage() {
                 })),
               ]}
             />
+            {hasActiveFilters && (
+              <Button size="sm" variant="ghost" className="h-8 gap-1 text-xs text-muted-foreground" onClick={clearFilters}>
+                <X className="h-3 w-3" /> Clear Filters
+              </Button>
+            )}
           </div>
 
           <div className="grid gap-2 md:grid-cols-3">

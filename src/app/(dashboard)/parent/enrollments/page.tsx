@@ -12,7 +12,8 @@ import {
   XCircle, 
   AlertCircle,
   Loader2,
-  FileText
+  FileText,
+  X
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -90,6 +91,8 @@ export default function ParentEnrollmentsPage() {
   const [deleting, setDeleting] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("__all__");
+  const clearFilters = () => { setSearchQuery(""); setStatusFilter("__all__"); };
+  const hasActiveFilters = searchQuery !== "" || statusFilter !== "__all__";
 
   useEffect(() => {
     fetchEnrollments();
@@ -221,6 +224,11 @@ export default function ParentEnrollmentsPage() {
           ]}
           className="w-40"
         />
+        {hasActiveFilters && (
+          <Button size="sm" variant="ghost" className="h-8 gap-1 text-xs text-muted-foreground" onClick={clearFilters}>
+            <X className="h-3 w-3" /> Clear Filters
+          </Button>
+        )}
       </div>
 
       {filteredEnrollments.length === 0 && enrollments.length === 0 ? (

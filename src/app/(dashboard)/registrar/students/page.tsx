@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
-import { Search, Eye, Loader2, Users, RefreshCw } from "lucide-react";
+import { Search, Eye, Loader2, Users, RefreshCw, X } from "lucide-react";
 import { FormSelect } from "@/components/ui/form-select";
 
 import { GRADE_LEVELS } from "@/lib/grade-levels";
@@ -125,6 +125,13 @@ export default function StudentsPage() {
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [statusModal, setStatusModal] = useState<any>(null);
 
+  const clearFilters = () => {
+    setSearch("");
+    setGradeFilter("__all__");
+    setStatusFilter("__all__");
+  };
+  const hasActiveFilters = search !== "" || gradeFilter !== "__all__" || statusFilter !== "__all__";
+
   useEffect(() => {
     const t = setTimeout(() => setDebouncedSearch(search), 500);
     return () => clearTimeout(t);
@@ -199,6 +206,11 @@ export default function StudentsPage() {
               ]}
               className="w-36"
             />
+            {hasActiveFilters && (
+              <Button size="sm" variant="ghost" className="h-8 gap-1 text-xs text-muted-foreground" onClick={clearFilters}>
+                <X className="h-3 w-3" /> Clear Filters
+              </Button>
+            )}
             <CardTitle className="text-xs text-muted-foreground ml-auto">
               {total} student{total !== 1 ? "s" : ""}
             </CardTitle>

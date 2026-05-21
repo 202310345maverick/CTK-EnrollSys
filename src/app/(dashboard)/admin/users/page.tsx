@@ -49,6 +49,8 @@ export default function UsersPage() {
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
+  const clearFilters = () => { setSearch(""); setRoleFilter("all"); setStatusFilter("all"); };
+  const hasActiveFilters = search !== "" || roleFilter !== "all" || statusFilter !== "all";
   const [roleCounts, setRoleCounts] = useState({ total: 0, parent: 0, registrar: 0, admin: 0 });
 
   const [showCreate, setShowCreate] = useState(false);
@@ -230,6 +232,11 @@ export default function UsersPage() {
               ]}
               className="flex-none w-36"
             />
+            {hasActiveFilters && (
+              <Button size="sm" variant="ghost" className="h-8 gap-1 text-xs text-muted-foreground" onClick={clearFilters}>
+                <X className="h-3 w-3" /> Clear Filters
+              </Button>
+            )}
           </div>
         </CardContent>
       </Card>
