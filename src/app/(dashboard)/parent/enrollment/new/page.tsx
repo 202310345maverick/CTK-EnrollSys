@@ -5,13 +5,14 @@ import { useRouter } from "next/navigation";
 import { useForm, Controller, FieldErrors } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { ArrowLeft, Loader2, Send, Upload, X, CheckCircle, RefreshCw, Trash2, Download } from "lucide-react";
+import { ArrowLeft, Loader2, Send, Upload, X, CheckCircle, RefreshCw, Trash2, Download, UserCheck, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/components/ui/use-toast";
 import { FormSelect } from "@/components/ui/form-select";
+import { Badge } from "@/components/ui/badge";
 import { DatePicker } from "@/components/ui/date-picker";
 
 // ── Document types matching the API constants ─────────────────────────────────
@@ -93,6 +94,41 @@ type UploadedDoc = {
   mimeType: string;
 };
 
+
+type ChildData = {
+  _id: string;
+  studentId: string;
+  lrn: string | null;
+  personalInfo: {
+    firstName: string;
+    lastName: string;
+    middleName?: string;
+    birthDate: string;
+    birthPlace: string;
+    gender: "male" | "female";
+    religion?: string;
+  };
+  contactInfo: {
+    address: { street: string; barangay: string; city: string; province: string; zipCode: string };
+    contactNumber?: string;
+  };
+  guardianInfo: {
+    father?: { fullName: string; occupation?: string; contactNumber?: string };
+    mother?: { fullName: string; occupation?: string; contactNumber?: string };
+    guardian?: { fullName: string; relationship: string; occupation?: string; contactNumber: string };
+  };
+  currentGradeLevel: string | null;
+  status: string;
+  latestEnrollment: {
+    gradeLevel?: string;
+    monthlyIncome?: string;
+    numberOfSiblings?: string;
+    parentOccupation?: string;
+    parentAddress?: string;
+    lastSchoolAttended?: string;
+  } | null;
+};
+
 const DEFAULT_VALUES = { isCatholic: "yes" as const, enrollmentType: "new" as const };
 
 
@@ -136,6 +172,17 @@ function scrollToSection(sectionId: string) {
   setTimeout(() => el.classList.remove("ring-2", "ring-red-400", "ring-offset-2"), 2500);
 }
 
+
+const GRADE_ORDER = [
+  "Kindergarten","Grade 1","Grade 2","Grade 3","Grade 4","Grade 5","Grade 6",
+  "Grade 7","Grade 8","Grade 9","Grade 10",
+];
+function nextGrade(current: string | null): string {
+  if (!current) return "";
+  const idx = GRADE_ORDER.indexOf(current);
+  return idx >= 0 && idx < GRADE_ORDER.length - 1 ? GRADE_ORDER[idx + 1] : current;
+}
+
 export default function NewEnrollmentPage() {
   const router = useRouter();
   const { toast } = useToast();
@@ -154,6 +201,10 @@ export default function NewEnrollmentPage() {
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const draftIdRef = useRef<string | null>(null);
   const isLoadingRef = useRef(true); // suppress auto-save during initial draft load
+  const [children, setChildren] = useState<ChildData[]>([]);
+  const [isLoadingChildren, setIsLoadingChildren] = useState(false);
+  const [selectedChild, setSelectedChild] = useState<ChildData | null>(null);
+  const [existingStudentId, setExistingStudentId] = useState<string | null>(null);
 
   // Keep ref in sync with state
   useEffect(() => { draftIdRef.current = draftId; }, [draftId]);
@@ -168,6 +219,23 @@ export default function NewEnrollmentPage() {
   const watchedValues = watch();
   const watchBookOption = watch("bookOption");
   const watchPeUniform = watch("peUniform");
+
+  // Fetch children when "returning" is selected
+  useEffect(() => {
+    if (watchedValues.enrollmentType !== "returning") {
+      setChildren([]);
+      setSelectedChild(null);
+      setExistingStudentId(null);
+      return;
+    }
+    setIsLoadingChildren(true);
+    fetch("/api/students/my-children")
+      .then((r) => r.json())
+      .then((d) => setChildren(d.children ?? []))
+      .catch(() => setChildren([]))
+      .finally(() => setIsLoadingChildren(false));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [watchedValues.enrollmentType]);
 
   // On mount: fetch the single existing draft and restore it
   useEffect(() => {
@@ -350,6 +418,7 @@ export default function NewEnrollmentPage() {
       const payload = {
         enrollmentType: data.enrollmentType,
         gradeLevel:     data.gradeLevel,
+        existingStudentId: existingStudentId ?? undefined,
         lrn:            data.studentNo || undefined,
         firstName:      data.firstName,
         lastName:       data.lastName,
@@ -429,6 +498,46 @@ export default function NewEnrollmentPage() {
     }
   };
 
+  const selectChild = (child: ChildData) => {
+    setSelectedChild(child);
+    setExistingStudentId(child._id);
+    const guardian = child.guardianInfo?.guardian
+      ?? (child.guardianInfo?.father ? { ...child.guardianInfo.father, relationship: "Father" } : null)
+      ?? (child.guardianInfo?.mother ? { ...child.guardianInfo.mother, relationship: "Mother" } : null);
+    const guardianName = guardian?.fullName ?? "";
+    const contactNo = child.contactInfo?.contactNumber ?? (guardian && "contactNumber" in guardian ? guardian.contactNumber : "") ?? "";
+    const religion = child.personalInfo?.religion ?? "";
+    const isCatholicVal = (!religion || religion.toLowerCase() === "catholic") ? "yes" as const : "no" as const;
+    const suggestedGrade = nextGrade(child.currentGradeLevel);
+    const bd = child.personalInfo?.birthDate ? new Date(child.personalInfo.birthDate).toISOString().split("T")[0] : "";
+    const le = child.latestEnrollment;
+    reset({
+      enrollmentType: "returning",
+      gradeLevel: suggestedGrade || "",
+      studentNo: child.lrn ?? "",
+      lastName: child.personalInfo?.lastName ?? "",
+      firstName: child.personalInfo?.firstName ?? "",
+      middleName: child.personalInfo?.middleName ?? "",
+      birthDate: bd,
+      birthPlace: child.personalInfo?.birthPlace ?? "",
+      gender: child.personalInfo?.gender ?? undefined,
+      isCatholic: isCatholicVal,
+      religion: isCatholicVal === "no" ? religion : undefined,
+      street: child.contactInfo?.address?.street ?? "",
+      barangay: child.contactInfo?.address?.barangay ?? "",
+      city: child.contactInfo?.address?.city ?? "",
+      province: child.contactInfo?.address?.province ?? "",
+      zipCode: child.contactInfo?.address?.zipCode ?? "",
+      contactNo: typeof contactNo === "string" ? contactNo : "",
+      guardianName,
+      monthlyIncome: le?.monthlyIncome ?? "",
+      numberOfSiblings: le?.numberOfSiblings ?? "",
+      parentOccupation: le?.parentOccupation ?? "",
+      parentAddress: le?.parentAddress ?? "",
+      lastSchoolAttended: le?.lastSchoolAttended ?? "CTK Learning Center",
+    });
+  };
+
   const labelCls = "block text-xs font-medium text-gray-700";
   const errorCls = "mt-0.5 text-xs text-red-500";
 
@@ -496,6 +605,72 @@ export default function NewEnrollmentPage() {
               />
               {errors.enrollmentType && <p className={errorCls}>{errors.enrollmentType.message}</p>}
             </div>
+
+            {/* ── Returning Student: Child Selector ──────────────── */}
+            {watchedValues.enrollmentType === "returning" && (
+              <div className="rounded-xl border border-blue-200 bg-blue-50/60 p-4 space-y-3">
+                <div className="flex items-center gap-2">
+                  <UserCheck className="h-4 w-4 text-blue-600" />
+                  <p className="text-sm font-semibold text-blue-800">Select Your Child</p>
+                </div>
+
+                {isLoadingChildren && (
+                  <div className="flex items-center gap-2 text-xs text-blue-600">
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading children…
+                  </div>
+                )}
+
+                {!isLoadingChildren && children.length === 0 && (
+                  <p className="text-xs text-blue-700">
+                    No children found linked to your account. Please use <strong>New Student</strong> enrollment type.
+                  </p>
+                )}
+
+                {!isLoadingChildren && children.length > 0 && (
+                  <div className="space-y-2">
+                    {children.map((child) => {
+                      const isSelected = selectedChild?._id === child._id;
+                      const fullName = `${child.personalInfo?.lastName ?? ""}, ${child.personalInfo?.firstName ?? ""}${child.personalInfo?.middleName ? " " + child.personalInfo.middleName : ""}`.trim();
+                      return (
+                        <button
+                          key={child._id}
+                          type="button"
+                          onClick={() => selectChild(child)}
+                          className={`w-full flex items-center justify-between rounded-lg border px-3 py-2.5 text-left transition-colors ${
+                            isSelected
+                              ? "border-blue-500 bg-blue-100 ring-1 ring-blue-400"
+                              : "border-slate-200 bg-white hover:border-blue-300 hover:bg-blue-50"
+                          }`}
+                        >
+                          <div className="space-y-0.5">
+                            <p className="text-sm font-semibold text-slate-800">{fullName}</p>
+                            <div className="flex items-center gap-2">
+                              <Badge variant="neutral" className="text-xs h-4 px-1.5">
+                                {child.currentGradeLevel ?? "No grade"}
+                              </Badge>
+                              {child.lrn && (
+                                <span className="text-xs text-slate-500">LRN: {child.lrn}</span>
+                              )}
+                            </div>
+                          </div>
+                          {isSelected ? (
+                            <CheckCircle className="h-4 w-4 text-blue-600 shrink-0" />
+                          ) : (
+                            <ChevronRight className="h-4 w-4 text-slate-400 shrink-0" />
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {selectedChild && (
+                  <p className="text-xs text-blue-700 bg-blue-100 rounded-md px-3 py-2">
+                    ✓ Form auto-filled from <strong>{selectedChild.personalInfo?.firstName}&apos;s</strong> profile. Review and update if needed.
+                  </p>
+                )}
+              </div>
+            )}
 
             <div className="grid gap-3 sm:grid-cols-2">
               {/* Grade */}
