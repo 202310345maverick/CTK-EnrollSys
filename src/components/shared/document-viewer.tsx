@@ -10,9 +10,11 @@ interface DocumentViewerProps {
   mime?: string;
   label?: string;
   asButton?: boolean;
+  /** Optional JSX rendered in a footer bar inside the modal */
+  actions?: React.ReactNode;
 }
 
-export function DocumentViewer({ url, name = "Document", mime, label = "View", asButton }: DocumentViewerProps) {
+export function DocumentViewer({ url, name = "Document", mime, label = "View", asButton, actions }: DocumentViewerProps) {
   const [open, setOpen] = useState(false);
   const isPdf = mime === "application/pdf" || url.toLowerCase().includes(".pdf");
 
@@ -32,6 +34,7 @@ export function DocumentViewer({ url, name = "Document", mime, label = "View", a
       {open && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={() => setOpen(false)}>
           <div className="relative flex flex-col bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh]" onClick={(e) => e.stopPropagation()}>
+            {/* Header */}
             <div className="flex items-center justify-between px-4 py-3 border-b shrink-0">
               <p className="text-sm font-semibold truncate max-w-[60%]">{name}</p>
               <div className="flex items-center gap-2">
@@ -43,16 +46,25 @@ export function DocumentViewer({ url, name = "Document", mime, label = "View", a
                 </Button>
               </div>
             </div>
-            <div className="flex-1 overflow-auto min-h-0 rounded-b-xl bg-slate-100">
+
+            {/* Document preview */}
+            <div className={`flex-1 overflow-auto min-h-0 bg-slate-100 ${actions ? "" : "rounded-b-xl"}`}>
               {isPdf ? (
-                <iframe src={url} className="w-full h-[75vh] rounded-b-xl border-0" title={name} />
+                <iframe src={url} className="w-full h-[65vh] border-0" title={name} />
               ) : (
-                <div className="flex items-center justify-center p-4 min-h-[400px]">
+                <div className="flex items-center justify-center p-4 min-h-[300px]">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={url} alt={name} className="max-w-full max-h-[70vh] object-contain rounded-lg shadow" />
+                  <img src={url} alt={name} className="max-w-full max-h-[60vh] object-contain rounded-lg shadow" />
                 </div>
               )}
             </div>
+
+            {/* Actions footer — only rendered when actions prop is provided */}
+            {actions && (
+              <div className="border-t bg-white px-4 py-3 rounded-b-xl shrink-0">
+                {actions}
+              </div>
+            )}
           </div>
         </div>
       )}
