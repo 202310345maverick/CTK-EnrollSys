@@ -304,11 +304,18 @@ export default function NewEnrollmentPage() {
       try { await fetch(`/api/enrollments/${draftId}`, { method: "DELETE" }); } catch {}
     }
     setDraftId(null);
+    draftIdRef.current = null;
     setLastSaved(null);
     reset(DEFAULT_VALUES);
     setUploadedFiles({});
     setUploadedDocs({});
     setUploadErrors({});
+    setUploadProgress({});
+    setSelectedChild(null);
+    setExistingStudentId(null);
+    setChildren([]);
+    setLrnStatus("idle");
+    if (lrnTimerRef.current) clearTimeout(lrnTimerRef.current);
     toast({ title: "Form cleared", description: "All fields have been reset." });
   };
 
