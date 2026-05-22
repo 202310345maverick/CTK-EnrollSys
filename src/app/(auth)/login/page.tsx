@@ -127,7 +127,7 @@ export default function LoginPage() {
         <p className="text-white/50 text-sm">© 2026 Christ the King Catholic School</p>
       </div>
 
-      <div className="flex-1 flex items-center justify-center p-4 lg:p-6 relative bg-[url('/images/ctkbackground.png')] bg-cover bg-center">
+      <div className="flex-1 flex items-center justify-center p-4 lg:p-6 relative bg-cover bg-center" style={{ backgroundImage: "url('/images/ctkbackground.png')" }}>
         <div className="absolute inset-0 bg-black/50 backdrop-blur-[2px]" />
         <Card className="w-full max-w-md shadow-2xl border-t-4 border-t-maroon relative z-10 bg-white/95 backdrop-blur-sm">
           <CardHeader className="text-center pb-1">

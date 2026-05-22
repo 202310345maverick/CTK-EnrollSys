@@ -110,7 +110,7 @@ export default function RegisterPage() {
       </div>
 
       {/* Right Panel - Register Form */}
-      <div className="flex-1 flex items-center justify-center p-4 lg:p-6 relative bg-[url('/images/ctkbackground.png')] bg-cover bg-center overflow-y-auto">
+      <div className="flex-1 flex items-center justify-center p-4 lg:p-6 relative overflow-y-auto" style={{ backgroundImage: "url('/images/ctkbackground.png')", backgroundSize: "cover", backgroundPosition: "center" }}>
         <div className="absolute inset-0 bg-black/50 backdrop-blur-[2px]" />
         <Card className="w-full max-w-3xl shadow-2xl border-t-4 border-t-maroon relative z-10 bg-white/95 backdrop-blur-sm">
           <CardHeader className="text-center pb-1">
