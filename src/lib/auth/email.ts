@@ -94,19 +94,20 @@ export async function sendPasswordResetEmail({
   expiresInMinutes: number;
 }) {
   const { transporter, from } = getEmailConfig();
+  const resetBody = [
+    `<p style="color:#333;line-height:1.6;">Dear <strong>${name}</strong>,</p>`,
+    `<p style="color:#333;line-height:1.6;">We received a request to reset your CTK EnrollSys password. Click the button below to create a new password.</p>`,
+    `<p style="margin:24px 0;"><a href="${resetUrl}" style="display:inline-block;background:#b4040d;color:#fff;text-decoration:none;padding:12px 28px;border-radius:6px;font-size:15px;font-weight:bold;">Reset My Password</a></p>`,
+    `<p style="color:#555;font-size:13px;line-height:1.6;">This link expires in <strong>${expiresInMinutes} minutes</strong>. If you did not request a password reset, you can safely ignore this email.</p>`,
+    `<p style="color:#333;line-height:1.6;">God bless,<br><strong>Christ the King Catholic School</strong></p>`,
+  ].join("\n");
 
   await transporter.sendMail({
     from,
     to: email,
-    subject: "Reset your CTK EnrollSys password",
-    html: `
-      <p>Hi ${name},</p>
-      <p>We received a request to reset your CTK EnrollSys password.</p>
-      <p><a href="${resetUrl}">Reset your password</a></p>
-      <p>This link expires in ${expiresInMinutes} minutes.</p>
-      <p>If you did not request this, you can ignore this email.</p>
-    `,
-    text: `Hi ${name},\n\nUse this link to reset your CTK EnrollSys password:\n${resetUrl}\n\nThis link expires in ${expiresInMinutes} minutes.\n\nIf you did not request this, you can ignore this email.`,
+    subject: "Reset Your CTK EnrollSys Password",
+    html: buildEmailHtml("Reset Your Password", resetBody),
+    text: `Dear ${name},\n\nUse this link to reset your CTK EnrollSys password:\n${resetUrl}\n\nThis link expires in ${expiresInMinutes} minutes.\n\nIf you did not request this, you can safely ignore this email.\n\nGod bless,\nChrist the King Catholic School`,
   });
 }
 
@@ -123,20 +124,24 @@ export async function sendVerificationEmail({
 }) {
   const { transporter, from } = getEmailConfig();
   const expiresInHours = Math.max(1, Math.ceil(expiresInMinutes / 60));
+  const pluralHours = expiresInHours !== 1 ? "s" : "";
+  const verifyBody = [
+    `<p style="color:#333;line-height:1.6;">Dear <strong>${name}</strong>,</p>`,
+    `<p style="color:#333;line-height:1.6;">Welcome to CTK EnrollSys! Please verify your email address to activate your account and begin the enrollment process.</p>`,
+    `<p style="margin:24px 0;"><a href="${verificationUrl}" style="display:inline-block;background:#b4040d;color:#fff;text-decoration:none;padding:12px 28px;border-radius:6px;font-size:15px;font-weight:bold;">Verify My Email</a></p>`,
+    `<p style="color:#555;font-size:13px;line-height:1.6;">This link expires in <strong>${expiresInHours} hour${pluralHours}</strong>. If you did not create an account, you can safely ignore this email.</p>`,
+    `<p style="color:#333;line-height:1.6;">God bless,<br><strong>Christ the King Catholic School</strong></p>`,
+  ].join("\n");
 
   await transporter.sendMail({
     from,
     to: email,
-    subject: "Verify your CTK EnrollSys account",
-    html: `
-      <p>Hi ${name},</p>
-      <p>Welcome to CTK EnrollSys. Please verify your email to activate your account.</p>
-      <p><a href="${verificationUrl}">Verify my email</a></p>
-      <p>This link expires in ${expiresInHours} hour(s).</p>
-    `,
-    text: `Hi ${name},\n\nWelcome to CTK EnrollSys. Verify your email to activate your account:\n${verificationUrl}\n\nThis link expires in ${expiresInHours} hour(s).`,
+    subject: "Verify Your CTK EnrollSys Account",
+    html: buildEmailHtml("Verify Your Email Address", verifyBody),
+    text: `Dear ${name},\n\nWelcome to CTK EnrollSys! Verify your email to activate your account:\n${verificationUrl}\n\nThis link expires in ${expiresInHours} hour${pluralHours}.\n\nIf you did not create an account, you can safely ignore this email.\n\nGod bless,\nChrist the King Catholic School`,
   });
 }
+
 
 function buildEmailHtml(title: string, bodyContent: string): string {
   return `
