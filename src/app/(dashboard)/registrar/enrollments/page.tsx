@@ -216,7 +216,7 @@ export default function EnrollmentsPage() {
                     </TableCell>
                     <TableCell className="text-xs text-muted-foreground">{formatDate(enrollment.createdAt)}</TableCell>
                     <TableCell className="text-right">
-                      <Link href={`/registrar/enrollments/${enrollment._id}`}>
+                      <Link href={`/registrar/enrollments/${String(enrollment._id)}`}>
                         <Button variant="outline" size="sm" className="h-7 px-2 text-xs">
                           <Eye className="mr-1 h-3.5 w-3.5" />
                           Review

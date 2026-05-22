@@ -25,12 +25,24 @@ export async function GET(
 
     await dbConnect();
 
-    const enrollment = await Enrollment.findById(params.id)
+    const id = Array.isArray(params.id) ? params.id[0] : params.id;
+
+    let enrollment = await Enrollment.findById(id)
       .populate("studentId")
       .populate("schoolYearId", "name")
       .populate("statusHistory.changedBy", "profile.firstName profile.lastName email role")
       .populate("documents.documentId", "secureUrl originalName fileName createdAt aiAnalysis")
       .lean();
+
+    // Fallback: try looking up by enrollmentNumber in case the URL contains it
+    if (!enrollment && id) {
+      enrollment = await Enrollment.findOne({ enrollmentNumber: id })
+        .populate("studentId")
+        .populate("schoolYearId", "name")
+        .populate("statusHistory.changedBy", "profile.firstName profile.lastName email role")
+        .populate("documents.documentId", "secureUrl originalName fileName createdAt aiAnalysis")
+        .lean();
+    }
 
     if (!enrollment) {
       return NextResponse.json({ error: "Enrollment not found" }, { status: 404 });
@@ -65,7 +77,12 @@ export async function PUT(
 
     await dbConnect();
 
-    const enrollment = await Enrollment.findById(params.id);
+    const id = Array.isArray(params.id) ? params.id[0] : params.id;
+
+    let enrollment = await Enrollment.findById(id);
+    if (!enrollment) {
+      enrollment = await Enrollment.findOne({ enrollmentNumber: id });
+    }
     if (!enrollment) {
       return NextResponse.json({ error: "Enrollment not found" }, { status: 404 });
     }
@@ -322,7 +339,12 @@ export async function DELETE(
 
     await dbConnect();
 
-    const enrollment = await Enrollment.findById(params.id);
+    const id = Array.isArray(params.id) ? params.id[0] : params.id;
+
+    let enrollment = await Enrollment.findById(id);
+    if (!enrollment) {
+      enrollment = await Enrollment.findOne({ enrollmentNumber: id });
+    }
     if (!enrollment) {
       return NextResponse.json({ error: "Enrollment not found" }, { status: 404 });
     }
@@ -342,11 +364,12 @@ export async function DELETE(
       );
     }
 
+    const enrollmentObjectId = enrollment._id;
     const studentId = enrollment.studentId ? enrollment.studentId.toString() : null;
 
-    await Document.deleteMany({ enrollmentId: params.id });
+    await Document.deleteMany({ enrollmentId: enrollmentObjectId });
 
-    await Enrollment.findByIdAndDelete(params.id);
+    await Enrollment.findByIdAndDelete(enrollmentObjectId);
 
     const ipAddress = request.headers.get("x-forwarded-for")?.split(",")[0] || request.headers.get("x-real-ip") || "unknown";
     const userAgent = request.headers.get("user-agent") || "unknown";
@@ -354,7 +377,7 @@ export async function DELETE(
       userId: session.user.id,
       action: "DELETE",
       resource: "ENROLLMENT",
-      resourceId: params.id,
+      resourceId: enrollmentObjectId.toString(),
       ipAddress,
       userAgent,
     });
@@ -366,7 +389,7 @@ export async function DELETE(
         await Student.findByIdAndDelete(studentId);
       } else {
         await Student.findByIdAndUpdate(studentId, {
-          $pull: { enrollmentHistory: params.id },
+          $pull: { enrollmentHistory: enrollmentObjectId },
         });
       }
     }

@@ -252,7 +252,7 @@ export default function EnrollmentDetailPage() {
                 ? "Enrollment not found"
                 : "Failed to load enrollment"}
             </p>
-            {fetchError && fetchError !== "Enrollment not found" && (
+            {fetchError && (
               <p className="mt-1 text-xs text-red-500">{fetchError}</p>
             )}
             <p className="mt-2 text-xs text-muted-foreground">
