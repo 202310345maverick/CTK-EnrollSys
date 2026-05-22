@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { ENROLLMENT_DOCUMENT_LABELS } from "@/lib/enrollment/constants";
 import { DocumentViewer } from "@/components/shared/document-viewer";
+import { FormSelect } from "@/components/ui/form-select";
 
 function PesoSign({ className }: { className?: string }) {
   return (
@@ -597,13 +598,28 @@ export default function EnrollmentDetailPage() {
                 </div>
               )}
 
-              <p className="text-xs font-medium text-slate-700">Add Fee Items Manually</p>
+              <p className="text-xs font-medium text-slate-700">Add Fee Item</p>
               <div className="flex gap-2">
-                <input
+                <FormSelect
                   value={feeDescription}
-                  onChange={(e) => setFeeDescription(e.target.value)}
-                  placeholder="Description (e.g. Tuition Fee)"
-                  className="h-8 flex-1 rounded-md border px-2 text-xs"
+                  onChange={(v) => {
+                    setFeeDescription(v);
+                    const match = feeStructureItems.find((f) => f.description === v);
+                    if (match) setFeeAmount(String(match.amount));
+                  }}
+                  placeholder="Select fee type..."
+                  options={
+                    feeStructureItems.length > 0
+                      ? feeStructureItems.map((f) => ({ value: f.description, label: f.description }))
+                      : [
+                          { value: "Tuition Fee", label: "Tuition Fee" },
+                          { value: "PE Uniform", label: "PE Uniform" },
+                          { value: "Book - New", label: "Book (New)" },
+                          { value: "Book - 2nd Hand", label: "Book (2nd Hand)" },
+                          { value: "Book - Rental", label: "Book (Rental)" },
+                        ]
+                  }
+                  className="h-8 flex-1 text-xs"
                 />
                 <input
                   value={feeAmount}

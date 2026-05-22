@@ -11,6 +11,15 @@ import { formatCurrency } from "@/lib/utils";
 
 type FeeItem = { description: string; amount: number; isRequired: boolean };
 type SchoolYearOption = { _id: string; name: string };
+
+const FEE_TYPE_OPTIONS = [
+  { value: "Tuition Fee", label: "Tuition Fee" },
+  { value: "PE Uniform", label: "PE Uniform" },
+  { value: "Book - New", label: "Book (New)" },
+  { value: "Book - 2nd Hand", label: "Book (2nd Hand)" },
+  { value: "Book - Rental", label: "Book (Rental)" },
+];
+
 type FeeStructure = {
   _id: string;
   gradeLevel: string;
@@ -49,12 +58,12 @@ function FeeEditor({ fees, setFees }: { fees: FeeItem[]; setFees: (f: FeeItem[])
       </div>
       {fees.map((fee, idx) => (
         <div key={idx} className="flex items-center gap-2">
-          <Input
-            required
-            placeholder="Description"
-            className="h-8 text-sm flex-1"
+          <FormSelect
             value={fee.description}
-            onChange={(e) => setFees(updateFee(fees, idx, "description", e.target.value))}
+            onChange={(v) => setFees(updateFee(fees, idx, "description", v))}
+            placeholder="Select fee type..."
+            options={FEE_TYPE_OPTIONS}
+            className="h-8 text-sm flex-1"
           />
           <Input
             required
