@@ -28,7 +28,7 @@ function parseSmtpSecure(value: string | undefined, port: number): boolean {
   return port === 465;
 }
 
-function getEmailConfig(): {
+export function getEmailConfig(): {
   transporter: nodemailer.Transporter;
   from: string;
 } {
