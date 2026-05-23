@@ -84,23 +84,7 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* Quick Links */}
-      <section className="py-8 bg-gray-50">
-        <div className="container mx-auto px-4">
-          <div className="flex justify-center gap-4 flex-wrap">
-            <Link href="/register">
-              <Button className="bg-gold text-maroon-dark hover:bg-gold-light font-semibold h-12 px-6">Start Enrollment</Button>
-            </Link>
-            <Link href="/login">
-              <Button variant="outline" className="border-gold text-gold hover:bg-gold hover:text-maroon-dark font-semibold h-12 px-6">Parent Portal</Button>
-            </Link>
-            <Link href="/#how-it-works">
-              <Button variant="ghost" className="text-maroon hover:text-gold font-semibold h-12 px-6">How It Works</Button>
-            </Link>
-          </div>
-          <p className="text-center text-sm text-gray-600 mt-4">Need help? Contact the school at <a href="mailto:admin@example-school.org" className="text-maroon underline">admin@example-school.org</a></p>
-        </div>
-      </section>
+
 
       {/* Features */}
       <section className="py-16">
