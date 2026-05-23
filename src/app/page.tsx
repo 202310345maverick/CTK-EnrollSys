@@ -84,16 +84,21 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* Grade Levels */}
-      <section className="py-12 bg-gray-50">
+      {/* Quick Links */}
+      <section className="py-8 bg-gray-50">
         <div className="container mx-auto px-4">
-          <div className="flex flex-wrap justify-center gap-3">
-            {["Kinder 1", "Kinder 2", "Grade 1", "Grade 2", "Grade 3", "Grade 4", "Grade 5", "Grade 6", "Grade 7", "Grade 8", "Grade 9", "Grade 10"].map((grade) => (
-              <span key={grade} className="px-4 py-2 bg-white border-2 border-maroon/20 rounded-full text-maroon font-medium text-sm">
-                {grade}
-              </span>
-            ))}
+          <div className="flex justify-center gap-4 flex-wrap">
+            <Link href="/register">
+              <Button className="bg-gold text-maroon-dark hover:bg-gold-light font-semibold h-12 px-6">Start Enrollment</Button>
+            </Link>
+            <Link href="/login">
+              <Button variant="outline" className="border-gold text-gold hover:bg-gold hover:text-maroon-dark font-semibold h-12 px-6">Parent Portal</Button>
+            </Link>
+            <Link href="/#how-it-works">
+              <Button variant="ghost" className="text-maroon hover:text-gold font-semibold h-12 px-6">How It Works</Button>
+            </Link>
           </div>
+          <p className="text-center text-sm text-gray-600 mt-4">Need help? Contact the school at <a href="mailto:admin@example-school.org" className="text-maroon underline">admin@example-school.org</a></p>
         </div>
       </section>
 
@@ -138,7 +143,7 @@ export default async function HomePage() {
       {/* How It Works */}
       <section className="py-16 bg-maroon/5">
         <div className="container mx-auto px-4">
-          <h2 className="text-3xl font-bold text-center text-maroon mb-12">
+          <h2 id="how-it-works" className="text-3xl font-bold text-center text-maroon mb-12">
             How It Works
           </h2>
           <div className="grid md:grid-cols-4 gap-6 max-w-4xl mx-auto">
