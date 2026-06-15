@@ -30,6 +30,7 @@ export type ChildDocument = {
 export type ChildEnrollmentData = {
   studentId: string;
   studentName: string;
+  currentGradeLevel?: string;
   enrollment: {
     id: string;
     enrollmentNumber: string;
