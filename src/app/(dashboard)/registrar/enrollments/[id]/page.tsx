@@ -434,7 +434,7 @@ export default function EnrollmentDetailPage() {
                                       {doc.status !== "rejected" && (
                                         <Button size="sm" variant="destructive" className="h-8 gap-1.5 text-xs"
                                           onClick={() => updateDocStatus(doc.type, "rejected", docRemarks[doc.type] || "Document rejected — please re-upload")} disabled={saving}>
-                                          <XCircle className="h-3.5 w-3.5" /> Decline
+                                          <XCircle className="h-3.5 w-3.5" /> Reject
                                         </Button>
                                       )}
                                       {doc.status !== "rejected" && (

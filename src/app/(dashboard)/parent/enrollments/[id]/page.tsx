@@ -131,6 +131,11 @@ export default async function ParentEnrollmentDetailPage({
           Back to Enrollments
         </Button>
       </Link>
+      <Link href={`/parent/enrollments/${params.id}/summary`}>
+        <Button variant="outline" size="sm" className="ml-2">
+          Download Summary
+        </Button>
+      </Link>
 
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
@@ -138,7 +143,7 @@ export default async function ParentEnrollmentDetailPage({
           <p className="text-xs text-slate-500">{enrollment.enrollmentNumber}</p>
         </div>
         <Badge variant={getStatusVariant(enrollment.status)}>
-          {{ pending: "Pending", under_review: "Under Review", approved: "Approved", rejected: "Decline", enrolled: "Enrolled" }[String(enrollment.status)] ?? String(enrollment.status).replace("_", " ")}
+          {{ pending: "Pending", under_review: "Under Review", approved: "Approved", rejected: "Reject", enrolled: "Enrolled" }[String(enrollment.status)] ?? String(enrollment.status).replace("_", " ")}
         </Badge>
       </div>
 
@@ -187,7 +192,7 @@ export default async function ParentEnrollmentDetailPage({
                   </div>
                   <div className="space-y-1">
                     <p className="text-sm font-semibold">
-                      {{ pending: "Pending", under_review: "Under Review", approved: "Approved", rejected: "Decline", enrolled: "Enrolled" }[String(entry.status)] ?? String(entry.status).replace("_", " ") }
+                      {{ pending: "Pending", under_review: "Under Review", approved: "Approved", rejected: "Reject", enrolled: "Enrolled" }[String(entry.status)] ?? String(entry.status).replace("_", " ") }
                     </p>
                     <p className="text-xs text-muted-foreground">
                       {formatDateTime(entry.changedAt)} by {getChangedByLabel(entry.changedBy)}

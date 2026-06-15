@@ -219,7 +219,7 @@ export async function sendStatusChangeEmail({
     const statusColor = statusColors[newStatus] ?? "#6b7280";
     const statusLabels: Record<string, string> = {
       pending: "Pending", under_review: "Under Review", approved: "Approved",
-      rejected: "Decline", enrolled: "Enrolled",
+      rejected: "Reject", enrolled: "Enrolled",
     };
     const statusLabel = statusLabels[newStatus] ?? newStatus.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
     const body = `

@@ -8,6 +8,7 @@ import { z } from "zod";
 import { ArrowLeft, Loader2, Send, Upload, X, CheckCircle, RefreshCw, Trash2, Download, UserCheck, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { ACCEPT_FILE_INPUT } from "@/lib/enrollment/constants";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/components/ui/use-toast";
@@ -911,7 +912,7 @@ export default function NewEnrollmentPage() {
                       onClick={() => {
                         const input = document.createElement("input");
                         input.type = "file";
-                        input.accept = "image/*,application/pdf,.doc,.docx";
+                        input.accept = ACCEPT_FILE_INPUT;
                         input.onchange = (e) => {
                           const file = (e.target as HTMLInputElement).files?.[0];
                           if (file) handleFileSelect("non_catholic_agreement", file);
@@ -1033,7 +1034,7 @@ export default function NewEnrollmentPage() {
                             } else {
                               const input = document.createElement("input");
                               input.type = "file";
-                              input.accept = "image/*,application/pdf";
+                              input.accept = ACCEPT_FILE_INPUT;
                               input.onchange = (e) => {
                                 const file = (e.target as HTMLInputElement).files?.[0];
                                 if (file) handleFileSelect(doc.id, file);
@@ -1054,7 +1055,7 @@ export default function NewEnrollmentPage() {
                           onClick={() => {
                             const input = document.createElement("input");
                             input.type = "file";
-                            input.accept = "image/*,application/pdf";
+                            input.accept = ACCEPT_FILE_INPUT;
                             input.onchange = (e) => {
                               const file = (e.target as HTMLInputElement).files?.[0];
                               if (file) handleFileSelect(doc.id, file);
