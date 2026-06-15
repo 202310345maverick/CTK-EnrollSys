@@ -85,7 +85,7 @@ export default async function EnrollmentSummaryPage({ params }: { params: { id: 
         </table>
       </section>
 
-      <p className="mt-6 text-xs text-muted-foreground">Use the "Download PDF" button to get a printable enrollment summary.</p>
+      <p className="mt-6 text-xs text-muted-foreground">Use the &quot;Download PDF&quot; button to get a printable enrollment summary.</p>
     </div>
   );
 }
