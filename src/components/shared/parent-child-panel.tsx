@@ -14,7 +14,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import ParentDashboardDocuments from "@/components/shared/parent-dashboard-documents";
 
 export type ChildDocument = {
@@ -80,40 +79,18 @@ export default function ParentChildPanel({ childData }: { childData: ChildEnroll
       {/* Child selector + New Enrollment button */}
       <div className="flex items-center gap-3">
         {childData.length > 1 ? (
-          <div className="min-w-0 flex-1">
-            <Table>
-              <TableHeader>
-                <tr>
-                  <TableHead>Student</TableHead>
-                  <TableHead>Grade</TableHead>
-                  <TableHead>Enrollment</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Action</TableHead>
-                </tr>
-              </TableHeader>
-              <TableBody>
-                {childData.map((c) => (
-                  <TableRow key={c.studentId}>
-                    <TableCell className="font-semibold">{c.studentName}</TableCell>
-                    <TableCell>{c.enrollment?.gradeLevel ?? c.currentGradeLevel ?? "—"}</TableCell>
-                    <TableCell>{c.enrollment?.enrollmentNumber ?? "—"}</TableCell>
-                    <TableCell>
-                      <Badge className="shrink-0 border-0 px-2 py-0.5 text-xs font-medium" variant="neutral">
-                        {getStatusLabel(c.enrollment?.status ?? "pending")}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      {c.enrollment?.id ? (
-                        <Link href={`/parent/enrollments/${c.enrollment.id}`} className="text-primary text-xs font-medium">View</Link>
-                      ) : (
-                        <Link href="/parent/enrollment/new" className="text-xs">Enroll</Link>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
+          <Select value={selectedId} onValueChange={setSelectedId}>
+            <SelectTrigger className="min-w-0 flex-1 h-9 text-sm font-medium">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {childData.map((c) => (
+                <SelectItem key={c.studentId} value={c.studentId}>
+                  {c.studentName}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         ) : (
           <p className="min-w-0 flex-1 truncate text-sm font-semibold text-slate-700">
             {selected?.studentName}
