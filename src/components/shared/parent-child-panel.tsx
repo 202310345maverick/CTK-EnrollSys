@@ -46,7 +46,7 @@ function getStatusLabel(status: string) {
   switch (status) {
     case "under_review": return "Under Review";
     case "approved":     return "Approved";
-    case "rejected":     return "Decline";
+    case "rejected":     return "Reject";
     case "enrolled":     return "Enrolled";
     case "pending":      return "Pending";
     default:             return status;
