@@ -9,6 +9,9 @@ import Student from "@/models/Student";
 import Document from "@/models/Document";
 import { ENROLLMENT_DOCUMENT_TYPES, ALLOWED_UPLOAD_EXTENSIONS, ALLOWED_UPLOAD_MIME_TYPES, MAX_UPLOAD_SIZE } from "@/lib/enrollment/constants";
 import { analyzeDocument } from "@/lib/ai-document-verify";
+import { analyzeDocumentLocal } from "@/lib/ai-document-verify-local";
+import User from "@/models/User";
+import { createNotification } from "@/lib/notifications";
 
 export async function GET(
   request: NextRequest,
@@ -162,13 +165,17 @@ export async function POST(
     const publicId = result.public_id;
     const mimeType = file.type;
     const docType = documentType;
-    setImmediate(() => {
-      Student.findById(studentId).select("personalInfo").lean()
-        .then((student: any) => {
-          const studentName = student
-            ? `${student.personalInfo?.firstName ?? ""} ${student.personalInfo?.lastName ?? ""}`.trim()
-            : undefined;
-          return analyzeDocument({
+    setImmediate(async () => {
+      try {
+        const student = await Student.findById(studentId).select("personalInfo").lean();
+        const studentName = student
+          ? `${student.personalInfo?.firstName ?? ""} ${student.personalInfo?.lastName ?? ""}`.trim()
+          : undefined;
+
+        let analysis: any;
+        if (mimeType === "application/pdf") {
+          // PDFs: fallback to Cloudinary OCR (already requested at upload time)
+          analysis = await analyzeDocument({
             cloudinaryPublicId: publicId,
             cloudinaryResourceType,
             mimeType,
@@ -176,9 +183,50 @@ export async function POST(
             studentName: studentName || undefined,
             uploadOcrInfo: result.info,
           });
-        })
-        .then((analysis) => Document.findByIdAndUpdate(docId, { aiAnalysis: analysis }))
-        .catch((err: unknown) => console.error("[AI] Document analysis failed:", err));
+        } else {
+          // Images: run local OCR (tesseract.js)
+          analysis = await analyzeDocumentLocal({
+            buffer,
+            mimeType,
+            expectedDocumentType: docType,
+            studentName: studentName || undefined,
+          });
+        }
+
+        const update: any = { aiAnalysis: analysis };
+        if (analysis.status === "passed") {
+          update.verificationStatus = "verified";
+          update.verifiedAt = new Date();
+        }
+
+        await Document.findByIdAndUpdate(docId, update);
+
+        if (analysis.status === "passed") {
+          await Enrollment.updateOne(
+            { _id: enrollment._id, "documents.documentId": docId },
+            { $set: { "documents.$.status": "verified" } }
+          );
+        }
+
+        if (analysis.status === "flagged" || analysis.status === "needs_review") {
+          try {
+            const registrars = await User.find({ role: "registrar" }).select("_id").lean();
+            const message = `A document (${file.name}) for ${enrollment.enrollmentNumber} was flagged by AI verification.`;
+            for (const r of registrars) {
+              await createNotification({
+                userId: r._id,
+                title: "Document flagged for review",
+                message,
+                link: `/dashboard/registrar/enrollments/${enrollment._id}`,
+              });
+            }
+          } catch (notifyErr) {
+            console.error("[AI] Failed to notify registrars:", notifyErr);
+          }
+        }
+      } catch (err) {
+        console.error("[AI] Document analysis failed:", err);
+      }
     });
 
     const refreshedEnrollment = await Enrollment.findById(enrollment._id)
