@@ -51,7 +51,7 @@ export default async function EnrollmentSummaryPage({ params }: { params: { id: 
             <tr><td className="text-muted-foreground">Grade Level</td><td>{enrollment.gradeLevel || "—"}</td></tr>
             <tr><td className="text-muted-foreground">Status</td><td>{String(enrollment.status).replace("_", " ")}</td></tr>
             <tr><td className="text-muted-foreground">Submitted</td><td>{new Date(enrollment.submittedAt || enrollment.createdAt || Date.now()).toLocaleString("en-PH")}</td></tr>
-            <tr><td className="text-muted-foreground">Remarks</td><td>{enrollment.remark || "—"}</td></tr>
+            <tr><td className="text-muted-foreground">Remarks</td><td>{(enrollment as any).remarks ?? (enrollment as any).remark ?? "—"}</td></tr>
           </tbody>
         </table>
       </section>
