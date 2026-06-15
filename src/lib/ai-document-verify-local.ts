@@ -82,7 +82,7 @@ export async function analyzeDocumentLocal(params: {
       };
     }
 
-    const worker = createWorker();
+    const worker = await createWorker();
     await worker.load();
     await worker.loadLanguage("eng");
     await worker.initialize("eng");
