@@ -194,30 +194,28 @@ export default async function ParentPaymentsPage() {
           {studentSummaries.length === 0 ? (
             <p className="py-4 text-center text-xs text-muted-foreground">No child records found.</p>
           ) : (
-            studentSummaries.map((summary) => (
-              <div
-                key={summary.id}
-                className="flex flex-col gap-2 rounded-lg border bg-slate-50/50 p-3 sm:flex-row sm:items-center sm:justify-between"
-              >
-                <div>
-                  <p className="text-sm font-semibold">{summary.name || "Unnamed student"}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {summary.transactions} {summary.transactions === 1 ? "transaction" : "transactions"}
-                  </p>
-                </div>
-                <div className="flex flex-wrap items-center gap-1.5">
-                  <Badge variant="info" className="text-xs px-2 py-0.5">
-                    Assessed: {formatCurrency(summary.assessed)}
-                  </Badge>
-                  <Badge variant="success" className="text-xs px-2 py-0.5">
-                    Paid: {formatCurrency(summary.paid)}
-                  </Badge>
-                  <Badge variant={summary.balance > 0 ? "warning" : "success"} className="text-xs px-2 py-0.5 font-semibold">
-                    Balance: {formatCurrency(summary.balance)}
-                  </Badge>
-                </div>
-              </div>
-            ))
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-xs text-muted-foreground">
+                  <th className="text-left py-2">Student</th>
+                  <th className="text-right py-2">Assessed</th>
+                  <th className="text-right py-2">Paid</th>
+                  <th className="text-right py-2">Balance</th>
+                  <th className="text-center py-2">Transactions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {studentSummaries.map((summary) => (
+                  <tr key={summary.id} className="border-t">
+                    <td className="py-3">{summary.name || "Unnamed student"}</td>
+                    <td className="py-3 text-right">{formatCurrency(summary.assessed)}</td>
+                    <td className="py-3 text-right text-emerald-600">{formatCurrency(summary.paid)}</td>
+                    <td className="py-3 text-right font-semibold text-amber-700">{formatCurrency(summary.balance)}</td>
+                    <td className="py-3 text-center">{summary.transactions}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           )}
         </CardContent>
       </Card>

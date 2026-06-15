@@ -315,7 +315,7 @@ By the end of training, users will be able to:
 - Process 5 enrollment applications
 - Approve 3 with verified documents
 - Request re-upload for 1 (photo issue)
-- Reject 1 with incomplete information
+- Decline 1 with incomplete information
 
 ---
 

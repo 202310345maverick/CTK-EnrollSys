@@ -31,7 +31,7 @@ Audience
 4. Registrar Guide — Processing Enrollments
    - Enrollment Queue
    - Review & Verification
-   - Approve / Reject / Request Changes
+   - Approve / Decline / Request Changes
    - Creating Student Records
    - Payments
 5. Admin Guide — Configuration & Reports
@@ -213,13 +213,13 @@ Document verification checklist
 
 [Figures]
 
-### 4.3 Approve / Reject / Request Changes
+### 4.3 Approve / Decline / Request Changes
 - Approve
   1. Click "Approve".
   2. Assign Grade / Section and Student ID.
   3. Save to create student record.
-- Reject
-  1. Click "Reject" and enter reason. Parent receives notification.
+- Decline
+  1. Click "Decline" and enter reason. Parent receives notification.
 - Request Changes
   1. Click "Request Changes" and add guidance. Application returns to Draft.
 

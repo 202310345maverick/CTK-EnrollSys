@@ -89,9 +89,9 @@ This guide assumes the user has a Registrar role.
 ### 3. Document Verification
 - Mark each document as Valid or Invalid. Provide notes for invalid documents to trigger parent notifications. [Figures]
 
-### 4. Approve / Reject / Request Changes
+### 4. Approve / Decline / Request Changes
 - Approve: assign grade/section and register a student record in the system.
-- Reject: provide reasons for rejection; the parent is notified.
+- Decline: provide reasons for decline; the parent is notified.
 - Request Changes: add notes and set the application back to Draft for parent action. [Figures]
 
 ### 5. Creating Student Records

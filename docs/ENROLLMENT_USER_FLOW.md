@@ -67,7 +67,7 @@ PARENT                              SYSTEM                              REGISTRA
   │                                    │               13. Assess Fees      │
   │                                    │◄───────────────────────────────────┤
   │                                    │                                    │
-  │                                    │               14. Approve/Reject   │
+  │                                    │               14. Approve/Decline   │
   │                                    │◄───────────────────────────────────┤
   │                                    │                                    │
   │                                    │ 15. Update Status (APPROVED)       │
@@ -450,7 +450,7 @@ For returning students, the system pre-fills data from the previous enrollment:
 │  │    Uploaded: March 15, 2024                                │ │
 │  │    [View Document 🔍]                                       │ │
 │  │                                                             │ │
-│  │    ○ Verify ✓   ○ Reject ✗                                 │ │
+│  │    ○ Verify ✓   ○ Decline ✗                                 │ │
 │  │    Remarks: [_______________________________]              │ │
 │  │                                                             │ │
 │  └────────────────────────────────────────────────────────────┘ │
@@ -526,7 +526,7 @@ For returning students, the system pre-fills data from the previous enrollment:
 │  ┌────────────────────────────────────────────────────────────┐ │
 │  │                                                             │ │
 │  │  Decision: ○ Approve Enrollment                            │ │
-│  │            ○ Reject Enrollment                              │ │
+│  │            ○ Decline Enrollment                              │ │
 │  │            ○ Waitlist                                       │ │
 │  │                                                             │ │
 │  │  Remarks (will be sent to parent):                         │ │
@@ -704,8 +704,8 @@ Date: March 15, 2024 10:30 AM
 | Error Scenario | User Message | System Action |
 |---------------|--------------|---------------|
 | Enrollment period closed | "Enrollment is currently closed. The next enrollment period is [date]." | Block access to enrollment form |
-| File too large | "File size exceeds 5MB limit. Please upload a smaller file." | Reject upload, retain form data |
-| Invalid file type | "Please upload a PDF, JPG, or PNG file." | Reject upload, show accepted formats |
+| File too large | "File size exceeds 5MB limit. Please upload a smaller file." | Decline upload, retain form data |
+| Invalid file type | "Please upload a PDF, JPG, or PNG file." | Decline upload, show accepted formats |
 | Required field missing | "[Field name] is required." | Highlight field, prevent submission |
 | Invalid LRN format | "LRN must be exactly 12 digits." | Show validation error |
 | Duplicate enrollment | "An enrollment for this student already exists for SY 2024-2025." | Show link to existing enrollment |
