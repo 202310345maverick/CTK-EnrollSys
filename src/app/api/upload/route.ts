@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth/options";
 import { uploadToCloudinary } from "@/lib/cloudinary";
-import { ENROLLMENT_DOCUMENT_TYPES } from "@/lib/enrollment/constants";
+import { ENROLLMENT_DOCUMENT_TYPES, ALLOWED_UPLOAD_EXTENSIONS, ALLOWED_UPLOAD_MIME_TYPES, MAX_UPLOAD_SIZE } from "@/lib/enrollment/constants";
 import { createAuditLog } from "@/lib/audit";
 import { logger } from "@/lib/logger";
 
@@ -45,19 +45,17 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate file type
-    const allowedTypes = ["application/pdf", "image/jpeg", "image/png", "image/jpg"];
-    if (!allowedTypes.includes(file.type)) {
+    if (!ALLOWED_UPLOAD_MIME_TYPES.includes(file.type)) {
       return NextResponse.json(
-        { error: "Invalid file type. Allowed: PDF, JPG, PNG" },
+        { error: `Invalid file type. Allowed: ${ALLOWED_UPLOAD_EXTENSIONS.join(", ")}` },
         { status: 400 }
       );
     }
 
-    // Validate file size (5MB max)
-    const maxSize = 5 * 1024 * 1024;
-    if (file.size > maxSize) {
+    // Validate file size
+    if (file.size > MAX_UPLOAD_SIZE) {
       return NextResponse.json(
-        { error: "File too large. Maximum size is 5MB" },
+        { error: `File too large. Maximum size is ${MAX_UPLOAD_SIZE / (1024 * 1024)}MB` },
         { status: 400 }
       );
     }
@@ -65,11 +63,10 @@ export async function POST(request: NextRequest) {
     const buffer = Buffer.from(await file.arrayBuffer());
 
     // SEC-005: Extension validation
-    const allowedExtensions = [".pdf", ".jpg", ".jpeg", ".png"];
     const fileExt = path.extname(file.name).toLowerCase();
-    if (!allowedExtensions.includes(fileExt)) {
+    if (!ALLOWED_UPLOAD_EXTENSIONS.includes(fileExt)) {
       return NextResponse.json(
-        { error: "Invalid file extension. Allowed: PDF, JPG, PNG" },
+        { error: `Invalid file extension. Allowed: ${ALLOWED_UPLOAD_EXTENSIONS.join(", ")}` },
         { status: 400 }
       );
     }

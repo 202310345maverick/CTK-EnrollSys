@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Upload, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
+import { ALLOWED_UPLOAD_EXTENSIONS } from "@/lib/enrollment/constants";
 
 interface DocumentUploadButtonProps {
   enrollmentId: string;
@@ -54,7 +55,7 @@ export function DocumentUploadButton({
 
   return (
     <>
-      <input ref={inputRef} type="file" accept=".pdf,.jpg,.jpeg,.png" className="hidden" onChange={handleFileChange} />
+      <input ref={inputRef} type="file" accept={ALLOWED_UPLOAD_EXTENSIONS.join(',')} className="hidden" onChange={handleFileChange} />
       <Button
         size="sm"
         variant={isMissing ? "default" : "outline"}

@@ -9,6 +9,8 @@ import Enrollment from "@/models/Enrollment";
 import User from "@/models/User";
 import { createNotification } from "@/lib/notifications";
 import { sendPaymentConfirmationEmail } from "@/lib/auth/email";
+import { jsPDF } from "jspdf";
+import "jspdf-autotable";
 import { createAuditLog } from "@/lib/audit";
 import { sanitizeObject } from "@/lib/sanitize";
 import { logger } from "@/lib/logger";
@@ -159,14 +161,51 @@ export async function POST(request: NextRequest) {
           const paymentDateStr = payment.paymentDate
             ? new Date(payment.paymentDate).toLocaleDateString("en-PH", { year: "numeric", month: "long", day: "numeric" })
             : new Date().toLocaleDateString("en-PH", { year: "numeric", month: "long", day: "numeric" });
-          await sendPaymentConfirmationEmail({
-            email: parent.email,
-            name: parentName,
-            receiptNumber: payment.receiptNumber,
-            studentName,
-            amount: payment.amount,
-            paymentDate: paymentDateStr,
-          });
+          try {
+            const doc = new jsPDF();
+            doc.setFontSize(14);
+            doc.text("Christ the King Catholic School", 20, 20);
+            doc.setFontSize(12);
+            doc.text(`Receipt: ${payment.receiptNumber}`, 20, 40);
+            doc.text(`Student: ${studentName}`, 20, 60);
+            doc.text(`Amount: ${new Intl.NumberFormat("en-PH", { style: "currency", currency: "PHP" }).format(payment.amount)}`, 20, 80);
+            doc.text(`Payment Date: ${paymentDateStr}`, 20, 100);
+            // Add simple table if plugin available
+            try {
+              // @ts-ignore
+              if ((doc as any).autoTable) {
+                // @ts-ignore
+                (doc as any).autoTable({
+                  startY: 120,
+                  head: [["Description", "Amount"]],
+                  body: [[payment.paymentType || "Payment", new Intl.NumberFormat("en-PH", { style: "currency", currency: "PHP" }).format(payment.amount)]],
+                });
+              }
+            } catch (e) {
+              // ignore autoTable errors
+            }
+            const ab = doc.output("arraybuffer");
+            const pdfBuffer = Buffer.from(ab);
+            await sendPaymentConfirmationEmail({
+              email: parent.email,
+              name: parentName,
+              receiptNumber: payment.receiptNumber,
+              studentName,
+              amount: payment.amount,
+              paymentDate: paymentDateStr,
+              attachments: [{ filename: `e-invoice-${payment.receiptNumber}.pdf`, content: pdfBuffer }],
+            });
+          } catch (err) {
+            console.error("Failed to generate/send e-invoice:", err);
+            await sendPaymentConfirmationEmail({
+              email: parent.email,
+              name: parentName,
+              receiptNumber: payment.receiptNumber,
+              studentName,
+              amount: payment.amount,
+              paymentDate: paymentDateStr,
+            });
+          }
           await createNotification({
             userId: parentId,
             title: "Payment Recorded",

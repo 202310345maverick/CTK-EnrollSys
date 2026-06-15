@@ -219,7 +219,7 @@ export async function sendStatusChangeEmail({
     const statusColor = statusColors[newStatus] ?? "#6b7280";
     const statusLabels: Record<string, string> = {
       pending: "Pending", under_review: "Under Review", approved: "Approved",
-      rejected: "Not Approved", enrolled: "Enrolled",
+      rejected: "Rejected", enrolled: "Enrolled",
     };
     const statusLabel = statusLabels[newStatus] ?? newStatus.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
     const body = `
@@ -335,10 +335,10 @@ export async function sendFeeAssessmentEmail({
 }
 
 export async function sendPaymentConfirmationEmail({
-  email, name, receiptNumber, studentName, amount, paymentDate,
+  email, name, receiptNumber, studentName, amount, paymentDate, attachments,
 }: {
   email: string; name: string; receiptNumber: string; studentName: string;
-  amount: number; paymentDate: string;
+  amount: number; paymentDate: string; attachments?: any[];
 }): Promise<void> {
   try {
     const { transporter, from } = getEmailConfig();
@@ -355,11 +355,13 @@ export async function sendPaymentConfirmationEmail({
       <p style="color:#333;line-height:1.6;">Please keep this as your official record. If you have any questions about your payment, please contact our finance office.</p>
       <p style="color:#333;line-height:1.6;">God bless,<br><strong>Christ the King Catholic School</strong></p>
     `;
-    await transporter.sendMail({
+    const mailOptions: any = {
       from, to: email,
       subject: `Payment Confirmed – ${receiptNumber} | CTK EnrollSys`,
       html: buildEmailHtml("Payment Confirmation", body),
-    });
+    };
+    if (attachments && attachments.length) mailOptions.attachments = attachments;
+    await transporter.sendMail(mailOptions);
   } catch (error) {
     console.error("[sendPaymentConfirmationEmail] Failed:", error);
   }
