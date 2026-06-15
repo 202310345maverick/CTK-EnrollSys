@@ -36,3 +36,8 @@ export function getRequiredDocumentTypes(
 
   return baseRequired;
 }
+
+export const ALLOWED_UPLOAD_EXTENSIONS = [".pdf", ".jpg", ".jpeg", ".png"];
+export const ALLOWED_UPLOAD_MIME_TYPES = ["application/pdf", "image/jpeg", "image/png", "image/jpg"];
+export const MAX_UPLOAD_SIZE = 5 * 1024 * 1024; // 5MB
+export const ACCEPT_FILE_INPUT = ALLOWED_UPLOAD_EXTENSIONS.join(",");

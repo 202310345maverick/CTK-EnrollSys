@@ -7,7 +7,7 @@ import dbConnect from "@/lib/db/connection";
 import Enrollment from "@/models/Enrollment";
 import Student from "@/models/Student";
 import Document from "@/models/Document";
-import { ENROLLMENT_DOCUMENT_TYPES } from "@/lib/enrollment/constants";
+import { ENROLLMENT_DOCUMENT_TYPES, ALLOWED_UPLOAD_EXTENSIONS, ALLOWED_UPLOAD_MIME_TYPES, MAX_UPLOAD_SIZE } from "@/lib/enrollment/constants";
 import { analyzeDocument } from "@/lib/ai-document-verify";
 
 export async function GET(
@@ -91,18 +91,16 @@ export async function POST(
       return NextResponse.json({ error: "Invalid document type" }, { status: 400 });
     }
 
-    const allowedTypes = ["application/pdf", "image/jpeg", "image/png", "image/jpg"];
-    if (!allowedTypes.includes(file.type)) {
+    if (!ALLOWED_UPLOAD_MIME_TYPES.includes(file.type)) {
       return NextResponse.json(
-        { error: "Invalid file type. Allowed: PDF, JPG, PNG" },
+        { error: `Invalid file type. Allowed: ${ALLOWED_UPLOAD_EXTENSIONS.join(", ")}` },
         { status: 400 }
       );
     }
 
-    const maxSize = 5 * 1024 * 1024;
-    if (file.size > maxSize) {
+    if (file.size > MAX_UPLOAD_SIZE) {
       return NextResponse.json(
-        { error: "File too large. Maximum size is 5MB" },
+        { error: `File too large. Maximum size is ${MAX_UPLOAD_SIZE / (1024 * 1024)}MB` },
         { status: 400 }
       );
     }

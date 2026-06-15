@@ -568,7 +568,7 @@ export default function NewEnrollmentPage() {
               type="button"
               variant="outline"
               size="sm"
-              className="h-8 text-xs text-red-600 border-red-200 hover:bg-red-50"
+              className="h-10 text-sm text-red-600 border-red-200 hover:bg-red-50"
               onClick={clearDraft}
             >
               <Trash2 className="mr-1 h-3.5 w-3.5" />
@@ -576,7 +576,7 @@ export default function NewEnrollmentPage() {
             </Button>
           )}
           <Link href="/parent/enrollments">
-            <Button variant="outline" size="sm" className="h-8 text-xs">
+            <Button variant="outline" size="sm" className="h-10 text-sm">
               <ArrowLeft className="mr-1 h-3.5 w-3.5" />
               Back
             </Button>
@@ -892,7 +892,7 @@ export default function NewEnrollmentPage() {
                         type="button"
                         variant="outline"
                         size="sm"
-                        className="h-7 text-xs ml-2"
+                        className="h-9 text-sm ml-2"
                         onClick={() => {
                           setUploadedFiles((p) => { const n = { ...p }; delete n["non_catholic_agreement"]; return n; });
                           setUploadedDocs((p)  => { const n = { ...p }; delete n["non_catholic_agreement"]; return n; });
@@ -906,7 +906,7 @@ export default function NewEnrollmentPage() {
                       type="button"
                       variant="outline"
                       size="sm"
-                      className="h-7 text-xs border-amber-300 text-amber-800 hover:bg-amber-100"
+                      className="h-9 text-sm border-amber-300 text-amber-800 hover:bg-amber-100"
                       disabled={uploadingId === "non_catholic_agreement"}
                       onClick={() => {
                         const input = document.createElement("input");
@@ -1012,7 +1012,7 @@ export default function NewEnrollmentPage() {
                           type="button"
                           variant="outline"
                           size="sm"
-                          className="h-7 text-xs"
+                          className="h-9 text-sm"
                           onClick={() => {
                             setUploadedFiles((p) => { const n = { ...p }; delete n[doc.id]; return n; });
                             setUploadedDocs((p)  => { const n = { ...p }; delete n[doc.id]; return n; });
@@ -1025,7 +1025,7 @@ export default function NewEnrollmentPage() {
                           type="button"
                           variant="outline"
                           size="sm"
-                          className="h-7 text-xs border-red-300 text-red-600 hover:bg-red-50"
+                          className="h-9 text-sm border-red-300 text-red-600 hover:bg-red-50"
                           disabled={isUploading}
                           onClick={() => {
                             if (uploadedFiles[doc.id]) {
@@ -1049,7 +1049,7 @@ export default function NewEnrollmentPage() {
                           type="button"
                           variant="outline"
                           size="sm"
-                          className="h-7 text-xs"
+                          className="h-9 text-sm"
                           disabled={isUploading}
                           onClick={() => {
                             const input = document.createElement("input");
@@ -1189,7 +1189,7 @@ export default function NewEnrollmentPage() {
         {/* ── Submit ───────────────────────────────────────────── */}
         <div className="flex justify-end gap-3">
           <Link href="/parent/enrollments">
-            <Button type="button" variant="outline" size="sm" disabled={isSubmitting} className="h-8 text-xs">
+            <Button type="button" variant="outline" size="sm" disabled={isSubmitting} className="h-10 text-sm">
               Cancel
             </Button>
           </Link>
@@ -1197,7 +1197,7 @@ export default function NewEnrollmentPage() {
             type="submit"
             size="sm"
             disabled={isSubmitting || uploadingId !== null}
-            className="h-8 text-xs bg-[#b4040d] hover:bg-[#8a0309]"
+            className="h-10 text-sm bg-[#b4040d] hover:bg-[#8a0309]"
           >
             {isSubmitting
               ? <><Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />Submitting...</>

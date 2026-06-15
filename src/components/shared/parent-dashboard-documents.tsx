@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ExternalLink, Loader2, Upload, CheckCircle2, CircleAlert, BrainCircuit } from "lucide-react";
 
-import { ENROLLMENT_DOCUMENT_LABELS, type EnrollmentDocumentType } from "@/lib/enrollment/constants";
+import { ENROLLMENT_DOCUMENT_LABELS, type EnrollmentDocumentType, ALLOWED_UPLOAD_EXTENSIONS } from "@/lib/enrollment/constants";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -146,7 +146,7 @@ export default function ParentDashboardDocuments({
               <input
                 id={`parent-doc-${document.type}`}
                 type="file"
-                accept=".pdf,.jpg,.jpeg,.png"
+                accept={ALLOWED_UPLOAD_EXTENSIONS.join(',')}
                 className="hidden"
                 onChange={(event) => uploadDocument(event, document.type)}
               />
@@ -198,7 +198,7 @@ export default function ParentDashboardDocuments({
         <input
           id="parent-doc-other"
           type="file"
-          accept=".pdf,.jpg,.jpeg,.png"
+          accept={ALLOWED_UPLOAD_EXTENSIONS.join(',')}
           className="hidden"
           onChange={(event) => uploadDocument(event, "other")}
         />
