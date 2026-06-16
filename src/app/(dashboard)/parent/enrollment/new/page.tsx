@@ -9,6 +9,7 @@ import { ArrowLeft, Loader2, Send, Upload, X, CheckCircle, RefreshCw, Trash2, Do
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { ACCEPT_FILE_INPUT } from "@/lib/enrollment/constants";
+import { BARANGAYS, CITIES, MUNICIPALITIES } from "@/lib/locations";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/components/ui/use-toast";
@@ -62,6 +63,7 @@ const schema = z.object({
   street:         z.string().min(1, "Address is required"),
   barangay:       z.string().min(1, "Barangay is required"),
   city:           z.string().min(1, "City is required"),
+  municipality:   z.string().min(1, "Municipality is required"),
   province:       z.string().min(1, "Province is required"),
   zipCode:        z.string().min(1, "Zip code is required"),
   contactNo:      z.string().optional(),
@@ -130,7 +132,7 @@ type ChildData = {
   } | null;
 };
 
-const DEFAULT_VALUES = { isCatholic: "yes" as const, enrollmentType: "new" as const };
+const DEFAULT_VALUES = { isCatholic: "yes" as const, enrollmentType: "new" as const, municipality: "" };
 
 
 // ── Scroll-to-error helpers ────────────────────────────────────────────────────
@@ -147,6 +149,7 @@ const FIELD_SECTION_MAP: Partial<Record<keyof FormData, string>> = {
   street:         "section-student",
   barangay:       "section-student",
   city:           "section-student",
+  municipality:   "section-student",
   province:       "section-student",
   zipCode:        "section-student",
   contactNo:      "section-student",
@@ -438,6 +441,7 @@ export default function NewEnrollmentPage() {
         street:         data.street,
         barangay:       data.barangay,
         city:           data.city,
+        municipality:   data.municipality,
         province:       data.province,
         zipCode:        data.zipCode,
         guardianName:   data.guardianName,
@@ -534,6 +538,7 @@ export default function NewEnrollmentPage() {
       street: child.contactInfo?.address?.street ?? "",
       barangay: child.contactInfo?.address?.barangay ?? "",
       city: child.contactInfo?.address?.city ?? "",
+      municipality: child.contactInfo?.address?.municipality ?? "",
       province: child.contactInfo?.address?.province ?? "",
       zipCode: child.contactInfo?.address?.zipCode ?? "",
       contactNo: typeof contactNo === "string" ? contactNo : "",
@@ -793,22 +798,67 @@ export default function NewEnrollmentPage() {
               <Input {...register("street")} className="mt-1 h-8 text-sm" />
               {errors.street && <p className={errorCls}>{errors.street.message}</p>}
             </div>
-            <div className="grid gap-3 sm:grid-cols-2">
+            <div className="grid gap-3 sm:grid-cols-3">
               <div>
                 <label className={labelCls}>Barangay <span className="text-red-500">*</span></label>
-                <Input {...register("barangay")} className="mt-1 h-8 text-sm" />
+                <Controller
+                  name="barangay"
+                  control={control}
+                  render={({ field }) => (
+                    <FormSelect
+                      value={field.value}
+                      onChange={field.onChange}
+                      options={BARANGAYS.map((b) => ({ value: b, label: b }))}
+                      placeholder="Select Barangay"
+                      className="mt-1"
+                    />
+                  )}
+                />
                 {errors.barangay && <p className={errorCls}>{errors.barangay.message}</p>}
               </div>
+
               <div>
-                <label className={labelCls}>City / Municipality <span className="text-red-500">*</span></label>
-                <Input {...register("city")} className="mt-1 h-8 text-sm" />
+                <label className={labelCls}>City <span className="text-red-500">*</span></label>
+                <Controller
+                  name="city"
+                  control={control}
+                  render={({ field }) => (
+                    <FormSelect
+                      value={field.value}
+                      onChange={field.onChange}
+                      options={CITIES.map((c) => ({ value: c, label: c }))}
+                      placeholder="Select City"
+                      className="mt-1"
+                    />
+                  )}
+                />
                 {errors.city && <p className={errorCls}>{errors.city.message}</p>}
               </div>
+
+              <div>
+                <label className={labelCls}>Municipality <span className="text-red-500">*</span></label>
+                <Controller
+                  name="municipality"
+                  control={control}
+                  render={({ field }) => (
+                    <FormSelect
+                      value={field.value}
+                      onChange={field.onChange}
+                      options={MUNICIPALITIES.map((m) => ({ value: m, label: m }))}
+                      placeholder="Select Municipality"
+                      className="mt-1"
+                    />
+                  )}
+                />
+                {errors.municipality && <p className={errorCls}>{errors.municipality.message}</p>}
+              </div>
+
               <div>
                 <label className={labelCls}>Province <span className="text-red-500">*</span></label>
                 <Input {...register("province")} className="mt-1 h-8 text-sm" />
                 {errors.province && <p className={errorCls}>{errors.province.message}</p>}
               </div>
+
               <div>
                 <label className={labelCls}>Zip Code <span className="text-red-500">*</span></label>
                 <Input {...register("zipCode")} className="mt-1 h-8 text-sm" />
