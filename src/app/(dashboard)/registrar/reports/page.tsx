@@ -68,7 +68,6 @@ const STATUS_COLORS: Record<string, string> = {
 const REPORT_TYPES = [
   { id: "enrollment", label: "Enrollment Summary", desc: "All enrollments with filters", icon: FileText },
   { id: "sf1",        label: "DepEd SF1",          desc: "School Register (enrolled students)", icon: TableProperties },
-  { id: "sf2",        label: "DepEd SF2",          desc: "Daily Attendance Register template", icon: ClipboardList },
   { id: "payment",    label: "Payment Collection", desc: "Assessment & payment records", icon: CreditCard },
 ];
 
@@ -117,11 +116,13 @@ export default function ReportsPage() {
     }
   }, [buildUrl]);
 
-  // Load school years on mount only
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => { load(reportType, filters); }, []);
+  // Load and auto-refresh when filters or reportType change (debounced)
+  useEffect(() => {
+    const t = setTimeout(() => { load(reportType, filters); }, 250);
+    return () => clearTimeout(t);
+  }, [reportType, filters, load]);
 
-  const handleRun = () => load(reportType, filters);
+  
 
   const handleTypeChange = (t: string) => {
     setReportType(t);
@@ -575,10 +576,7 @@ export default function ReportsPage() {
               <Button size="sm" variant="outline" className="h-7 px-3 text-xs" onClick={() => { setFilters({ schoolYearId: "", gradeLevel: "", status: "", dateFrom: "", dateTo: "" }); }} disabled={loading}>
                 <X className="h-3 w-3 mr-1" /> Reset Filters
               </Button>
-              <Button size="sm" className="h-7 px-3 text-xs" onClick={handleRun} disabled={loading}>
-                {loading ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <RefreshCw className="h-3 w-3 mr-1" />}
-                Run Report
-              </Button>
+              {/* Run Report removed: filters apply in real-time */}
             </div>
           </div>
         </CardHeader>
@@ -607,7 +605,7 @@ export default function ReportsPage() {
               </div>
             )}
             {/* Status — hidden for sf1/sf2 (forced to enrolled) */}
-            {reportType !== "sf1" && reportType !== "sf2" && (
+            {reportType !== "sf1" && (
               <div>
                 <label className="block text-[10px] font-medium text-gray-600 mb-1">
                   {reportType === "payment" ? "Grade (N/A)" : "Status"}
@@ -812,18 +810,13 @@ export default function ReportsPage() {
                     {exporting === "sf1pdf" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <TableProperties className="h-3.5 w-3.5 text-blue-600" />}
                     <span><span className="font-semibold">SF1</span> School Register PDF</span>
                   </Button>
-                  <Button variant="outline" size="sm" className="w-full justify-start h-9 text-xs gap-2"
-                    onClick={downloadSF2PDF} disabled={!!exporting || rows.length === 0}>
-                    {exporting === "sf2pdf" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ClipboardList className="h-3.5 w-3.5 text-blue-600" />}
-                    <span><span className="font-semibold">SF2</span> Attendance Register PDF</span>
-                  </Button>
                   <p className="text-[10px] text-muted-foreground mt-1">
-                    SF1/SF2 use enrolled students. Run with <em>SF1</em> or <em>SF2</em> report type, or use the enrollment report and export.
+                    SF1 uses enrolled students. Use the SF1 report type or export the Enrollment report.
                   </p>
                 </>
               )}
               {!canExportPdf && !loading && (
-                <p className="text-[10px] text-muted-foreground mt-1">Run report first to enable export.</p>
+                <p className="text-[10px] text-muted-foreground mt-1">No data to export for current filters.</p>
               )}
             </CardContent>
           </Card>
