@@ -112,7 +112,7 @@ type ChildData = {
     religion?: string;
   };
   contactInfo: {
-    address: { street: string; barangay: string; city: string; province: string; zipCode: string };
+    address: { street: string; barangay: string; city: string; municipality?: string; province: string; zipCode: string };
     contactNumber?: string;
   };
   guardianInfo: {
