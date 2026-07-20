@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -312,7 +313,15 @@ export default function PaymentsPage() {
                       {formatCurrency(p.amount)}
                     </TableCell>
                     {isAdminOrRegistrar && (
-                      <TableCell className="text-right">
+                      <TableCell className="text-right space-x-1">
+                        {!p.isVoided && (
+                          <Button asChild variant="ghost" size="sm" className="h-6 px-2 text-xs text-slate-600 hover:bg-slate-50 hover:text-slate-700">
+                            <Link href={`/api/payments/${p._id}`} target="_blank" rel="noreferrer">
+                              <Receipt className="h-3 w-3 mr-1" />
+                              Invoice
+                            </Link>
+                          </Button>
+                        )}
                         {!p.isVoided && (
                           <Button
                             variant="ghost"
@@ -346,6 +355,7 @@ export default function PaymentsPage() {
                   <X className="h-4 w-4" />
                 </Button>
               </div>
+              <p className="text-xs text-muted-foreground mt-1">An e-invoice will be generated and emailed once payment is recorded.</p>
             </CardHeader>
             <CardContent>
               {success ? (
