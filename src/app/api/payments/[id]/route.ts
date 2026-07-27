@@ -4,8 +4,7 @@ import { authOptions } from "@/lib/auth/options";
 import dbConnect from "@/lib/db/connection";
 import Payment from "@/models/Payment";
 import { createAuditLog } from "@/lib/audit";
-import { jsPDF } from "jspdf";
-import "jspdf-autotable";
+import { buildPaymentReceiptPdf } from "@/lib/payment-receipt";
 
 export async function GET(
   request: NextRequest,
@@ -21,6 +20,7 @@ export async function GET(
 
     const payment = await Payment.findById(params.id)
       .populate("studentId", "personalInfo studentId parentUserId")
+      .populate("receivedBy", "profile.firstName profile.lastName")
       .lean();
     if (!payment) {
       return NextResponse.json({ error: "Payment not found" }, { status: 404 });
@@ -44,33 +44,20 @@ export async function GET(
       ? new Date(payment.paymentDate).toLocaleDateString("en-PH", { year: "numeric", month: "long", day: "numeric" })
       : new Date().toLocaleDateString("en-PH", { year: "numeric", month: "long", day: "numeric" });
 
-    const doc = new jsPDF();
-    doc.setFontSize(14);
-    doc.text("Christ the King Catholic School", 20, 20);
-    doc.setFontSize(12);
-    doc.text(`Receipt: ${payment.receiptNumber}`, 20, 40);
-    doc.text(`Student: ${studentName}`, 20, 55);
-    doc.text(`Amount: ${new Intl.NumberFormat("en-PH", { style: "currency", currency: "PHP" }).format(payment.amount)}`, 20, 70);
-    doc.text(`Payment Date: ${paymentDateStr}`, 20, 85);
+    const receivedBy = `${(payment as any).receivedBy?.profile?.firstName ?? ""} ${(payment as any).receivedBy?.profile?.lastName ?? ""}`.trim();
+    const pdfBuffer = buildPaymentReceiptPdf({
+      receiptNumber: payment.receiptNumber,
+      studentName,
+      paymentDate: paymentDateStr,
+      paymentType: payment.paymentType,
+      description: payment.description,
+      paymentMethod: payment.paymentMethod,
+      remarks: payment.remarks,
+      receivedBy: receivedBy || undefined,
+      amount: payment.amount,
+    });
 
-    try {
-      // @ts-ignore
-      if ((doc as any).autoTable) {
-        // @ts-ignore
-        (doc as any).autoTable({
-          startY: 100,
-          head: [["Description", "Amount"]],
-          body: [[payment.description || "Payment", new Intl.NumberFormat("en-PH", { style: "currency", currency: "PHP" }).format(payment.amount)]],
-        });
-      }
-    } catch (e) {
-      // ignore autoTable errors
-    }
-
-    const arrayBuffer = doc.output("arraybuffer");
-    const pdfBuffer = Buffer.from(arrayBuffer);
-
-    return new NextResponse(pdfBuffer, {
+    return new NextResponse(new Uint8Array(pdfBuffer), {
       status: 200,
       headers: {
         "Content-Type": "application/pdf",

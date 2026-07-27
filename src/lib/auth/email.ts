@@ -1,4 +1,5 @@
 import nodemailer from "nodemailer";
+import { formatCurrency } from "@/lib/utils";
 
 function getAppBaseUrl(): string {
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? process.env.NEXTAUTH_URL;
@@ -291,13 +292,12 @@ export async function sendFeeAssessmentEmail({
 }): Promise<void> {
   try {
     const { transporter, from } = getEmailConfig();
-    const fmt = (n: number) => new Intl.NumberFormat("en-PH", { style: "currency", currency: "PHP" }).format(n);
     const breakdownRows = breakdown
       .map(
         (item) => `
         <tr>
           <td style="padding:6px 12px;color:#333;font-size:14px;">${item.description}</td>
-          <td style="padding:6px 12px;color:#333;font-size:14px;text-align:right;">${fmt(item.amount)}</td>
+          <td style="padding:6px 12px;color:#333;font-size:14px;text-align:right;">${formatCurrency(item.amount)}</td>
         </tr>`
       )
       .join("");
@@ -312,7 +312,7 @@ export async function sendFeeAssessmentEmail({
         ${breakdownRows}
         <tr style="border-top:2px solid #b4040d;">
           <td style="padding:10px 12px;color:#b4040d;font-size:15px;font-weight:bold;">Total</td>
-          <td style="padding:10px 12px;color:#b4040d;font-size:15px;font-weight:bold;text-align:right;">${fmt(totalAmount)}</td>
+          <td style="padding:10px 12px;color:#b4040d;font-size:15px;font-weight:bold;text-align:right;">${formatCurrency(totalAmount)}</td>
         </tr>
       </table>
       <table cellpadding="0" cellspacing="0" style="background:#f9f9f9;border:1px solid #e5e5e5;border-radius:6px;padding:16px;margin:16px 0;width:100%;">
@@ -335,28 +335,62 @@ export async function sendFeeAssessmentEmail({
 }
 
 export async function sendPaymentConfirmationEmail({
-  email, name, receiptNumber, studentName, amount, paymentDate, attachments,
+  email,
+  name,
+  receiptNumber,
+  studentName,
+  amount,
+  paymentDate,
+  paymentType,
+  description,
+  paymentMethod,
+  remarks,
+  attachments,
 }: {
   email: string; name: string; receiptNumber: string; studentName: string;
-  amount: number; paymentDate: string; attachments?: any[];
+  amount: number; paymentDate: string; paymentType?: string;
+  description?: string; paymentMethod?: string; remarks?: string;
+  attachments?: any[];
 }): Promise<void> {
   try {
     const { transporter, from } = getEmailConfig();
-    const formattedAmount = new Intl.NumberFormat("en-PH", { style: "currency", currency: "PHP" }).format(amount);
+    const formattedAmount = formatCurrency(amount);
+
+    const rows = [
+      `<tr><td style="padding:6px 12px;color:#555;font-size:14px;"><strong>Receipt Number:</strong></td><td style="padding:6px 12px;color:#333;font-size:14px;">${receiptNumber}</td></tr>`,
+      `<tr><td style="padding:6px 12px;color:#555;font-size:14px;"><strong>Student Name:</strong></td><td style="padding:6px 12px;color:#333;font-size:14px;">${studentName}</td></tr>`,
+      `<tr><td style="padding:6px 12px;color:#555;font-size:14px;"><strong>Amount:</strong></td><td style="padding:6px 12px;color:#16a34a;font-size:14px;font-weight:bold;">${formattedAmount}</td></tr>`,
+      `<tr><td style="padding:6px 12px;color:#555;font-size:14px;"><strong>Payment Date:</strong></td><td style="padding:6px 12px;color:#333;font-size:14px;">${paymentDate}</td></tr>`,
+    ];
+
+    if (paymentType) {
+      rows.push(`<tr><td style="padding:6px 12px;color:#555;font-size:14px;"><strong>Payment Type:</strong></td><td style="padding:6px 12px;color:#333;font-size:14px;">${paymentType}</td></tr>`);
+    }
+
+    if (paymentMethod) {
+      rows.push(`<tr><td style="padding:6px 12px;color:#555;font-size:14px;"><strong>Method:</strong></td><td style="padding:6px 12px;color:#333;font-size:14px;">${paymentMethod}</td></tr>`);
+    }
+
+    if (description) {
+      rows.push(`<tr><td style="padding:6px 12px;color:#555;font-size:14px;"><strong>Description:</strong></td><td style="padding:6px 12px;color:#333;font-size:14px;">${description}</td></tr>`);
+    }
+
+    if (remarks) {
+      rows.push(`<tr><td style="padding:6px 12px;color:#555;font-size:14px;"><strong>Remarks:</strong></td><td style="padding:6px 12px;color:#333;font-size:14px;">${remarks}</td></tr>`);
+    }
+
     const body = `
       <p style="color:#333;line-height:1.6;">Dear <strong>${name}</strong>,</p>
       <p style="color:#333;line-height:1.6;">We have received your payment. Please find the payment details below.</p>
       <table cellpadding="0" cellspacing="0" style="background:#f0fdf4;border:1px solid #86efac;border-radius:6px;padding:16px;margin:16px 0;width:100%;">
-        <tr><td style="padding:6px 12px;color:#555;font-size:14px;"><strong>Receipt Number:</strong></td><td style="padding:6px 12px;color:#333;font-size:14px;">${receiptNumber}</td></tr>
-        <tr><td style="padding:6px 12px;color:#555;font-size:14px;"><strong>Student Name:</strong></td><td style="padding:6px 12px;color:#333;font-size:14px;">${studentName}</td></tr>
-        <tr><td style="padding:6px 12px;color:#555;font-size:14px;"><strong>Amount:</strong></td><td style="padding:6px 12px;color:#16a34a;font-size:14px;font-weight:bold;">${formattedAmount}</td></tr>
-        <tr><td style="padding:6px 12px;color:#555;font-size:14px;"><strong>Payment Date:</strong></td><td style="padding:6px 12px;color:#333;font-size:14px;">${paymentDate}</td></tr>
+        ${rows.join("\n")}
       </table>
       <p style="color:#333;line-height:1.6;">Please keep this as your official record. If you have any questions about your payment, please contact our finance office.</p>
       <p style="color:#333;line-height:1.6;">God bless,<br><strong>Christ the King Catholic School</strong></p>
     `;
     const mailOptions: any = {
-      from, to: email,
+      from,
+      to: email,
       subject: `Payment Confirmed – ${receiptNumber} | CTK EnrollSys`,
       html: buildEmailHtml("Payment Confirmation", body),
     };

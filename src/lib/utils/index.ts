@@ -14,10 +14,27 @@ export function formatDate(date: Date | string): string {
 }
 
 export function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat("en-PH", {
-    style: "currency",
-    currency: "PHP",
-  }).format(amount);
+  try {
+    const formatted = new Intl.NumberFormat("en-PH", {
+      style: "currency",
+      currency: "PHP",
+      currencyDisplay: "symbol",
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(amount);
+
+    // Some runtime environments may fall back to the currency code instead of the symbol.
+    if (formatted.includes("PHP") || formatted.includes("php")) {
+      return `₱${amount.toLocaleString("en-PH", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      })}`;
+    }
+
+    return formatted;
+  } catch {
+    return `₱${amount.toFixed(2)}`;
+  }
 }
 
 export function generateId(prefix: string, counter: number): string {
