@@ -25,10 +25,10 @@ export const CITIES = [
 ];
 
 export const MUNICIPALITIES = [
-  "Subic, Zambales",
-  "Castillejos, Zambales",
-  "Morong, Bataan",
-  "Dinalupihan, Bataan",
-  "San Marcelino, Zambales",
-  "Hermosa, Bataan",
+  "Subic",
+  "Castillejos",
+  "Morong",
+  "Dinalupihan",
+  "San Marcelino",
+  "Hermosa",
 ];

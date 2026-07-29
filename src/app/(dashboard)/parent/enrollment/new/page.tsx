@@ -1045,9 +1045,6 @@ export default function NewEnrollmentPage() {
                         {doc.required && !(gradeLevel === "Kindergarten" && KINDER_EXEMPT_DOCS.has(doc.id)) && <span className="ml-1 text-red-500 text-xs">*</span>}
                         {gradeLevel === "Kindergarten" && KINDER_EXEMPT_DOCS.has(doc.id) && <span className="ml-1 text-gray-400 text-xs">(not required for Kindergarten)</span>}
                       </p>
-                      <p className="mt-1 text-xs text-slate-500">
-                        Accepted file types: <span className="font-medium">{ALLOWED_UPLOAD_EXTENSIONS.join(", ").toUpperCase()}</span>
-                      </p>
                       {uploaded && (
                         <div className="flex items-center gap-1 mt-0.5 text-xs text-green-600">
                           <CheckCircle className="h-3 w-3" />
