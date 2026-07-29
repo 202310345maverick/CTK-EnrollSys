@@ -1,5 +1,7 @@
 "use client";
 
+export const dynamic = "force-dynamic";
+
 import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -752,7 +754,7 @@ export default function ReportsPage() {
                   {/* Total count card - Responsive size */}
                   <div className="bg-primary/5 border-2 border-primary/20 rounded-xl p-4 sm:p-6 text-center">
                     <p className="text-xs sm:text-sm font-medium text-primary mb-1 sm:mb-2">TOTAL ENROLLED STUDENTS</p>
-                    <p className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-primary">{data.total || rows.length}</p>
+                    <p className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-primary">{data?.total ?? rows.length}</p>
                   </div>
                   
                   {/* Scrollable table - Responsive size */}

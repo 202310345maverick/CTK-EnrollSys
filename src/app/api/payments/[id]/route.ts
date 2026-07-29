@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth/options";
 import dbConnect from "@/lib/db/connection";
 import Payment from "@/models/Payment";
 import { createAuditLog } from "@/lib/audit";
+import { formatCurrency } from "@/lib/utils";
 import { jsPDF } from "jspdf";
 import "jspdf-autotable";
 
@@ -44,23 +45,52 @@ export async function GET(
       ? new Date(payment.paymentDate).toLocaleDateString("en-PH", { year: "numeric", month: "long", day: "numeric" })
       : new Date().toLocaleDateString("en-PH", { year: "numeric", month: "long", day: "numeric" });
 
-    const doc = new jsPDF();
-    doc.setFontSize(14);
-    doc.text("Christ the King Catholic School", 20, 20);
+    const doc = new jsPDF({ unit: "mm", format: "a4" });
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(16);
+    doc.text("Christ the King Catholic School", 20, 24);
+    doc.setFontSize(11);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor("#4b5563");
+    doc.text("Official Payment Receipt", 20, 32);
+    doc.setTextColor("#111827");
     doc.setFontSize(12);
-    doc.text(`Receipt: ${payment.receiptNumber}`, 20, 40);
-    doc.text(`Student: ${studentName}`, 20, 55);
-    doc.text(`Amount: ${new Intl.NumberFormat("en-PH", { style: "currency", currency: "PHP" }).format(payment.amount)}`, 20, 70);
-    doc.text(`Payment Date: ${paymentDateStr}`, 20, 85);
+    doc.text(`Receipt: ${payment.receiptNumber}`, 20, 44);
+    doc.text(`Date: ${paymentDateStr}`, 190, 44, { align: "right" });
+    doc.setDrawColor(229, 231, 235);
+    doc.setLineWidth(0.4);
+    doc.line(20, 48, 190, 48);
+
+    const metaStartY = 56;
+    const labelX = 20;
+    const valueX = 100;
+    doc.setFontSize(11);
+    doc.text("Student:", labelX, metaStartY);
+    doc.text(studentName || "—", valueX, metaStartY);
+    doc.text("Payment Type:", labelX, metaStartY + 8);
+    doc.text(payment.paymentType || "Payment", valueX, metaStartY + 8);
+    doc.text("Amount:", labelX, metaStartY + 16);
+    doc.setFont("helvetica", "bold");
+    doc.text(formatCurrency(payment.amount), valueX, metaStartY + 16);
+    doc.setFont("helvetica", "normal");
+    doc.text("Payment Date:", labelX, metaStartY + 24);
+    doc.text(paymentDateStr, valueX, metaStartY + 24);
+    doc.setFontSize(10);
+    doc.setTextColor("#6b7280");
+    doc.text("Please keep this receipt for your records.", 20, metaStartY + 36);
 
     try {
       // @ts-ignore
       if ((doc as any).autoTable) {
         // @ts-ignore
         (doc as any).autoTable({
-          startY: 100,
+          startY: metaStartY + 46,
           head: [["Description", "Amount"]],
-          body: [[payment.description || "Payment", new Intl.NumberFormat("en-PH", { style: "currency", currency: "PHP" }).format(payment.amount)]],
+          body: [[payment.description || payment.paymentType || "Payment", formatCurrency(payment.amount)]],
+          theme: "grid",
+          headStyles: { fillColor: [241, 245, 249], textColor: [17, 24, 39], halign: "left" },
+          styles: { fontSize: 10, cellPadding: 3 },
+          columnStyles: { 0: { cellWidth: 130 }, 1: { halign: "right", cellWidth: 40 } },
         });
       }
     } catch (e) {

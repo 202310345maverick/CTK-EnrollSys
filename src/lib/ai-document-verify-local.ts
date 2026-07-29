@@ -1,5 +1,3 @@
-import { createWorker } from "tesseract.js";
-
 export type AIDocumentStatus = "passed" | "flagged" | "needs_review" | "skipped" | "error";
 
 export interface AIAnalysisResult {
@@ -82,6 +80,7 @@ export async function analyzeDocumentLocal(params: {
       };
     }
 
+    const { createWorker } = await import("tesseract.js");
     const worker: any = await createWorker();
     await worker.load();
     await worker.loadLanguage("eng");
