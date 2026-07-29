@@ -8,7 +8,7 @@ import { z } from "zod";
 import { ArrowLeft, Loader2, Send, Upload, X, CheckCircle, RefreshCw, Trash2, Download, UserCheck, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { ACCEPT_FILE_INPUT } from "@/lib/enrollment/constants";
+import { ACCEPT_FILE_INPUT, ALLOWED_UPLOAD_EXTENSIONS, MAX_UPLOAD_SIZE } from "@/lib/enrollment/constants";
 import { BARANGAYS, CITIES, MUNICIPALITIES } from "@/lib/locations";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -209,6 +209,8 @@ export default function NewEnrollmentPage() {
   const [isLoadingChildren, setIsLoadingChildren] = useState(false);
   const [selectedChild, setSelectedChild] = useState<ChildData | null>(null);
   const [existingStudentId, setExistingStudentId] = useState<string | null>(null);
+  const allowedFileTypesLabel = ALLOWED_UPLOAD_EXTENSIONS.map((ext) => ext.replace(".", "").toUpperCase()).join(", ");
+  const maxUploadSizeMb = (MAX_UPLOAD_SIZE / (1024 * 1024)).toFixed(0);
 
   // Keep ref in sync with state
   useEffect(() => { draftIdRef.current = draftId; }, [draftId]);
@@ -1030,6 +1032,9 @@ export default function NewEnrollmentPage() {
             <CardTitle className="text-sm font-semibold">Required Documents</CardTitle>
           </CardHeader>
           <CardContent className="px-4 pb-4">
+            <p className="text-xs text-muted-foreground mb-3">
+              Allowed files: {allowedFileTypesLabel}. Maximum file size: {maxUploadSizeMb}MB.
+            </p>
             <div className="space-y-2">
               {DOCUMENT_TYPES.map((doc) => {
                 const uploaded = !!uploadedDocs[doc.id];
