@@ -8,7 +8,7 @@ import { z } from "zod";
 import { ArrowLeft, Loader2, Send, Upload, X, CheckCircle, RefreshCw, Trash2, Download, UserCheck, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { ACCEPT_FILE_INPUT } from "@/lib/enrollment/constants";
+import { ACCEPT_FILE_INPUT, ALLOWED_UPLOAD_EXTENSIONS, MAX_UPLOAD_SIZE } from "@/lib/enrollment/constants";
 import { BARANGAYS, CITIES, MUNICIPALITIES } from "@/lib/locations";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -1028,6 +1028,9 @@ export default function NewEnrollmentPage() {
         <Card id="section-documents" className="scroll-mt-4">
           <CardHeader className="pb-2 pt-4 px-4">
             <CardTitle className="text-sm font-semibold">Required Documents</CardTitle>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Accepted file types: <span className="font-medium">{ALLOWED_UPLOAD_EXTENSIONS.join(", ").toUpperCase()}</span>. Max file size per document: <span className="font-medium">{Math.round(MAX_UPLOAD_SIZE / 1024 / 1024)}MB</span>.
+            </p>
           </CardHeader>
           <CardContent className="px-4 pb-4">
             <div className="space-y-2">
@@ -1041,6 +1044,9 @@ export default function NewEnrollmentPage() {
                         {doc.label}
                         {doc.required && !(gradeLevel === "Kindergarten" && KINDER_EXEMPT_DOCS.has(doc.id)) && <span className="ml-1 text-red-500 text-xs">*</span>}
                         {gradeLevel === "Kindergarten" && KINDER_EXEMPT_DOCS.has(doc.id) && <span className="ml-1 text-gray-400 text-xs">(not required for Kindergarten)</span>}
+                      </p>
+                      <p className="mt-1 text-xs text-slate-500">
+                        Accepted file types: <span className="font-medium">{ALLOWED_UPLOAD_EXTENSIONS.join(", ").toUpperCase()}</span>
                       </p>
                       {uploaded && (
                         <div className="flex items-center gap-1 mt-0.5 text-xs text-green-600">
