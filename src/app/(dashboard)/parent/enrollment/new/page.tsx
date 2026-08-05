@@ -46,6 +46,26 @@ const GRADE_LEVELS = [
 // Document types not required for Kindergarten
 const KINDER_EXEMPT_DOCS = new Set(["report_card", "good_moral", "transfer_certificate"]);
 
+function parseISODate(value?: string): Date | null {
+  if (!value) return null;
+  const date = new Date(`${value}T00:00:00`);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function isValidBirthDate(value: string) {
+  const date = parseISODate(value);
+  if (!date) return false;
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  if (date > today) return false;
+
+  const minDate = new Date(1950, 0, 1);
+  if (date < minDate) return false;
+
+  return true;
+}
+
 // ── Zod schema ────────────────────────────────────────────────────────────────
 const schema = z.object({
   enrollmentType: z.enum(["new", "returning", "transferee"], { required_error: "Enrollment type is required" }),
@@ -57,7 +77,10 @@ const schema = z.object({
   lastName:       z.string().min(1, "Last name is required"),
   firstName:      z.string().min(1, "First name is required"),
   middleName:     z.string().optional(),
-  birthDate:      z.string().min(1, "Date of birth is required"),
+  birthDate:      z.string().min(1, "Date of birth is required").refine(
+    isValidBirthDate,
+    { message: "Please select a valid date of birth" }
+  ),
   birthPlace:     z.string().min(1, "Place of birth is required"),
   gender:         z.enum(["male", "female"], { required_error: "Gender is required" }),
   street:         z.string().min(1, "Address is required"),
