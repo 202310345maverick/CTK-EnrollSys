@@ -116,6 +116,149 @@ function getMissingRequiredFields(payload: EnrollmentPayload): string[] {
   });
 }
 
+function normalizeNameValue(value?: string): string {
+  return (value ?? "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function escapeRegex(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function getDateValue(value?: string): Date | null {
+  if (!value) return null;
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+async function detectDuplicateEnrollmentRisk(
+  formData: EnrollmentPayload,
+  currentUserId: string,
+  existingStudentId?: string | null
+) {
+  const firstName = normalizeNameValue(formData.firstName);
+  const lastName = normalizeNameValue(formData.lastName);
+  if (!firstName || !lastName) {
+    return { severity: "none", matches: [] as { type: string; id: string; name: string; birthDate?: string; gradeLevel?: string }[] };
+  }
+
+  const birthDate = getDateValue(formData.birthDate);
+  const strongMatches: Array<{ type: string; id: string; name: string; birthDate?: string; gradeLevel?: string }> = [];
+  const possibleMatches: Array<{ type: string; id: string; name: string; birthDate?: string; gradeLevel?: string }> = [];
+
+  const nameMatchQuery = {
+    $or: [
+      { "personalInfo.lastName": { $regex: `^${escapeRegex(lastName)}$`, $options: "i" } },
+      { "personalInfo.firstName": { $regex: `^${escapeRegex(firstName)}$`, $options: "i" } },
+    ],
+    ...(existingStudentId ? { _id: { $ne: new Types.ObjectId(existingStudentId) } } : {}),
+  };
+
+  const students = await Student.find(nameMatchQuery)
+    .select("_id studentId personalInfo currentGradeLevel parentUserId")
+    .lean();
+
+  for (const student of students) {
+    const candidateFirst = normalizeNameValue(student.personalInfo?.firstName);
+    const candidateLast = normalizeNameValue(student.personalInfo?.lastName);
+    if (candidateFirst !== firstName || candidateLast !== lastName) {
+      continue;
+    }
+
+    const candidateBirthDate = student.personalInfo?.birthDate
+      ? new Date(student.personalInfo.birthDate)
+      : null;
+    const sameBirthDate =
+      birthDate && candidateBirthDate && birthDate.toDateString() === candidateBirthDate.toDateString();
+
+    const match = {
+      type: "student",
+      id: String(student._id),
+      name: `${student.personalInfo?.firstName ?? ""} ${student.personalInfo?.lastName ?? ""}`.trim(),
+      birthDate: candidateBirthDate ? candidateBirthDate.toISOString().slice(0, 10) : undefined,
+      gradeLevel: student.currentGradeLevel ?? undefined,
+    };
+
+    if (sameBirthDate) {
+      strongMatches.push(match);
+    } else {
+      possibleMatches.push(match);
+    }
+  }
+
+  const pendingEnrollments = await Enrollment.find({
+    isDraft: false,
+    status: { $in: ["pending", "under_review", "approved", "enrolled"] },
+    submittedBy: { $ne: currentUserId },
+  })
+    .populate("studentId", "_id studentId personalInfo currentGradeLevel")
+    .select("_id studentId status gradeLevel")
+    .lean();
+
+  for (const enrollment of pendingEnrollments) {
+    const student = enrollment.studentId as any;
+
+    if (!student?.personalInfo) continue;
+
+    const candidateFirst = normalizeNameValue(student.personalInfo.firstName);
+    const candidateLast = normalizeNameValue(student.personalInfo.lastName);
+    if (candidateFirst !== firstName || candidateLast !== lastName) continue;
+
+    const candidateBirthDate = student.personalInfo?.birthDate
+      ? new Date(student.personalInfo.birthDate)
+      : null;
+    const sameBirthDate =
+      birthDate && candidateBirthDate && birthDate.toDateString() === candidateBirthDate.toDateString();
+
+    const match = {
+      type: "pending_enrollment",
+      id: String(enrollment._id),
+      name: `${student.personalInfo?.firstName ?? ""} ${student.personalInfo?.lastName ?? ""}`.trim(),
+      birthDate: candidateBirthDate ? candidateBirthDate.toISOString().slice(0, 10) : undefined,
+      gradeLevel: student.currentGradeLevel ?? enrollment.gradeLevel ?? undefined,
+    };
+
+    if (sameBirthDate) {
+      strongMatches.push(match);
+    } else {
+      possibleMatches.push(match);
+    }
+  }
+
+  const uniqueMatches = Array.from(
+    new Map(
+      [...strongMatches, ...possibleMatches].map((match) => [
+        `${match.type}:${match.id}`,
+        match,
+      ])
+    ).values()
+  );
+
+  if (strongMatches.length > 0) {
+    return {
+      severity: "block",
+      matches: uniqueMatches,
+    };
+  }
+
+  if (possibleMatches.length > 0) {
+    return {
+      severity: "warning",
+      matches: uniqueMatches,
+    };
+  }
+
+  return {
+    severity: "none",
+    matches: [],
+  };
+}
+
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
@@ -200,13 +343,27 @@ export async function POST(request: NextRequest) {
 
     await dbConnect();
 
-    const body = sanitizeObject(await request.json() as Record<string, unknown>);
-    const action = body?.action === "save_draft" ? "save_draft" : "submit";
+    const body = sanitizeObject((await request.json()) as Record<string, unknown>);
+    const action = body?.action === "save_draft"
+      ? "save_draft"
+      : body?.action === "check_duplicate"
+        ? "check_duplicate"
+        : "submit";
     const formData: EnrollmentPayload =
       typeof body?.formData === "object" && body.formData !== null
         ? body.formData
         : body;
     const draftId = typeof body?.draftId === "string" ? body.draftId : undefined;
+
+    if (action === "check_duplicate") {
+      const duplicateRisk = await detectDuplicateEnrollmentRisk(
+        formData,
+        session.user.id,
+        typeof body?.existingStudentId === "string" ? body.existingStudentId : null
+      );
+
+      return NextResponse.json({ duplicate: duplicateRisk });
+    }
 
     if (action === "save_draft") {
       const draftSnapshot = {

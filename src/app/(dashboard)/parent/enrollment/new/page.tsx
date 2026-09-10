@@ -360,6 +360,57 @@ export default function NewEnrollmentPage() {
     }, 600);
   };
 
+  const checkDuplicateApplicant = async (data: FormData) => {
+    if (data.enrollmentType === "returning" && existingStudentId) {
+      return { severity: "none" as const, matches: [] };
+    }
+
+    try {
+      const response = await fetch("/api/enrollments", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "check_duplicate",
+          formData: {
+            firstName: data.firstName,
+            lastName: data.lastName,
+            birthDate: data.birthDate,
+            gradeLevel: data.gradeLevel,
+            enrollmentType: data.enrollmentType,
+          },
+          existingStudentId: existingStudentId ?? null,
+        }),
+      });
+
+      const result = await response.json();
+      const duplicate = result?.duplicate ?? { severity: "none", matches: [] };
+
+      if (duplicate.severity === "block") {
+        toast({
+          title: "Possible Duplicate Student",
+          description: "A matching student record or pending enrollment already exists. Please review and contact admin if this is the same student.",
+          variant: "destructive",
+        });
+        return { severity: "block", matches: duplicate.matches ?? [] };
+      }
+
+      if (duplicate.severity === "warning") {
+        const continueSubmission = window.confirm(
+          "Possible duplicate student detected. This may match an existing record or pending enrollment. Continue anyway?"
+        );
+
+        if (!continueSubmission) {
+          return { severity: "cancelled", matches: duplicate.matches ?? [] };
+        }
+      }
+
+      return { severity: duplicate.severity ?? "none", matches: duplicate.matches ?? [] };
+    } catch (error) {
+      console.error("Duplicate check failed", error);
+      return { severity: "none", matches: [] };
+    }
+  };
+
   const uploadFile = (docId: string, file: File): Promise<UploadedDoc> => {
     return new Promise((resolve, reject) => {
       const xhr = new XMLHttpRequest();
@@ -434,6 +485,13 @@ export default function NewEnrollmentPage() {
         setIsSubmitting(false);
         return;
       }
+
+      const duplicateResult = await checkDuplicateApplicant(data);
+      if (duplicateResult.severity === "block" || duplicateResult.severity === "cancelled") {
+        setIsSubmitting(false);
+        return;
+      }
+
       // Check required documents (Kindergarten doesn't need report card or good moral)
       const isKindergarten = data.gradeLevel === "Kindergarten";
       const missingDocs = DOCUMENT_TYPES.filter(
@@ -705,6 +763,13 @@ export default function NewEnrollmentPage() {
                     ✓ Form auto-filled from <strong>{selectedChild.personalInfo?.firstName}&apos;s</strong> profile. Review and update if needed.
                   </p>
                 )}
+              </div>
+            )}
+
+            {existingStudentId === null && (
+              <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+                <p className="font-semibold">Possible Duplicate Student Check</p>
+                <p className="mt-1">We will compare this application with existing student records and pending enrollments before submission.</p>
               </div>
             )}
 

@@ -14,6 +14,100 @@ import "jspdf-autotable";
 import { createAuditLog } from "@/lib/audit";
 import { sanitizeObject } from "@/lib/sanitize";
 import { logger } from "@/lib/logger";
+import fs from "fs";
+import path from "path";
+
+const CTK_LOGO_PATH = path.join(process.cwd(), "public", "images", "ctk.png");
+
+function getCtkLogoDataUrl() {
+  try {
+    const fileBuffer = fs.readFileSync(CTK_LOGO_PATH);
+    return `data:image/png;base64,${fileBuffer.toString("base64")}`;
+  } catch {
+    return null;
+  }
+}
+
+function buildOfficialReceiptPdf(doc: jsPDF, params: {
+  schoolName: string;
+  receiptNumber: string;
+  receiptDate: string;
+  payerName: string;
+  description: string;
+  amount: number;
+  currency?: string;
+}) {
+  const logo = getCtkLogoDataUrl();
+  const currencyCode = params.currency || "PHP";
+  const amountLabel = currencyCode === "PHP" ? "₱" : currencyCode;
+
+  doc.setFillColor(255, 255, 255);
+  doc.rect(0, 0, 210, 297, "F");
+  doc.setTextColor(15, 23, 42);
+
+  if (logo) {
+    doc.addImage(logo, "PNG", 20, 18, 22, 22);
+  }
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(16);
+  doc.text(params.schoolName || "Christ the King Catholic School", 48, 28);
+  doc.setFontSize(10);
+  doc.setTextColor(71, 85, 105);
+  doc.text("Official Receipt", 48, 35);
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(30);
+  doc.setTextColor(51, 65, 85);
+  doc.text("RECEIPT", 190, 31, { align: "right" });
+
+  doc.setFontSize(12);
+  doc.setTextColor(15, 23, 42);
+  doc.text("To", 20, 62);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(24);
+  doc.text(params.payerName || "Customer Name", 20, 76);
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(12);
+  doc.text("Receipt #", 130, 60);
+  doc.text(params.receiptNumber || "0001001", 190, 60, { align: "right" });
+  doc.text("Receipt Date", 130, 70);
+  doc.text(params.receiptDate, 190, 70, { align: "right" });
+
+  doc.setFillColor(58, 64, 72);
+  doc.rect(20, 96, 170, 10, "F");
+  doc.setTextColor(255, 255, 255);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(10);
+  doc.text("QTY", 24, 103);
+  doc.text("Description", 70, 103);
+  doc.text("Unit Price", 138, 103, { align: "right" });
+  doc.text("Amount", 190, 103, { align: "right" });
+
+  const bodyY = 116;
+  doc.setDrawColor(203, 213, 225);
+  doc.setLineWidth(0.3);
+  doc.setFillColor(255, 255, 255);
+  doc.rect(20, bodyY, 170, 14, "FD");
+  doc.setTextColor(15, 23, 42);
+  doc.setFont("helvetica", "bold");
+  doc.text("1", 24, 125);
+  doc.setFont("helvetica", "normal");
+  doc.text(params.description || "Payment", 70, 125);
+  doc.text(formatCurrency(params.amount), 138, 125, { align: "right" });
+  doc.text(formatCurrency(params.amount), 190, 125, { align: "right" });
+
+  const totalY = 144;
+  doc.setFillColor(241, 245, 249);
+  doc.rect(20, totalY, 170, 16, "F");
+  doc.setTextColor(51, 65, 85);
+  doc.setFont("helvetica", "bold");
+  doc.text(`Total (${amountLabel})`, 82, 155, { align: "center" });
+  doc.setFontSize(18);
+  doc.setTextColor(15, 23, 42);
+  doc.text(formatCurrency(params.amount), 190, 155, { align: "right" });
+}
 
 export async function GET(request: NextRequest) {
   try {
@@ -163,56 +257,15 @@ export async function POST(request: NextRequest) {
             : new Date().toLocaleDateString("en-PH", { year: "numeric", month: "long", day: "numeric" });
           try {
             const doc = new jsPDF({ unit: "mm", format: "a4" });
-            doc.setFont("helvetica", "bold");
-            doc.setFontSize(16);
-            doc.text("Christ the King Catholic School", 20, 24);
-            doc.setFontSize(11);
-            doc.setFont("helvetica", "normal");
-            doc.setTextColor("#4b5563");
-            doc.text("Official Payment Receipt", 20, 32);
-            doc.setTextColor("#111827");
-            doc.setFontSize(12);
-            doc.text(`Receipt: ${payment.receiptNumber}`, 20, 44);
-            doc.text(`Date: ${paymentDateStr}`, 190, 44, { align: "right" });
-            doc.setDrawColor(229, 231, 235);
-            doc.setLineWidth(0.4);
-            doc.line(20, 48, 190, 48);
-
-            const metaStartY = 56;
-            const labelX = 20;
-            const valueX = 100;
-            doc.setFontSize(11);
-            doc.text("Student:", labelX, metaStartY);
-            doc.text(studentName || "—", valueX, metaStartY);
-            doc.text("Payment Type:", labelX, metaStartY + 8);
-            doc.text(payment.paymentType || "Payment", valueX, metaStartY + 8);
-            doc.text("Amount:", labelX, metaStartY + 16);
-            doc.setFont("helvetica", "bold");
-            doc.text(formatCurrency(payment.amount), valueX, metaStartY + 16);
-            doc.setFont("helvetica", "normal");
-            doc.text("Payment Date:", labelX, metaStartY + 24);
-            doc.text(paymentDateStr, valueX, metaStartY + 24);
-            doc.setFontSize(10);
-            doc.setTextColor("#6b7280");
-            doc.text("Please keep this receipt for your records.", 20, metaStartY + 36);
-
-            try {
-              // @ts-ignore
-              if ((doc as any).autoTable) {
-                // @ts-ignore
-                (doc as any).autoTable({
-                  startY: metaStartY + 46,
-                  head: [["Description", "Amount"]],
-                  body: [[payment.description || payment.paymentType || "Payment", formatCurrency(payment.amount)]],
-                  theme: "grid",
-                  headStyles: { fillColor: [241, 245, 249], textColor: [17, 24, 39], halign: "left" },
-                  styles: { fontSize: 10, cellPadding: 3 },
-                  columnStyles: { 0: { cellWidth: 130 }, 1: { halign: "right", cellWidth: 40 } },
-                });
-              }
-            } catch (e) {
-              // ignore autoTable errors
-            }
+            buildOfficialReceiptPdf(doc, {
+              schoolName: "Christ the King Catholic School",
+              receiptNumber: payment.receiptNumber,
+              receiptDate: paymentDateStr,
+              payerName: studentName || "Student Name",
+              description: payment.description || payment.paymentType || "Payment",
+              amount: payment.amount ?? 0,
+              currency: "PHP",
+            });
             const ab = doc.output("arraybuffer");
             const pdfBuffer = Buffer.from(ab);
             await sendPaymentConfirmationEmail({
