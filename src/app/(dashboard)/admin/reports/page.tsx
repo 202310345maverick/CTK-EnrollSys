@@ -69,11 +69,11 @@ const STATUS_COLORS: Record<string, string> = {
 
 const REPORT_TYPES = [
   { id: "enrollment", label: "Enrollment Summary", desc: "All enrollments with filters", icon: FileText },
-  { id: "sf1",        label: "DepEd SF1",          desc: "School Register (enrolled students)", icon: TableProperties },
+  { id: "sf1",        label: "DepEd SF1",          desc: "School Register", icon: TableProperties },
   { id: "payment",    label: "Payment Collection", desc: "Assessment & payment records", icon: CreditCard },
 ];
 
-const inputCls = "h-8 text-xs w-full border border-gray-300 rounded-md px-2 focus:outline-none focus:ring-1 focus:ring-primary bg-white";
+const inputCls = "h-9 sm:h-10 text-sm w-full border border-gray-300 rounded-md px-3 focus:outline-none focus:ring-2 focus:ring-primary bg-white";
 
 async function getLogoBase64(): Promise<string | null> {
   try {
@@ -90,7 +90,7 @@ async function getLogoBase64(): Promise<string | null> {
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
-export default function AdminReportsPage() {
+export default function ReportsPage() {
   const [reportType, setReportType] = useState("enrollment");
   const [filters, setFilters] = useState({ schoolYearId: "", gradeLevel: "", status: "", dateFrom: "", dateTo: "" });
   const [data, setData] = useState<ReportData | null>(null);
@@ -337,6 +337,7 @@ export default function AdminReportsPage() {
       } else {
         const rows = data.rows || [];
         let y = 29;
+        // Summary bar
         if (data.byGrade?.length) {
           doc.setFontSize(7.5); doc.setFont("helvetica", "bold"); doc.setTextColor(50, 50, 50);
           doc.text(`Total Records: ${rows.length}`, 8, y);
@@ -434,7 +435,7 @@ export default function AdminReportsPage() {
             12: { cellWidth: 18 },                    // Parent/Guardian
             13: { cellWidth: 13 },                    // Contact #
             14: { cellWidth: 8  },                    // Remarks
-          },                                          // Total: 194mm
+          },                                          // Total: 178+16=194mm
           margin: { left: 8, right: 8 },
           didDrawPage: (hookData: any) => {
             doc.setDrawColor(...BRAND_RED);
@@ -498,13 +499,13 @@ export default function AdminReportsPage() {
           alternateRowStyles: { fillColor: [248, 248, 248] },
           tableLineColor: [220, 220, 220], tableLineWidth: 0.2,
           columnStyles: {
-            0: { cellWidth: 5  },
-            1: { cellWidth: 14, halign: "left" },
-            2: { cellWidth: 17, halign: "left" },
-            3: { cellWidth: 15, halign: "left" },
-            4: { cellWidth: 5  },
-            ...Object.fromEntries(Array.from({ length: 31 }, (_, i) => [i + 5, { cellWidth: 4.5 }])),
-          },
+            0: { cellWidth: 5  },                           // #
+            1: { cellWidth: 14, halign: "left" },           // LRN
+            2: { cellWidth: 17, halign: "left" },           // Last Name
+            3: { cellWidth: 14, halign: "left" },           // First Name
+            4: { cellWidth: 5  },                           // Sex
+            ...Object.fromEntries(Array.from({ length: 31 }, (_, i) => [i + 5, { cellWidth: 4.48 }])),
+          },                                                 // Total: 55 + 31×4.48 = 193.88 ≈ 194mm
           margin: { left: 8, right: 8 },
           didDrawPage: (hookData: any) => {
             doc.setDrawColor(...BRAND_RED);
@@ -536,30 +537,30 @@ export default function AdminReportsPage() {
   const canExportPdf = rows.length > 0 || (payments?.list?.length || 0) > 0;
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 sm:space-y-6 max-w-full overflow-hidden">
       <div>
-        <h1 className="text-xl font-bold text-slate-900">Admin Reports</h1>
-        <p className="text-xs text-slate-500">Generate, filter, and export administrative reports</p>
+        <h1 className="text-xl sm:text-2xl font-bold text-slate-900">Reports</h1>
+        <p className="text-xs sm:text-sm text-slate-500">Generate, filter, and export school reports</p>
       </div>
 
       {/* Report type selector */}
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+      <div className="grid grid-cols-2 gap-2 sm:gap-3 sm:grid-cols-4">
         {REPORT_TYPES.map((r) => {
           const Icon = r.icon;
           return (
             <button
               key={r.id}
               onClick={() => handleTypeChange(r.id)}
-              className={`flex items-center gap-2 rounded-xl border p-3 text-left transition-all ${
+              className={`flex items-center gap-2 sm:gap-3 rounded-xl border p-2.5 sm:p-4 text-left transition-all ${
                 reportType === r.id
                   ? "border-primary bg-primary/5 shadow-sm"
                   : "border-border bg-white hover:bg-muted/50"
               }`}
             >
-              <Icon className={`h-4 w-4 shrink-0 ${reportType === r.id ? "text-primary" : "text-muted-foreground"}`} />
+              <Icon className={`h-4 w-4 sm:h-6 sm:w-6 shrink-0 ${reportType === r.id ? "text-primary" : "text-muted-foreground"}`} />
               <div className="min-w-0">
-                <p className="text-xs font-semibold leading-tight truncate">{r.label}</p>
-                <p className="text-[10px] text-muted-foreground leading-tight mt-0.5 hidden sm:block truncate">{r.desc}</p>
+                <p className="text-xs sm:text-sm font-semibold leading-tight truncate">{r.label}</p>
+                <p className="text-[10px] sm:text-xs text-muted-foreground leading-tight mt-0.5 hidden sm:block truncate">{r.desc}</p>
               </div>
             </button>
           );
@@ -568,24 +569,23 @@ export default function AdminReportsPage() {
 
       {/* Filters */}
       <Card>
-        <CardHeader className="pb-2 pt-3 px-4">
+        <CardHeader className="pb-2 sm:pb-3 pt-3 sm:pt-4 px-3 sm:px-5">
           <div className="flex items-center justify-between">
-            <CardTitle className="text-sm font-semibold flex items-center gap-1.5">
-              <Filter className="h-3.5 w-3.5" /> Filters
+            <CardTitle className="text-sm sm:text-base font-semibold flex items-center gap-1.5 sm:gap-2">
+              <Filter className="h-3.5 w-3.5 sm:h-4 sm:w-4" /> Filters
             </CardTitle>
             <div className="flex items-center gap-2">
-              <Button size="sm" variant="outline" className="h-7 px-3 text-xs" onClick={() => { setFilters({ schoolYearId: "", gradeLevel: "", status: "", dateFrom: "", dateTo: "" }); }} disabled={loading}>
-                <X className="h-3 w-3 mr-1" /> Reset Filters
+              <Button size="sm" variant="outline" className="h-8 sm:h-9 px-3 sm:px-4 text-xs sm:text-sm" onClick={() => { setFilters({ schoolYearId: "", gradeLevel: "", status: "", dateFrom: "", dateTo: "" }); }} disabled={loading}>
+                <X className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" /> Reset Filters
               </Button>
-              {/* Run Report removed: filters apply in real-time */}
             </div>
           </div>
         </CardHeader>
-        <CardContent className="px-4 pb-3">
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
+        <CardContent className="px-3 sm:px-5 pb-3 sm:pb-4">
+          <div className="grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-5">
             {/* School Year */}
             <div>
-              <label className="block text-[10px] font-medium text-gray-600 mb-1">School Year</label>
+              <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">School Year</label>
               <FormSelect
                 value={filters.schoolYearId || undefined}
                 onChange={(v) => setFilters((f) => ({ ...f, schoolYearId: v === "_all_" ? "" : v }))}
@@ -596,7 +596,7 @@ export default function AdminReportsPage() {
             {/* Grade Level — hidden for payment */}
             {reportType !== "payment" && (
               <div>
-                <label className="block text-[10px] font-medium text-gray-600 mb-1">Grade Level</label>
+                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">Grade Level</label>
                 <FormSelect
                   value={filters.gradeLevel || undefined}
                   onChange={(v) => setFilters((f) => ({ ...f, gradeLevel: v === "_all_" ? "" : v }))}
@@ -608,7 +608,7 @@ export default function AdminReportsPage() {
             {/* Status — hidden for sf1/sf2 (forced to enrolled) */}
             {reportType !== "sf1" && (
               <div>
-                <label className="block text-[10px] font-medium text-gray-600 mb-1">
+                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">
                   {reportType === "payment" ? "Grade (N/A)" : "Status"}
                 </label>
                 {reportType !== "payment" ? (
@@ -625,7 +625,7 @@ export default function AdminReportsPage() {
             )}
             {/* Date From */}
             <div>
-              <label className="block text-[10px] font-medium text-gray-600 mb-1">
+              <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">
                 {reportType === "payment" ? "Payment Date From" : "Submitted From"}
               </label>
               <input type="date" className={inputCls} value={filters.dateFrom}
@@ -633,7 +633,7 @@ export default function AdminReportsPage() {
             </div>
             {/* Date To */}
             <div>
-              <label className="block text-[10px] font-medium text-gray-600 mb-1">
+              <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">
                 {reportType === "payment" ? "Payment Date To" : "Submitted To"}
               </label>
               <input type="date" className={inputCls} value={filters.dateTo}
@@ -641,182 +641,194 @@ export default function AdminReportsPage() {
             </div>
           </div>
           {(reportType === "sf1" || reportType === "sf2") && (
-            <p className="mt-2 text-[10px] text-amber-600">
+            <p className="mt-2 sm:mt-3 text-xs sm:text-sm text-amber-600 font-medium">
               SF1 and SF2 automatically filter to enrolled students only.
             </p>
           )}
         </CardContent>
       </Card>
 
-      <div className="grid gap-4 xl:grid-cols-[1fr_260px]">
-        {/* Preview */}
-        <Card className="min-h-[300px] sm:min-h-[400px]">
-          <CardHeader className="pb-2 sm:pb-3 pt-3 sm:pt-4 px-3 sm:px-5">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-sm sm:text-lg font-semibold">
-                {REPORT_TYPES.find((r) => r.id === reportType)?.label} Preview
-                {!loading && data && (
-                  <span className="ml-2 sm:ml-3 text-xs sm:text-base font-normal text-muted-foreground">
-                    {reportType === "payment"
-                      ? `(${payments?.list?.length || 0} records)`
-                      : `(${rows.length} records)`}
-                  </span>
-                )}
-              </CardTitle>
-            </div>
-          </CardHeader>
-          <CardContent className="px-3 sm:px-5 pb-4 sm:pb-5">
-            {loading ? (
-              <div className="flex justify-center py-12 sm:py-16"><Loader2 className="h-6 w-6 sm:h-8 sm:w-8 animate-spin text-muted-foreground" /></div>
-            ) : reportType === "payment" && payments ? (
-              <div className="space-y-4 sm:space-y-6">
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
-                  {[
-                    { label: "Total Collections", value: formatCurrency(payments.totalAmount), color: "text-emerald-600" },
-                    { label: "Transactions", value: payments.count, color: "text-blue-600" },
-                    { label: "Voided Count", value: payments.voidedCount, color: "text-red-600" },
-                    { label: "Voided Amount", value: formatCurrency(payments.voidedAmount), color: "text-red-600" },
-                  ].map((s) => (
-                    <div key={s.label} className="rounded-lg border p-3 sm:p-4">
-                      <p className="text-xs sm:text-sm text-muted-foreground">{s.label}</p>
-                      <p className={`text-base sm:text-lg font-bold ${s.color}`}>{s.value}</p>
-                    </div>
-                  ))}
-                </div>
-                <div className="overflow-x-auto rounded-lg border">
-                  <table className="w-full text-xs sm:text-sm">
-                    <thead className="bg-slate-50">
-                      <tr>
-                        {["Receipt #", "Student Name", "Type", "Amount", "Date", "Recorded By"].map((h) => (
-                          <th key={h} className="px-3 sm:px-4 py-2 sm:py-3 text-left font-semibold text-slate-700">{h}</th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {payments.list.length === 0 ? (
-                        <tr><td colSpan={6} className="py-8 sm:py-12 text-center text-sm sm:text-base text-muted-foreground">No records found</td></tr>
-                      ) : payments.list.slice(0, 50).map((p, i) => (
-                        <tr key={i} className="border-t hover:bg-slate-50/50">
-                          <td className="px-3 sm:px-4 py-2 sm:py-3 font-mono text-xs sm:text-sm">{p.receiptNumber || "—"}</td>
-                          <td className="px-3 sm:px-4 py-2 sm:py-3">{p.studentName}</td>
-                          <td className="px-3 sm:px-4 py-2 sm:py-3 capitalize">{p.paymentType}</td>
-                          <td className="px-3 sm:px-4 py-2 sm:py-3 font-semibold text-emerald-700">{formatCurrency(p.amount)}</td>
-                          <td className="px-3 sm:px-4 py-2 sm:py-3">{p.paymentDate ? new Date(p.paymentDate).toLocaleDateString("en-PH") : "—"}</td>
-                          <td className="px-3 sm:px-4 py-2 sm:py-3 text-muted-foreground">{p.recordedBy}</td>
-                        </tr>
-                      ))}
-                      {payments.list.length > 50 && (
-                        <tr><td colSpan={6} className="py-2 sm:py-3 text-center text-xs sm:text-sm text-muted-foreground">Showing first 50 of {payments.list.length} — export for full list</td></tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
+      {/* Main content - stack on mobile, side by side on desktop */}
+      <div className="flex flex-col xl:flex-row gap-4 sm:gap-6">
+        {/* Preview - takes full width on mobile, flexible on desktop */}
+        <div className="w-full xl:flex-1 xl:min-w-0">
+          <Card className="min-h-[300px] sm:min-h-[400px]">
+            <CardHeader className="pb-2 sm:pb-3 pt-3 sm:pt-4 px-3 sm:px-5">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-sm sm:text-lg font-semibold">
+                  {REPORT_TYPES.find((r) => r.id === reportType)?.label} Preview
+                  {!loading && data && (
+                    <span className="ml-2 sm:ml-3 text-xs sm:text-base font-normal text-muted-foreground">
+                      {reportType === "payment"
+                        ? `(${payments?.list?.length || 0} records)`
+                        : `(${rows.length} records)`}
+                    </span>
+                  )}
+                </CardTitle>
               </div>
-            ) : rows.length > 0 ? (
-              <div className="space-y-4 sm:space-y-6">
-                {data?.byStatus && (
-                  <div className="flex flex-wrap gap-1.5 sm:gap-2">
-                    {data.byStatus.map((s) => (
-                      <span key={s.status} className={`inline-flex items-center gap-1.5 sm:gap-2 rounded-full border px-2.5 sm:px-4 py-1 sm:py-2 text-xs sm:text-sm font-semibold ${STATUS_COLORS[s.status] || "bg-slate-100 text-slate-600"}`}>
-                        {STATUS_LABELS[s.status] ?? s.status.replace("_", " ")} · {s.count}
-                      </span>
+            </CardHeader>
+            <CardContent className="px-3 sm:px-5 pb-4 sm:pb-5">
+              {loading ? (
+                <div className="flex justify-center py-12 sm:py-16"><Loader2 className="h-6 w-6 sm:h-8 sm:w-8 animate-spin text-muted-foreground" /></div>
+              ) : reportType === "payment" && payments ? (
+                <div className="space-y-4 sm:space-y-6">
+                  {/* Summary row */}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+                    {[
+                      { label: "Total Collections", value: formatCurrency(payments.totalAmount), color: "text-emerald-600" },
+                      { label: "Transactions", value: payments.count, color: "text-blue-600" },
+                      { label: "Voided Count", value: payments.voidedCount, color: "text-red-600" },
+                      { label: "Voided Amount", value: formatCurrency(payments.voidedAmount), color: "text-red-600" },
+                    ].map((s) => (
+                      <div key={s.label} className="rounded-lg border p-3 sm:p-4">
+                        <p className="text-xs sm:text-sm text-muted-foreground">{s.label}</p>
+                        <p className={`text-base sm:text-lg font-bold ${s.color}`}>{s.value}</p>
+                      </div>
                     ))}
                   </div>
-                )}
-                {data?.byGrade && (
-                  <div className="space-y-2 sm:space-y-3">
-                    <h3 className="text-sm sm:text-base font-semibold text-slate-700">Enrollment by Grade Level</h3>
-                    <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-                      {data.byGrade.map((g) => (
-                        <div key={g.grade} className="rounded-xl border border-slate-200 bg-slate-50/80 p-3 sm:p-4">
-                          <p className="text-[10px] sm:text-xs font-medium uppercase tracking-wide text-slate-500">{g.grade}</p>
-                          <p className="mt-2 text-2xl sm:text-3xl font-extrabold text-primary">{g.count}</p>
-                        </div>
+                  {/* Payment list table */}
+                  <div className="overflow-x-auto rounded-lg border">
+                    <table className="w-full text-xs sm:text-sm">
+                      <thead className="bg-slate-50">
+                        <tr>
+                          {["Receipt #", "Student Name", "Type", "Amount", "Date", "Recorded By"].map((h) => (
+                            <th key={h} className="px-3 sm:px-4 py-2 sm:py-3 text-left font-semibold text-slate-700">{h}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {payments.list.length === 0 ? (
+                          <tr><td colSpan={6} className="py-8 sm:py-12 text-center text-sm sm:text-base text-muted-foreground">No records found</td></tr>
+                        ) : payments.list.slice(0, 50).map((p, i) => (
+                          <tr key={i} className="border-t hover:bg-slate-50/50">
+                            <td className="px-3 sm:px-4 py-2 sm:py-3 font-mono text-xs sm:text-sm">{p.receiptNumber || "—"}</td>
+                            <td className="px-3 sm:px-4 py-2 sm:py-3">{p.studentName}</td>
+                            <td className="px-3 sm:px-4 py-2 sm:py-3 capitalize">{p.paymentType}</td>
+                            <td className="px-3 sm:px-4 py-2 sm:py-3 font-semibold text-emerald-700">{formatCurrency(p.amount)}</td>
+                            <td className="px-3 sm:px-4 py-2 sm:py-3">{p.paymentDate ? new Date(p.paymentDate).toLocaleDateString("en-PH") : "—"}</td>
+                            <td className="px-3 sm:px-4 py-2 sm:py-3 text-muted-foreground">{p.recordedBy}</td>
+                          </tr>
+                        ))}
+                        {payments.list.length > 50 && (
+                          <tr><td colSpan={6} className="py-2 sm:py-3 text-center text-xs sm:text-sm text-muted-foreground">Showing first 50 of {payments.list.length} — export for full list</td></tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              ) : rows.length > 0 ? (
+                <div className="space-y-4 sm:space-y-6">
+                  {/* Summary badges - Responsive size */}
+                  {data?.byStatus && (
+                    <div className="flex flex-wrap gap-1.5 sm:gap-2">
+                      {data.byStatus.map((s) => (
+                        <span key={s.status} className={`inline-flex items-center gap-1.5 sm:gap-2 rounded-full border px-2.5 sm:px-4 py-1 sm:py-2 text-xs sm:text-sm font-semibold ${STATUS_COLORS[s.status] || "bg-slate-100 text-slate-600"}`}>
+                          {STATUS_LABELS[s.status] ?? s.status.replace("_", " ")} · {s.count}
+                        </span>
                       ))}
                     </div>
-                  </div>
-                )}
-                <div className="bg-primary/5 border-2 border-primary/20 rounded-xl p-4 sm:p-6 text-center">
-                  <p className="text-xs sm:text-sm font-medium text-primary mb-1 sm:mb-2">TOTAL ENROLLED STUDENTS</p>
-                  <p className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-primary">{data?.total ?? rows.length}</p>
-                </div>
-                <div className="overflow-x-auto rounded-lg border max-h-[340px] overflow-y-auto">
-                  <table className="w-full text-xs sm:text-sm whitespace-nowrap">
-                    <thead className="sticky top-0 bg-slate-50 z-10">
-                      <tr>
-                        {["#", "LRN", "Last Name", "First Name", "M.N.", "Sex", "Grade", "Section", "Status", "School Year", "Submitted"].map((h) => (
-                          <th key={h} className="px-3 sm:px-4 py-2 sm:py-3 text-left font-semibold text-slate-700 border-b">{h}</th>
+                  )}
+                  
+                  {/* Grade summary - Responsive size */}
+                  {data?.byGrade && (
+                    <div className="space-y-2 sm:space-y-3">
+                      <h3 className="text-sm sm:text-base font-semibold text-slate-700">Enrollment by Grade Level</h3>
+                      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+                        {data.byGrade.map((g) => (
+                          <div key={g.grade} className="rounded-xl border border-slate-200 bg-slate-50/80 p-3 sm:p-4">
+                            <p className="text-[10px] sm:text-xs font-medium uppercase tracking-wide text-slate-500">{g.grade}</p>
+                            <p className="mt-2 text-2xl sm:text-3xl font-extrabold text-primary">{g.count}</p>
+                          </div>
                         ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {rows.slice(0, 100).map((r) => (
-                        <tr key={r.enrollmentNumber} className="border-t hover:bg-slate-50/50">
-                          <td className="px-3 sm:px-4 py-2 sm:py-3 text-muted-foreground">{r.no}</td>
-                          <td className="px-3 sm:px-4 py-2 sm:py-3 font-mono text-[10px] sm:text-xs">{r.lrn}</td>
-                          <td className="px-3 sm:px-4 py-2 sm:py-3 font-medium">{r.lastName}</td>
-                          <td className="px-3 sm:px-4 py-2 sm:py-3">{r.firstName}</td>
-                          <td className="px-3 sm:px-4 py-2 sm:py-3 text-muted-foreground">{r.middleName}</td>
-                          <td className="px-3 py-1.5">{r.sex}</td>
-                          <td className="px-3 py-1.5">{r.gradeLevel}</td>
-                          <td className="px-3 py-1.5">{r.section}</td>
-                          <td className="px-3 py-1.5">
-                            <span className={`inline-flex items-center rounded-full border px-1.5 py-0.5 text-[9px] font-medium ${STATUS_COLORS[r.status] || "bg-slate-100 text-slate-600"}`}>
-                              {STATUS_LABELS[r.status] ?? r.status.replace("_", " ")}
-                            </span>
-                          </td>
-                          <td className="px-3 py-1.5 text-muted-foreground">{r.schoolYear}</td>
-                          <td className="px-3 py-1.5 text-muted-foreground">{r.submittedAt}</td>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Total count card - Responsive size */}
+                  <div className="bg-primary/5 border-2 border-primary/20 rounded-xl p-4 sm:p-6 text-center">
+                    <p className="text-xs sm:text-sm font-medium text-primary mb-1 sm:mb-2">TOTAL ENROLLED STUDENTS</p>
+                    <p className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-primary">{data?.total ?? rows.length}</p>
+                  </div>
+                  
+                  {/* Scrollable table - Responsive size */}
+                  <div className="overflow-x-auto rounded-lg border max-h-[340px] sm:max-h-[500px] overflow-y-auto">
+                    <table className="w-full text-xs sm:text-sm whitespace-nowrap">
+                      <thead className="sticky top-0 bg-slate-100 z-10">
+                        <tr>
+                          {["#", "LRN", "Last Name", "First Name", "M.N.", "Sex", "Grade", "Section", "Status", "School Year", "Submitted"].map((h) => (
+                            <th key={h} className="px-2 sm:px-4 py-2 sm:py-3 text-left font-semibold text-slate-700 border-b-2 border-slate-200">{h}</th>
+                          ))}
                         </tr>
-                      ))}
-                      {rows.length > 100 && (
-                        <tr><td colSpan={11} className="py-2 text-center text-xs text-muted-foreground">Showing first 100 of {rows.length} — export for full list</td></tr>
-                      )}
-                    </tbody>
-                  </table>
+                      </thead>
+                      <tbody>
+                        {rows.slice(0, 100).map((r) => (
+                          <tr key={r.enrollmentNumber} className="border-t hover:bg-slate-50/50 transition-colors">
+                            <td className="px-2 sm:px-4 py-2 sm:py-3 text-muted-foreground">{r.no}</td>
+                            <td className="px-2 sm:px-4 py-2 sm:py-3 font-mono text-xs sm:text-sm">{r.lrn}</td>
+                            <td className="px-2 sm:px-4 py-2 sm:py-3 font-semibold">{r.lastName}</td>
+                            <td className="px-2 sm:px-4 py-2 sm:py-3">{r.firstName}</td>
+                            <td className="px-2 sm:px-4 py-2 sm:py-3 text-muted-foreground">{r.middleName}</td>
+                            <td className="px-2 sm:px-4 py-2 sm:py-3">{r.sex}</td>
+                            <td className="px-2 sm:px-4 py-2 sm:py-3 font-medium">{r.gradeLevel}</td>
+                            <td className="px-2 sm:px-4 py-2 sm:py-3">{r.section}</td>
+                            <td className="px-2 sm:px-4 py-2 sm:py-3">
+                              <span className={`inline-flex items-center rounded-full border px-1.5 sm:px-3 py-0.5 sm:py-1 text-[10px] sm:text-xs font-semibold ${STATUS_COLORS[r.status] || "bg-slate-100 text-slate-600"}`}>
+                                {STATUS_LABELS[r.status] ?? r.status.replace("_", " ")}
+                              </span>
+                            </td>
+                            <td className="px-2 sm:px-4 py-2 sm:py-3 text-muted-foreground">{r.schoolYear}</td>
+                            <td className="px-2 sm:px-4 py-2 sm:py-3 text-muted-foreground">{r.submittedAt}</td>
+                          </tr>
+                        ))}
+                        {rows.length > 100 && (
+                          <tr><td colSpan={11} className="py-2 sm:py-3 text-center text-xs sm:text-sm text-muted-foreground bg-slate-50">Showing first 100 of {rows.length} — export for full list</td></tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
-              </div>
-            ) : !loading ? (
-              <p className="py-8 text-center text-sm text-muted-foreground">No data. Adjust filters and click Run Report.</p>
-            ) : null}
-          </CardContent>
-        </Card>
+              ) : !loading ? (
+                <p className="py-12 sm:py-16 text-center text-sm sm:text-base text-muted-foreground">No data. Adjust filters and click Run Report.</p>
+              ) : null}
+            </CardContent>
+          </Card>
+        </div>
 
-        {/* Export panel */}
-        <div className="space-y-3">
+        {/* Export panel - full width on mobile, fixed width on desktop */}
+        <div className="w-full xl:w-72 space-y-3 sm:space-y-4 flex-shrink-0">
           <Card>
-            <CardHeader className="pb-2 pt-3 px-4">
-              <CardTitle className="text-sm font-semibold flex items-center gap-1.5">
-                <Download className="h-3.5 w-3.5" /> Export
+            <CardHeader className="pb-2 sm:pb-3 pt-3 sm:pt-4 px-3 sm:px-5">
+              <CardTitle className="text-sm sm:text-base font-semibold flex items-center gap-1.5 sm:gap-2">
+                <Download className="h-4 w-4 sm:h-5 sm:w-5" /> Export
               </CardTitle>
             </CardHeader>
-            <CardContent className="px-4 pb-4 space-y-2">
-              <Button variant="outline" size="sm" className="w-full justify-start h-9 text-xs gap-2"
+            <CardContent className="px-3 sm:px-5 pb-4 sm:pb-5 space-y-2 sm:space-y-3">
+              <Button variant="outline" size="sm" className="w-full justify-start h-9 sm:h-11 text-xs sm:text-sm gap-2 sm:gap-3"
                 onClick={downloadExcel} disabled={!!exporting || !canExportPdf}>
-                {exporting === "excel" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5 text-emerald-600" />}
+                {exporting === "excel" ? <Loader2 className="h-4 w-4 sm:h-5 sm:w-5 animate-spin" /> : <Download className="h-4 w-4 sm:h-5 sm:w-5 text-emerald-600" />}
                 <span><span className="font-semibold">Excel</span> (.xlsx)</span>
               </Button>
-              <Button variant="outline" size="sm" className="w-full justify-start h-9 text-xs gap-2"
+              <Button variant="outline" size="sm" className="w-full justify-start h-9 sm:h-11 text-xs sm:text-sm gap-2 sm:gap-3"
                 onClick={downloadPDF} disabled={!!exporting || !canExportPdf}>
-                {exporting === "pdf" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5 text-red-600" />}
+                {exporting === "pdf" ? <Loader2 className="h-4 w-4 sm:h-5 sm:w-5 animate-spin" /> : <Download className="h-4 w-4 sm:h-5 sm:w-5 text-red-600" />}
                 <span><span className="font-semibold">PDF</span> (standard)</span>
               </Button>
               {(reportType === "enrollment" || reportType === "sf1" || reportType === "sf2") && (
                 <>
-                  <hr className="my-1" />
-                  <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wide">DepEd Forms</p>
-                  <Button variant="outline" size="sm" className="w-full justify-start h-9 text-xs gap-2"
+                  <hr className="my-2 sm:my-3" />
+                  <p className="text-xs sm:text-sm text-muted-foreground font-semibold uppercase tracking-wide">DepEd Forms</p>
+                  <Button variant="outline" size="sm" className="w-full justify-start h-9 sm:h-11 text-xs sm:text-sm gap-2 sm:gap-3"
                     onClick={downloadSF1PDF} disabled={!!exporting || rows.length === 0}>
-                    {exporting === "sf1pdf" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <TableProperties className="h-3.5 w-3.5 text-blue-600" />}
+                    {exporting === "sf1pdf" ? <Loader2 className="h-4 w-4 sm:h-5 sm:w-5 animate-spin" /> : <TableProperties className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" />}
                     <span><span className="font-semibold">SF1</span> School Register PDF</span>
                   </Button>
-                  <p className="text-[10px] text-muted-foreground mt-1">
+                  <p className="text-xs sm:text-sm text-muted-foreground mt-1 sm:mt-2">
                     SF1 uses enrolled students. Use the SF1 report type or export the Enrollment report.
                   </p>
                 </>
               )}
               {!canExportPdf && !loading && (
-                <p className="text-[10px] text-muted-foreground mt-1">No data to export for current filters.</p>
+                <p className="text-xs sm:text-sm text-muted-foreground mt-1 sm:mt-2">No data to export for current filters.</p>
               )}
             </CardContent>
           </Card>
@@ -824,15 +836,15 @@ export default function AdminReportsPage() {
           {/* By-grade summary card */}
           {data?.byGrade && data.byGrade.length > 0 && (
             <Card>
-              <CardHeader className="pb-1 pt-3 px-4">
-                <CardTitle className="text-xs font-semibold text-muted-foreground uppercase">By Grade Level</CardTitle>
+              <CardHeader className="pb-1 sm:pb-2 pt-3 sm:pt-4 px-3 sm:px-5">
+                <CardTitle className="text-xs sm:text-sm font-semibold text-muted-foreground uppercase">By Grade Level</CardTitle>
               </CardHeader>
-              <CardContent className="px-4 pb-3">
-                <div className="space-y-1">
+              <CardContent className="px-3 sm:px-5 pb-3 sm:pb-4">
+                <div className="space-y-1.5 sm:space-y-2">
                   {data.byGrade.map((g) => (
-                    <div key={g.grade} className="flex items-center justify-between text-xs">
-                      <span className="text-muted-foreground truncate max-w-[140px]">{g.grade}</span>
-                      <span className="font-semibold">{g.count}</span>
+                    <div key={g.grade} className="flex items-center justify-between text-xs sm:text-sm py-0.5 sm:py-1">
+                      <span className="text-muted-foreground truncate max-w-[120px] sm:max-w-[160px]">{g.grade}</span>
+                      <span className="font-bold text-base sm:text-lg">{g.count}</span>
                     </div>
                   ))}
                 </div>
@@ -843,15 +855,15 @@ export default function AdminReportsPage() {
           {/* Payment by-type summary */}
           {payments?.byType && payments.byType.length > 0 && (
             <Card>
-              <CardHeader className="pb-1 pt-3 px-4">
-                <CardTitle className="text-xs font-semibold text-muted-foreground uppercase">By Payment Type</CardTitle>
+              <CardHeader className="pb-1 sm:pb-2 pt-3 sm:pt-4 px-3 sm:px-5">
+                <CardTitle className="text-xs sm:text-sm font-semibold text-muted-foreground uppercase">By Payment Type</CardTitle>
               </CardHeader>
-              <CardContent className="px-4 pb-3">
-                <div className="space-y-1">
+              <CardContent className="px-3 sm:px-5 pb-3 sm:pb-4">
+                <div className="space-y-1.5 sm:space-y-2">
                   {payments.byType.map((t) => (
-                    <div key={t.type} className="flex items-center justify-between text-xs">
+                    <div key={t.type} className="flex items-center justify-between text-xs sm:text-sm py-0.5 sm:py-1">
                       <span className="text-muted-foreground capitalize">{t.type}</span>
-                      <span className="font-semibold">{formatCurrency(t.amount)}</span>
+                      <span className="font-bold text-base sm:text-lg">{formatCurrency(t.amount)}</span>
                     </div>
                   ))}
                 </div>
