@@ -270,19 +270,21 @@ export default function AdminStudentsPage() {
           <CardContent className="px-4 pb-4">
             <div className="space-y-2">
               {(() => {
-                const maxCount = Math.max(...gradeBreakdown.map((g) => g.count));
-                return gradeBreakdown.map(({ grade, count }) => (
-                  <div key={grade} className="flex items-center gap-3 text-xs">
-                    <span className="w-36 shrink-0 text-muted-foreground">{grade}</span>
-                    <div className="flex-1 rounded-full bg-slate-100 h-2">
-                      <div
-                        className="h-2 rounded-full bg-primary"
-                        style={{ width: `${maxCount > 0 ? Math.max(4, (count / maxCount) * 100) : 0}%` }}
-                      />
+                const maxCount = Math.max(...gradeBreakdown.map((g) => g.count), 1);
+                return gradeBreakdown.map(({ grade, count }) => {
+                  const pct = Math.round((count / maxCount) * 100);
+                  return (
+                    <div key={grade} className="rounded-xl border border-slate-200 bg-slate-50/60 p-3">
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="text-xs font-medium text-slate-600">{grade}</span>
+                        <span className="text-sm font-bold text-primary">{count}</span>
+                      </div>
+                      <div className="mt-2 h-2.5 overflow-hidden rounded-full bg-slate-200">
+                        <div className="h-full rounded-full bg-primary" style={{ width: `${pct}%` }} />
+                      </div>
                     </div>
-                    <span className="w-8 text-right font-semibold text-primary">{count}</span>
-                  </div>
-                ));
+                  );
+                });
               })()}
             </div>
           </CardContent>

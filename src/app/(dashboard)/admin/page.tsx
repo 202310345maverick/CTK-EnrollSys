@@ -212,19 +212,24 @@ export default async function AdminDashboard() {
             <BarChart3 className="h-4 w-4 text-primary" /> Enrollment Overview
           </CardTitle>
         </CardHeader>
-        <CardContent className="px-4 pb-4 space-y-2">
-          {statusBreakdown.map(({ label, count, color, bg }) => (
-            <div key={label} className="flex items-center gap-3 text-xs">
-              <span className="w-24 shrink-0 text-muted-foreground">{label}</span>
-              <div className="flex-1 rounded-full bg-slate-100 h-2">
-                <div
-                  className={`h-2 rounded-full ${bg}`}
-                  style={{ width: `${totalAll > 0 ? Math.max(4, (count / totalAll) * 100) : 0}%` }}
-                />
-              </div>
-              <span className={`w-8 text-right font-semibold ${color}`}>{count}</span>
-            </div>
-          ))}
+        <CardContent className="px-4 pb-4">
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
+            {statusBreakdown.map(({ label, count, color, bg }) => {
+              const percent = totalAll > 0 ? Math.round((count / totalAll) * 100) : 0;
+              return (
+                <div key={label} className="rounded-xl border border-slate-200 bg-slate-50/60 p-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-xs font-medium text-slate-600">{label}</span>
+                    <span className={`text-base font-bold ${color}`}>{count}</span>
+                  </div>
+                  <div className="mt-3 h-2.5 overflow-hidden rounded-full bg-slate-200">
+                    <div className={`h-full rounded-full ${bg}`} style={{ width: `${percent}%` }} />
+                  </div>
+                  <div className="mt-2 text-[11px] text-slate-500">{percent}% of total</div>
+                </div>
+              );
+            })}
+          </div>
         </CardContent>
       </Card>
 
@@ -241,19 +246,21 @@ export default async function AdminDashboard() {
           ) : (
             <div className="space-y-2">
               {(() => {
-                const maxCount = Math.max(...enrolledPerGrade.map((g) => g.count));
-                return enrolledPerGrade.map(({ grade, count }) => (
-                  <div key={grade} className="flex items-center gap-3 text-xs">
-                    <span className="w-36 shrink-0 text-muted-foreground">{grade}</span>
-                    <div className="flex-1 rounded-full bg-slate-100 h-2">
-                      <div
-                        className="h-2 rounded-full bg-primary"
-                        style={{ width: `${maxCount > 0 ? Math.max(4, (count / maxCount) * 100) : 0}%` }}
-                      />
+                const maxCount = Math.max(...enrolledPerGrade.map((g) => g.count), 1);
+                return enrolledPerGrade.map(({ grade, count }) => {
+                  const pct = Math.round((count / maxCount) * 100);
+                  return (
+                    <div key={grade} className="rounded-xl border border-slate-200 bg-slate-50/60 p-3">
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="text-xs font-medium text-slate-600">{grade}</span>
+                        <span className="text-sm font-bold text-primary">{count}</span>
+                      </div>
+                      <div className="mt-2 h-2.5 overflow-hidden rounded-full bg-slate-200">
+                        <div className="h-full rounded-full bg-primary" style={{ width: `${pct}%` }} />
+                      </div>
                     </div>
-                    <span className="w-8 text-right font-semibold text-primary">{count}</span>
-                  </div>
-                ));
+                  );
+                });
               })()}
             </div>
           )}
