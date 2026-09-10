@@ -10,17 +10,48 @@ interface DocumentViewerProps {
   mime?: string;
   label?: string;
   asButton?: boolean;
+  thumbnail?: boolean;
   /** Optional JSX rendered in a footer bar inside the modal */
   actions?: React.ReactNode;
 }
 
-export function DocumentViewer({ url, name = "Document", mime, label = "View", asButton, actions }: DocumentViewerProps) {
+export function DocumentViewer({ url, name = "Document", mime, label = "View", asButton, thumbnail, actions }: DocumentViewerProps) {
   const [open, setOpen] = useState(false);
   const isPdf = mime === "application/pdf" || url.toLowerCase().includes(".pdf");
+  const isImage = !isPdf && (mime?.startsWith("image/") || /\.(png|jpe?g|gif|webp|bmp)$/i.test(url));
 
   return (
     <>
-      {asButton ? (
+      {thumbnail ? (
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          className="group block w-full rounded-lg border border-slate-200 bg-white p-2 text-left shadow-sm transition hover:border-primary/60 hover:shadow-md"
+        >
+          <div className="flex items-center gap-3">
+            <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-md border bg-slate-100">
+              {isPdf ? (
+                <div className="flex h-full w-full flex-col items-center justify-center gap-1 bg-red-50 text-red-600">
+                  <FileText className="h-6 w-6" />
+                  <span className="text-[9px] font-semibold uppercase">PDF</span>
+                </div>
+              ) : isImage ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={url} alt={name} className="h-full w-full object-cover" />
+              ) : (
+                <div className="flex h-full w-full flex-col items-center justify-center gap-1 bg-slate-100 text-slate-500">
+                  <FileText className="h-6 w-6" />
+                  <span className="text-[9px] font-semibold uppercase">FILE</span>
+                </div>
+              )}
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-xs font-semibold text-slate-800">{name}</p>
+              <p className="mt-1 text-[10px] text-muted-foreground">{isPdf ? "PDF document" : "Submitted file"}</p>
+            </div>
+          </div>
+        </button>
+      ) : asButton ? (
         <Button variant="outline" size="sm" className="h-6 px-1.5 text-xs gap-1" onClick={() => setOpen(true)}>
           <FileText className="h-3 w-3" /> {label}
         </Button>

@@ -406,53 +406,56 @@ export default function EnrollmentDetailPage() {
                       <div key={i} className="rounded-lg border bg-slate-50/50">
                         <div className="px-3 py-2.5 space-y-2">
                           {/* Header row: clickable doc type + status badge + AI badge */}
-                          <div className="flex items-center gap-2 flex-wrap">
+                          <div className="flex items-start gap-2 flex-wrap">
                             {fileUrl ? (
-                              <DocumentViewer
-                                url={fileUrl}
-                                name={docId?.originalName || label}
-                                mime={docId?.mimeType}
-                                label={label}
-                                actions={canReview ? (
-                                  <div className="space-y-2">
-                                    {doc.status !== "verified" && (
-                                      <input
-                                        type="text"
-                                        className="w-full rounded border border-slate-200 px-2 py-1.5 text-xs placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-[#b4040d]"
-                                        placeholder="Add rejection note (optional)..."
-                                        value={docRemarks[doc.type] ?? ""}
-                                        onChange={(e) => setDocRemarks((p) => ({ ...p, [doc.type]: e.target.value }))}
-                                      />
-                                    )}
-                                    <div className="flex flex-wrap gap-2">
+                              <div className="min-w-[180px] flex-1">
+                                <DocumentViewer
+                                  url={fileUrl}
+                                  name={docId?.originalName || label}
+                                  mime={docId?.mimeType}
+                                  label={label}
+                                  thumbnail
+                                  actions={canReview ? (
+                                    <div className="space-y-2">
                                       {doc.status !== "verified" && (
-                                        <Button size="sm" className="h-8 gap-1.5 text-xs bg-emerald-600 hover:bg-emerald-700"
-                                          onClick={() => updateDocStatus(doc.type, "verified")} disabled={saving}>
-                                          <ShieldCheck className="h-3.5 w-3.5" /> Approve Document
-                                        </Button>
+                                        <input
+                                          type="text"
+                                          className="w-full rounded border border-slate-200 px-2 py-1.5 text-xs placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-[#b4040d]"
+                                          placeholder="Add rejection note (optional)..."
+                                          value={docRemarks[doc.type] ?? ""}
+                                          onChange={(e) => setDocRemarks((p) => ({ ...p, [doc.type]: e.target.value }))}
+                                        />
                                       )}
-                                      {doc.status !== "rejected" && (
-                                        <Button size="sm" variant="destructive" className="h-8 gap-1.5 text-xs"
-                                          onClick={() => updateDocStatus(doc.type, "rejected", docRemarks[doc.type] || "Document rejected — please re-upload")} disabled={saving}>
-                                          <XCircle className="h-3.5 w-3.5" /> Decline
-                                        </Button>
-                                      )}
-                                      {doc.status !== "rejected" && (
-                                        <Button size="sm" variant="outline" className="h-8 gap-1.5 text-xs text-amber-700 border-amber-300 hover:bg-amber-50"
-                                          onClick={() => { setReuploadModal({ docType: doc.type, label }); setReuploadReason(""); }} disabled={saving}>
-                                          <UploadCloud className="h-3.5 w-3.5" /> Request Re-upload
-                                        </Button>
-                                      )}
-                                      {doc.status === "rejected" && (
-                                        <Button size="sm" variant="outline" className="h-8 gap-1.5 text-xs"
-                                          onClick={() => updateDocStatus(doc.type, "pending")} disabled={saving}>
-                                          <RotateCcw className="h-3.5 w-3.5" /> Reset to Pending
-                                        </Button>
-                                      )}
+                                      <div className="flex flex-wrap gap-2">
+                                        {doc.status !== "verified" && (
+                                          <Button size="sm" className="h-8 gap-1.5 text-xs bg-emerald-600 hover:bg-emerald-700"
+                                            onClick={() => updateDocStatus(doc.type, "verified")} disabled={saving}>
+                                            <ShieldCheck className="h-3.5 w-3.5" /> Approve Document
+                                          </Button>
+                                        )}
+                                        {doc.status !== "rejected" && (
+                                          <Button size="sm" variant="destructive" className="h-8 gap-1.5 text-xs"
+                                            onClick={() => updateDocStatus(doc.type, "rejected", docRemarks[doc.type] || "Document rejected — please re-upload")} disabled={saving}>
+                                            <XCircle className="h-3.5 w-3.5" /> Decline
+                                          </Button>
+                                        )}
+                                        {doc.status !== "rejected" && (
+                                          <Button size="sm" variant="outline" className="h-8 gap-1.5 text-xs text-amber-700 border-amber-300 hover:bg-amber-50"
+                                            onClick={() => { setReuploadModal({ docType: doc.type, label }); setReuploadReason(""); }} disabled={saving}>
+                                            <UploadCloud className="h-3.5 w-3.5" /> Request Re-upload
+                                          </Button>
+                                        )}
+                                        {doc.status === "rejected" && (
+                                          <Button size="sm" variant="outline" className="h-8 gap-1.5 text-xs"
+                                            onClick={() => updateDocStatus(doc.type, "pending")} disabled={saving}>
+                                            <RotateCcw className="h-3.5 w-3.5" /> Reset to Pending
+                                          </Button>
+                                        )}
+                                      </div>
                                     </div>
-                                  </div>
-                                ) : undefined}
-                              />
+                                  ) : undefined}
+                                />
+                              </div>
                             ) : (
                               <span className="text-xs font-semibold text-slate-700">{label}</span>
                             )}
