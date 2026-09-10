@@ -650,13 +650,13 @@ export default function AdminReportsPage() {
 
       <div className="grid gap-4 xl:grid-cols-[1fr_260px]">
         {/* Preview */}
-        <Card className="min-h-[300px]">
-          <CardHeader className="pb-2 pt-3 px-4">
+        <Card className="min-h-[300px] sm:min-h-[400px]">
+          <CardHeader className="pb-2 sm:pb-3 pt-3 sm:pt-4 px-3 sm:px-5">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-semibold">
+              <CardTitle className="text-sm sm:text-lg font-semibold">
                 {REPORT_TYPES.find((r) => r.id === reportType)?.label} Preview
                 {!loading && data && (
-                  <span className="ml-2 text-xs font-normal text-muted-foreground">
+                  <span className="ml-2 sm:ml-3 text-xs sm:text-base font-normal text-muted-foreground">
                     {reportType === "payment"
                       ? `(${payments?.list?.length || 0} records)`
                       : `(${rows.length} records)`}
@@ -665,99 +665,98 @@ export default function AdminReportsPage() {
               </CardTitle>
             </div>
           </CardHeader>
-          <CardContent className="px-4 pb-4">
+          <CardContent className="px-3 sm:px-5 pb-4 sm:pb-5">
             {loading ? (
-              <div className="flex justify-center py-12"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
+              <div className="flex justify-center py-12 sm:py-16"><Loader2 className="h-6 w-6 sm:h-8 sm:w-8 animate-spin text-muted-foreground" /></div>
             ) : reportType === "payment" && payments ? (
-              <div className="space-y-4">
-                {/* Summary row */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div className="space-y-4 sm:space-y-6">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
                   {[
                     { label: "Total Collections", value: formatCurrency(payments.totalAmount), color: "text-emerald-600" },
                     { label: "Transactions", value: payments.count, color: "text-blue-600" },
                     { label: "Voided Count", value: payments.voidedCount, color: "text-red-600" },
                     { label: "Voided Amount", value: formatCurrency(payments.voidedAmount), color: "text-red-600" },
                   ].map((s) => (
-                    <div key={s.label} className="rounded-lg border p-2.5">
-                      <p className="text-[10px] text-muted-foreground">{s.label}</p>
-                      <p className={`text-sm font-bold ${s.color}`}>{s.value}</p>
+                    <div key={s.label} className="rounded-lg border p-3 sm:p-4">
+                      <p className="text-xs sm:text-sm text-muted-foreground">{s.label}</p>
+                      <p className={`text-base sm:text-lg font-bold ${s.color}`}>{s.value}</p>
                     </div>
                   ))}
                 </div>
-                {/* Payment list table */}
                 <div className="overflow-x-auto rounded-lg border">
-                  <table className="w-full text-xs">
+                  <table className="w-full text-xs sm:text-sm">
                     <thead className="bg-slate-50">
                       <tr>
                         {["Receipt #", "Student Name", "Type", "Amount", "Date", "Recorded By"].map((h) => (
-                          <th key={h} className="px-3 py-2 text-left font-medium text-slate-600">{h}</th>
+                          <th key={h} className="px-3 sm:px-4 py-2 sm:py-3 text-left font-semibold text-slate-700">{h}</th>
                         ))}
                       </tr>
                     </thead>
                     <tbody>
                       {payments.list.length === 0 ? (
-                        <tr><td colSpan={6} className="py-8 text-center text-muted-foreground">No records found</td></tr>
+                        <tr><td colSpan={6} className="py-8 sm:py-12 text-center text-sm sm:text-base text-muted-foreground">No records found</td></tr>
                       ) : payments.list.slice(0, 50).map((p, i) => (
                         <tr key={i} className="border-t hover:bg-slate-50/50">
-                          <td className="px-3 py-1.5 font-mono text-[10px]">{p.receiptNumber || "—"}</td>
-                          <td className="px-3 py-1.5">{p.studentName}</td>
-                          <td className="px-3 py-1.5 capitalize">{p.paymentType}</td>
-                          <td className="px-3 py-1.5 font-semibold text-emerald-700">{formatCurrency(p.amount)}</td>
-                          <td className="px-3 py-1.5">{p.paymentDate ? new Date(p.paymentDate).toLocaleDateString("en-PH") : "—"}</td>
-                          <td className="px-3 py-1.5 text-muted-foreground">{p.recordedBy}</td>
+                          <td className="px-3 sm:px-4 py-2 sm:py-3 font-mono text-xs sm:text-sm">{p.receiptNumber || "—"}</td>
+                          <td className="px-3 sm:px-4 py-2 sm:py-3">{p.studentName}</td>
+                          <td className="px-3 sm:px-4 py-2 sm:py-3 capitalize">{p.paymentType}</td>
+                          <td className="px-3 sm:px-4 py-2 sm:py-3 font-semibold text-emerald-700">{formatCurrency(p.amount)}</td>
+                          <td className="px-3 sm:px-4 py-2 sm:py-3">{p.paymentDate ? new Date(p.paymentDate).toLocaleDateString("en-PH") : "—"}</td>
+                          <td className="px-3 sm:px-4 py-2 sm:py-3 text-muted-foreground">{p.recordedBy}</td>
                         </tr>
                       ))}
                       {payments.list.length > 50 && (
-                        <tr><td colSpan={6} className="py-2 text-center text-xs text-muted-foreground">Showing first 50 of {payments.list.length} — export for full list</td></tr>
+                        <tr><td colSpan={6} className="py-2 sm:py-3 text-center text-xs sm:text-sm text-muted-foreground">Showing first 50 of {payments.list.length} — export for full list</td></tr>
                       )}
                     </tbody>
                   </table>
                 </div>
               </div>
             ) : rows.length > 0 ? (
-              <div className="space-y-4">
-                {/* Summary badges */}
+              <div className="space-y-4 sm:space-y-6">
                 {data?.byStatus && (
-                  <div className="flex flex-wrap gap-1.5">
+                  <div className="flex flex-wrap gap-1.5 sm:gap-2">
                     {data.byStatus.map((s) => (
-                      <span key={s.status} className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-medium ${STATUS_COLORS[s.status] || "bg-slate-100 text-slate-600"}`}>
+                      <span key={s.status} className={`inline-flex items-center gap-1.5 sm:gap-2 rounded-full border px-2.5 sm:px-4 py-1 sm:py-2 text-xs sm:text-sm font-semibold ${STATUS_COLORS[s.status] || "bg-slate-100 text-slate-600"}`}>
                         {STATUS_LABELS[s.status] ?? s.status.replace("_", " ")} · {s.count}
                       </span>
                     ))}
                   </div>
                 )}
-                {/* Grade summary */}
                 {data?.byGrade && (
-                  <div className="space-y-1.5">
-                    {data.byGrade.map((g) => (
-                      <div key={g.grade} className="flex items-center gap-2">
-                        <span className="w-20 text-[10px] text-muted-foreground truncate">{g.grade}</span>
-                        <div className="flex-1 bg-muted rounded-full h-1.5">
-                          <div className="bg-primary rounded-full h-1.5 transition-all" style={{ width: `${Math.min(100, (g.count / (data.total || 1)) * 100)}%` }} />
+                  <div className="space-y-2 sm:space-y-3">
+                    <h3 className="text-sm sm:text-base font-semibold text-slate-700">Enrollment by Grade Level</h3>
+                    <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+                      {data.byGrade.map((g) => (
+                        <div key={g.grade} className="rounded-xl border border-slate-200 bg-slate-50/80 p-3 sm:p-4">
+                          <p className="text-[10px] sm:text-xs font-medium uppercase tracking-wide text-slate-500">{g.grade}</p>
+                          <p className="mt-2 text-2xl sm:text-3xl font-extrabold text-primary">{g.count}</p>
                         </div>
-                        <span className="text-[10px] font-medium w-5 text-right">{g.count}</span>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
                   </div>
                 )}
-                {/* Scrollable table */}
+                <div className="bg-primary/5 border-2 border-primary/20 rounded-xl p-4 sm:p-6 text-center">
+                  <p className="text-xs sm:text-sm font-medium text-primary mb-1 sm:mb-2">TOTAL ENROLLED STUDENTS</p>
+                  <p className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-primary">{data?.total ?? rows.length}</p>
+                </div>
                 <div className="overflow-x-auto rounded-lg border max-h-[340px] overflow-y-auto">
-                  <table className="w-full text-xs whitespace-nowrap">
+                  <table className="w-full text-xs sm:text-sm whitespace-nowrap">
                     <thead className="sticky top-0 bg-slate-50 z-10">
                       <tr>
                         {["#", "LRN", "Last Name", "First Name", "M.N.", "Sex", "Grade", "Section", "Status", "School Year", "Submitted"].map((h) => (
-                          <th key={h} className="px-3 py-2 text-left font-medium text-slate-600 border-b">{h}</th>
+                          <th key={h} className="px-3 sm:px-4 py-2 sm:py-3 text-left font-semibold text-slate-700 border-b">{h}</th>
                         ))}
                       </tr>
                     </thead>
                     <tbody>
                       {rows.slice(0, 100).map((r) => (
                         <tr key={r.enrollmentNumber} className="border-t hover:bg-slate-50/50">
-                          <td className="px-3 py-1.5 text-muted-foreground">{r.no}</td>
-                          <td className="px-3 py-1.5 font-mono text-[10px]">{r.lrn}</td>
-                          <td className="px-3 py-1.5 font-medium">{r.lastName}</td>
-                          <td className="px-3 py-1.5">{r.firstName}</td>
-                          <td className="px-3 py-1.5 text-muted-foreground">{r.middleName}</td>
+                          <td className="px-3 sm:px-4 py-2 sm:py-3 text-muted-foreground">{r.no}</td>
+                          <td className="px-3 sm:px-4 py-2 sm:py-3 font-mono text-[10px] sm:text-xs">{r.lrn}</td>
+                          <td className="px-3 sm:px-4 py-2 sm:py-3 font-medium">{r.lastName}</td>
+                          <td className="px-3 sm:px-4 py-2 sm:py-3">{r.firstName}</td>
+                          <td className="px-3 sm:px-4 py-2 sm:py-3 text-muted-foreground">{r.middleName}</td>
                           <td className="px-3 py-1.5">{r.sex}</td>
                           <td className="px-3 py-1.5">{r.gradeLevel}</td>
                           <td className="px-3 py-1.5">{r.section}</td>

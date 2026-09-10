@@ -733,18 +733,11 @@ export default function ReportsPage() {
                   {data?.byGrade && (
                     <div className="space-y-2 sm:space-y-3">
                       <h3 className="text-sm sm:text-base font-semibold text-slate-700">Enrollment by Grade Level</h3>
-                      <div className="space-y-2 sm:space-y-3">
+                      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
                         {data.byGrade.map((g) => (
-                          <div key={g.grade} className="flex items-center gap-2 sm:gap-4">
-                            <span className="w-16 sm:w-24 text-xs sm:text-sm font-medium text-slate-700 truncate">{g.grade}</span>
-                            <div className="flex-1 bg-muted rounded-full h-2.5 sm:h-4 min-w-[60px]">
-                              <div className="bg-primary rounded-full h-2.5 sm:h-4 transition-all flex items-center justify-end pr-1 sm:pr-2" style={{ width: `${Math.min(100, (g.count / (data.total || 1)) * 100)}%` }}>
-                                {(g.count > 0 && (g.count / (data.total || 1)) > 0.2) && (
-                                  <span className="text-white text-[10px] sm:text-xs font-bold">{g.count}</span>
-                                )}
-                              </div>
-                            </div>
-                            <span className="text-sm sm:text-base font-bold w-8 sm:w-12 text-right">{g.count}</span>
+                          <div key={g.grade} className="rounded-xl border border-slate-200 bg-slate-50/80 p-3 sm:p-4">
+                            <p className="text-[10px] sm:text-xs font-medium uppercase tracking-wide text-slate-500">{g.grade}</p>
+                            <p className="mt-2 text-2xl sm:text-3xl font-extrabold text-primary">{g.count}</p>
                           </div>
                         ))}
                       </div>
