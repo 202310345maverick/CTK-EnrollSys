@@ -38,83 +38,87 @@ function buildOfficialReceiptPdf(doc: jsPDF, params: {
   currency?: string;
 }) {
   const logo = getCtkLogoDataUrl();
-  const formatPhpAmount = (amount: number) => `₱${Number(amount).toLocaleString("en-PH", {
+  const formatTemplateAmount = (amount: number) => `± ${Number(amount).toLocaleString("en-PH", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   })}`;
-  const amountText = formatPhpAmount(params.amount);
-  const payerLines = doc.splitTextToSize(params.payerName || "Student Name", 52);
-  const descriptionLines = doc.splitTextToSize(params.description || "Payment", 54);
+  const amountText = formatTemplateAmount(params.amount);
+  const payerName = params.payerName || "Student Name";
+  const descriptionText = params.description || "Tuition";
 
-  doc.setFillColor(255, 255, 255);
+  doc.setFillColor(245, 247, 249);
   doc.rect(0, 0, 210, 297, "F");
   doc.setTextColor(15, 23, 42);
 
-  doc.setDrawColor(203, 213, 225);
+  doc.setDrawColor(184, 199, 214);
   doc.setLineWidth(0.5);
   doc.roundedRect(14, 12, 182, 263, 6, 6, "S");
 
   if (logo) {
-    doc.addImage(logo, "PNG", 24, 20, 22, 22);
+    doc.addImage(logo, "PNG", 26, 18, 24, 24);
   }
 
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(16);
-  doc.text(params.schoolName || "Christ the King Catholic School", 52, 28);
-  doc.setFontSize(10);
+  doc.setFontSize(20);
+  doc.text(params.schoolName || "Christ the King Catholic School", 58, 31);
   doc.setTextColor(71, 85, 105);
-  doc.text("Official Receipt", 52, 35);
+  doc.setFontSize(10);
+  doc.text("Official Receipt", 58, 39);
 
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(28);
   doc.setTextColor(51, 65, 85);
-  doc.text("RECEIPT", 190, 30, { align: "right" });
-
-  doc.setFillColor(239, 246, 255);
-  doc.roundedRect(24, 48, 162, 26, 4, 4, "F");
-  doc.setTextColor(15, 23, 42);
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(11);
-  doc.text("To", 30, 58);
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(16);
-  doc.text(payerLines, 30, 69);
+  doc.setFontSize(30);
+  doc.text("RECEIPT", 190, 36, { align: "right" });
+
+  doc.setFillColor(221, 232, 240);
+  doc.roundedRect(24, 52, 162, 30, 4, 4, "F");
+  doc.setTextColor(15, 23, 42);
 
   doc.setFont("helvetica", "normal");
   doc.setFontSize(11);
-  doc.text("Receipt #", 130, 58);
-  doc.text(params.receiptNumber || "0001001", 190, 58, { align: "right" });
-  doc.text("Receipt Date", 130, 68);
-  doc.text(params.receiptDate, 190, 68, { align: "right" });
+  doc.text("To", 30, 64);
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(20);
+  doc.text(payerName, 30, 80);
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(11);
+  doc.text("Receipt #", 129, 64);
+  doc.text(params.receiptNumber || "0001001", 190, 64, { align: "right" });
+  doc.text("Receipt Date", 129, 74);
+  doc.text(params.receiptDate, 190, 74, { align: "right" });
 
   doc.setFillColor(15, 23, 42);
-  doc.rect(24, 92, 162, 10, "F");
+  doc.rect(24, 96, 162, 10, "F");
   doc.setTextColor(255, 255, 255);
   doc.setFont("helvetica", "bold");
   doc.setFontSize(9);
-  doc.text("QTY", 30, 99);
-  doc.text("Description", 70, 99);
-  doc.text("Unit Price", 138, 99, { align: "right" });
-  doc.text("Amount", 190, 99, { align: "right" });
+  doc.text("QTY", 30, 103);
+  doc.text("Description", 70, 103);
+  doc.text("Unit Price", 138, 103, { align: "right" });
+  doc.text("Amount", 190, 103, { align: "right" });
 
   doc.setFillColor(255, 255, 255);
-  doc.rect(24, 102, 162, 18, "F");
-  doc.setTextColor(15, 23, 42);
-  doc.setFont("helvetica", "bold");
-  doc.text("1", 30, 114);
-  doc.setFont("helvetica", "normal");
-  doc.text(descriptionLines, 70, 114);
-  doc.text(formatPhpAmount(params.amount), 138, 114, { align: "right" });
-  doc.text(amountText, 190, 114, { align: "right" });
-
-  doc.setFillColor(241, 245, 249);
-  doc.roundedRect(24, 136, 162, 22, 4, 4, "F");
+  doc.rect(24, 106, 162, 20, "F");
   doc.setTextColor(15, 23, 42);
   doc.setFont("helvetica", "bold");
   doc.setFontSize(12);
-  doc.text("Total", 118, 149, { align: "center" });
-  doc.setFontSize(18);
-  doc.text(amountText, 190, 149, { align: "right" });
+  doc.text("1", 30, 119);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(11);
+  doc.text(descriptionText, 70, 119);
+  doc.text(amountText, 138, 119, { align: "right" });
+  doc.text(amountText, 190, 119, { align: "right" });
+
+  doc.setFillColor(236, 240, 245);
+  doc.roundedRect(24, 144, 162, 26, 4, 4, "F");
+  doc.setTextColor(15, 23, 42);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(16);
+  doc.text("Total", 104, 161, { align: "center" });
+  doc.setFontSize(20);
+  doc.text(amountText, 190, 161, { align: "right" });
 
   doc.setTextColor(71, 85, 105);
   doc.setFontSize(9);
