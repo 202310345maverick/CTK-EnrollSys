@@ -38,13 +38,10 @@ function buildOfficialReceiptPdf(doc: jsPDF, params: {
   currency?: string;
 }) {
   const logo = getCtkLogoDataUrl();
-  const currencyCode = params.currency || "PHP";
-  const amountText = new Intl.NumberFormat("en-PH", {
-    style: "currency",
-    currency: "PHP",
+  const amountText = `₱${params.amount.toLocaleString("en-PH", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
-  }).format(params.amount);
+  })}`;
 
   doc.setFillColor(255, 255, 255);
   doc.rect(0, 0, 210, 297, "F");
