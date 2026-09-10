@@ -31,10 +31,13 @@ function buildOfficialReceiptPdf(doc: jsPDF, params: {
   currency?: string;
 }) {
   const logo = getCtkLogoDataUrl();
-  const amountText = `₱${params.amount.toLocaleString("en-PH", {
+  const formatPhpAmount = (amount: number) => `₱${Number(amount).toLocaleString("en-PH", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   })}`;
+  const amountText = formatPhpAmount(params.amount);
+  const payerLines = doc.splitTextToSize(params.payerName || "Student Name", 52);
+  const descriptionLines = doc.splitTextToSize(params.description || "Payment", 54);
 
   doc.setFillColor(255, 255, 255);
   doc.rect(0, 0, 210, 297, "F");
@@ -67,8 +70,8 @@ function buildOfficialReceiptPdf(doc: jsPDF, params: {
   doc.setFontSize(11);
   doc.text("To", 30, 58);
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(18);
-  doc.text(params.payerName || "Customer Name", 30, 69);
+  doc.setFontSize(16);
+  doc.text(payerLines, 30, 69);
 
   doc.setFont("helvetica", "normal");
   doc.setFontSize(11);
@@ -93,8 +96,8 @@ function buildOfficialReceiptPdf(doc: jsPDF, params: {
   doc.setFont("helvetica", "bold");
   doc.text("1", 30, 114);
   doc.setFont("helvetica", "normal");
-  doc.text(params.description || "Payment", 70, 114);
-  doc.text(new Intl.NumberFormat("en-PH", { style: "currency", currency: "PHP", minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(params.amount), 138, 114, { align: "right" });
+  doc.text(descriptionLines, 70, 114);
+  doc.text(formatPhpAmount(params.amount), 138, 114, { align: "right" });
   doc.text(amountText, 190, 114, { align: "right" });
 
   doc.setFillColor(241, 245, 249);
