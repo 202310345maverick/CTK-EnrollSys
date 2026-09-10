@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, Fragment } from "react";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -35,6 +35,7 @@ export default function PaymentsPage() {
   const [enrollments, setEnrollments] = useState<any[]>([]);
   const [loadingEnrollments, setLoadingEnrollments] = useState(false);
   const [showVoided, setShowVoided] = useState(false);
+  const [expandedStudents, setExpandedStudents] = useState<string[]>([]);
   const clearFilters = () => { setSearch(""); setShowVoided(false); };
   const hasActiveFilters = search !== "" || showVoided;
 
@@ -140,8 +141,47 @@ export default function PaymentsPage() {
     return name.includes(search.toLowerCase()) || receipt.includes(search.toLowerCase()) || desc.includes(search.toLowerCase());
   });
 
+  const groupedPayments = (filtered || []).reduce((acc: any[], payment: any) => {
+    const studentId = typeof payment.studentId === "object" ? payment.studentId?._id : payment.studentId;
+    if (!studentId) return acc;
+
+    let studentGroup = acc.find((group) => group.studentId === studentId);
+    if (!studentGroup) {
+      studentGroup = {
+        studentId,
+        studentName: `${payment.studentId?.personalInfo?.firstName || ""} ${payment.studentId?.personalInfo?.lastName || ""}`.trim(),
+        studentNumber: payment.studentId?.studentId || "—",
+        payments: [],
+        latestPaymentDate: payment.paymentDate ? new Date(payment.paymentDate).getTime() : 0,
+      };
+      acc.push(studentGroup);
+    }
+
+    studentGroup.payments.push(payment);
+    const paymentTime = payment.paymentDate ? new Date(payment.paymentDate).getTime() : 0;
+    if (paymentTime > studentGroup.latestPaymentDate) {
+      studentGroup.latestPaymentDate = paymentTime;
+    }
+    return acc;
+  }, []).sort((a, b) => (b.latestPaymentDate || 0) - (a.latestPaymentDate || 0));
+
+  const toggleStudent = (studentId: string) => {
+    setExpandedStudents((current) =>
+      current.includes(studentId)
+        ? current.filter((id) => id !== studentId)
+        : [...current, studentId]
+    );
+  };
+
   const formatDate = (date: string) =>
     new Date(date).toLocaleDateString("en-PH", { month: "short", day: "numeric", year: "numeric" });
+
+  const formatDateTime = (date: string) =>
+    new Date(date).toLocaleDateString("en-PH", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -275,70 +315,123 @@ export default function PaymentsPage() {
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
-                <TableRow className="bg-muted/40">
-                  <TableHead className="text-xs">Receipt #</TableHead>
-                  <TableHead className="text-xs">Student</TableHead>
-                  <TableHead className="text-xs">Description</TableHead>
-                  <TableHead className="text-xs">Type</TableHead>
-                  <TableHead className="text-xs">Date</TableHead>
-                  <TableHead className="text-xs text-right">Amount</TableHead>
-                  {isAdminOrRegistrar && <TableHead className="text-xs w-20" />}
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filtered.map((p: any) => (
-                  <TableRow key={p._id} className={`text-sm ${p.isVoided ? "opacity-60" : ""}`}>
-                    <TableCell className="font-mono text-xs">
-                      <span className={p.isVoided ? "line-through text-muted-foreground" : ""}>{p.receiptNumber}</span>
-                      {p.isVoided && (
-                        <Badge className="ml-1.5 bg-red-100 text-red-700 border border-red-200 text-[10px] px-1 py-0">
-                          voided
-                        </Badge>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <p className="font-medium text-sm">
-                        {p.studentId?.personalInfo?.lastName}, {p.studentId?.personalInfo?.firstName}
-                      </p>
-                      <p className="text-xs text-muted-foreground">{p.studentId?.studentId || "—"}</p>
-                    </TableCell>
-                    <TableCell className="text-xs">{p.description}</TableCell>
-                    <TableCell>
-                      <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-emerald-100 text-emerald-800 border border-emerald-200">
-                        {p.paymentType}
-                      </span>
-                    </TableCell>
-                    <TableCell className="text-xs text-muted-foreground">{formatDate(p.paymentDate)}</TableCell>
-                    <TableCell className={`text-right text-sm font-semibold ${p.isVoided ? "text-muted-foreground line-through" : "text-emerald-600"}`}>
-                      {formatCurrency(p.amount)}
-                    </TableCell>
-                    {isAdminOrRegistrar && (
-                      <TableCell className="text-right space-x-1">
-                        {!p.isVoided && (
-                          <Button asChild variant="ghost" size="sm" className="h-6 px-2 text-xs text-slate-600 hover:bg-slate-50 hover:text-slate-700">
-                            <Link href={`/api/payments/${p._id}`} target="_blank" rel="noreferrer">
-                              <Receipt className="h-3 w-3 mr-1" />
-                              Invoice
-                            </Link>
-                          </Button>
-                        )}
-                        {!p.isVoided && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-6 px-2 text-xs text-red-600 hover:bg-red-50 hover:text-red-700"
-                            onClick={() => openVoidModal(p)}
-                          >
-                            <Ban className="h-3 w-3 mr-1" />
-                            Void
-                          </Button>
-                        )}
-                      </TableCell>
-                    )}
+                  <TableRow className="bg-muted/40">
+                    <TableHead className="text-xs">Student</TableHead>
+                    <TableHead className="text-xs">Latest Payment</TableHead>
+                    <TableHead className="text-xs">Status</TableHead>
+                    {isAdminOrRegistrar && <TableHead className="text-xs w-20" />}
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {groupedPayments.map((group: any) => {
+                    const latest = [...group.payments].sort((a: any, b: any) => new Date(b.paymentDate).getTime() - new Date(a.paymentDate).getTime())[0];
+                    const isExpanded = expandedStudents.includes(group.studentId);
+                    const latestAmount = latest ? formatCurrency(latest.amount) : "—";
+                    const latestStatus = latest?.isVoided ? "Voided" : "Paid";
+
+                    return (
+                      <Fragment key={group.studentId}>
+                        <TableRow className="text-sm align-top hover:bg-slate-50/50">
+                          <TableCell className="py-3">
+                            <button
+                              type="button"
+                              onClick={() => toggleStudent(group.studentId)}
+                              className="flex w-full items-center justify-between gap-3 text-left"
+                            >
+                              <div>
+                                <p className="font-semibold text-slate-900">{group.studentName || "Unknown Student"}</p>
+                                <p className="text-xs text-muted-foreground">Student ID: {group.studentNumber}</p>
+                              </div>
+                              <span className="text-xs text-primary font-medium">{isExpanded ? "Hide" : "View"}</span>
+                            </button>
+                          </TableCell>
+                          <TableCell className="py-3">
+                            <p className="font-medium text-slate-900">{latestAmount}</p>
+                            <p className="text-xs text-muted-foreground">{latest ? formatDateTime(latest.paymentDate) : "—"}</p>
+                          </TableCell>
+                          <TableCell className="py-3">
+                            <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${latestStatus === "Paid" ? "bg-emerald-100 text-emerald-700 border border-emerald-200" : "bg-red-100 text-red-700 border border-red-200"}`}>
+                              {latestStatus}
+                            </span>
+                          </TableCell>
+                          {isAdminOrRegistrar && (
+                            <TableCell className="py-3 text-right">
+                              {!latest?.isVoided && (
+                                <Button asChild variant="ghost" size="sm" className="h-6 px-2 text-xs text-slate-600 hover:bg-slate-50 hover:text-slate-700">
+                                  <Link href={`/api/payments/${latest?._id}`} target="_blank" rel="noreferrer">
+                                    <Receipt className="h-3 w-3 mr-1" />
+                                    Invoice
+                                  </Link>
+                                </Button>
+                              )}
+                            </TableCell>
+                          )}
+                        </TableRow>
+
+                        {isExpanded && (
+                          <TableRow>
+                            <TableCell colSpan={isAdminOrRegistrar ? 4 : 3} className="bg-slate-50/60 p-0">
+                              <div className="border-t border-slate-200 p-3">
+                                <div className="rounded-lg border bg-white">
+                                  <div className="grid grid-cols-[1.2fr_1fr_0.9fr_0.9fr_0.8fr_0.8fr] gap-2 border-b bg-slate-50 px-3 py-2 text-[10px] font-semibold uppercase tracking-wide text-slate-600">
+                                    <span>OR / ID</span>
+                                    <span>Date</span>
+                                    <span>Amount</span>
+                                    <span>Method</span>
+                                    <span>Status</span>
+                                    <span className="text-right">Actions</span>
+                                  </div>
+
+                                  {group.payments
+                                    .slice()
+                                    .sort((a: any, b: any) => new Date(b.paymentDate).getTime() - new Date(a.paymentDate).getTime())
+                                    .map((payment: any) => (
+                                      <div key={payment._id} className="grid grid-cols-[1.2fr_1fr_0.9fr_0.9fr_0.8fr_0.8fr] items-center gap-2 border-b last:border-b-0 px-3 py-2 text-xs">
+                                        <div>
+                                          <p className="font-mono font-semibold text-slate-800">{payment.receiptNumber}</p>
+                                          <p className="text-[10px] text-muted-foreground">{payment.description}</p>
+                                        </div>
+                                        <span className="text-slate-600">{formatDate(payment.paymentDate)}</span>
+                                        <span className={`font-semibold ${payment.isVoided ? "text-muted-foreground line-through" : "text-emerald-600"}`}>
+                                          {formatCurrency(payment.amount)}
+                                        </span>
+                                        <span className="capitalize text-slate-600">{payment.paymentMethod || "cash"}</span>
+                                        <span className={`inline-flex items-center justify-center rounded-full px-1.5 py-0.5 text-[10px] font-medium ${payment.isVoided ? "bg-red-100 text-red-700" : "bg-emerald-100 text-emerald-700"}`}>
+                                          {payment.isVoided ? "Voided" : "Paid"}
+                                        </span>
+                                        <div className="flex justify-end gap-1">
+                                          {!payment.isVoided && (
+                                            <Button asChild variant="ghost" size="sm" className="h-6 px-2 text-[10px] text-slate-600 hover:bg-slate-50 hover:text-slate-700">
+                                              <Link href={`/api/payments/${payment._id}`} target="_blank" rel="noreferrer">
+                                                <Receipt className="h-3 w-3 mr-1" />
+                                                Invoice
+                                              </Link>
+                                            </Button>
+                                          )}
+                                          {!payment.isVoided && isAdminOrRegistrar && (
+                                            <Button
+                                              variant="ghost"
+                                              size="sm"
+                                              className="h-6 px-2 text-[10px] text-red-600 hover:bg-red-50 hover:text-red-700"
+                                              onClick={() => openVoidModal(payment)}
+                                            >
+                                              <Ban className="h-3 w-3 mr-1" />
+                                              Void
+                                            </Button>
+                                          )}
+                                        </div>
+                                      </div>
+                                    ))}
+                                </div>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        )}
+                      </Fragment>
+                    );
+                  })}
+                </TableBody>
+              </Table>
             </div>
           )}
         </CardContent>
