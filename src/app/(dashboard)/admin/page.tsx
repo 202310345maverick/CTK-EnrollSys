@@ -214,21 +214,12 @@ export default async function AdminDashboard() {
         </CardHeader>
         <CardContent className="px-4 pb-4">
           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
-            {statusBreakdown.map(({ label, count, color, bg }) => {
-              const percent = totalAll > 0 ? Math.round((count / totalAll) * 100) : 0;
-              return (
-                <div key={label} className="rounded-xl border border-slate-200 bg-slate-50/60 p-3">
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="text-xs font-medium text-slate-600">{label}</span>
-                    <span className={`text-base font-bold ${color}`}>{count}</span>
-                  </div>
-                  <div className="mt-3 h-2.5 overflow-hidden rounded-full bg-slate-200">
-                    <div className={`h-full rounded-full ${bg}`} style={{ width: `${percent}%` }} />
-                  </div>
-                  <div className="mt-2 text-[11px] text-slate-500">{percent}% of total</div>
-                </div>
-              );
-            })}
+            {statusBreakdown.map(({ label, count, color }) => (
+              <div key={label} className="rounded-xl border border-slate-200 bg-slate-50/60 p-3">
+                <div className="text-[11px] font-medium uppercase tracking-wide text-slate-500">{label}</div>
+                <div className={`mt-2 text-2xl font-bold ${color}`}>{count}</div>
+              </div>
+            ))}
           </div>
         </CardContent>
       </Card>
@@ -244,24 +235,13 @@ export default async function AdminDashboard() {
           {enrolledPerGrade.length === 0 ? (
             <p className="py-4 text-center text-xs text-muted-foreground">No enrolled students yet.</p>
           ) : (
-            <div className="space-y-2">
-              {(() => {
-                const maxCount = Math.max(...enrolledPerGrade.map((g) => g.count), 1);
-                return enrolledPerGrade.map(({ grade, count }) => {
-                  const pct = Math.round((count / maxCount) * 100);
-                  return (
-                    <div key={grade} className="rounded-xl border border-slate-200 bg-slate-50/60 p-3">
-                      <div className="flex items-center justify-between gap-3">
-                        <span className="text-xs font-medium text-slate-600">{grade}</span>
-                        <span className="text-sm font-bold text-primary">{count}</span>
-                      </div>
-                      <div className="mt-2 h-2.5 overflow-hidden rounded-full bg-slate-200">
-                        <div className="h-full rounded-full bg-primary" style={{ width: `${pct}%` }} />
-                      </div>
-                    </div>
-                  );
-                });
-              })()}
+            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+              {enrolledPerGrade.map(({ grade, count }) => (
+                <div key={grade} className="rounded-xl border border-slate-200 bg-slate-50/60 p-3">
+                  <div className="text-[11px] font-medium uppercase tracking-wide text-slate-500">{grade}</div>
+                  <div className="mt-2 text-2xl font-bold text-primary">{count}</div>
+                </div>
+              ))}
             </div>
           )}
         </CardContent>
