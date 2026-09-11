@@ -3,6 +3,7 @@ import path from "path";
 import type { jsPDF } from "jspdf";
 
 const FONT_CANDIDATES = [
+  path.join(process.cwd(), "public", "fonts", "Arial.ttf"),
   path.join(process.cwd(), "public", "fonts", "DejaVuSans.ttf"),
   path.join(process.cwd(), "public", "fonts", "DejaVuSansCondensed.ttf"),
   path.join(process.cwd(), "public", "fonts", "NotoSans-Regular.ttf"),
