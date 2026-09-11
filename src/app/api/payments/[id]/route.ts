@@ -31,12 +31,12 @@ function buildOfficialReceiptPdf(doc: jsPDF, params: {
   currency?: string;
 }) {
   const logo = getCtkLogoDataUrl();
-  const formatPhpAmount = (amount: number) => `₱${Number(amount).toLocaleString("en-PH", {
+  const formatPeso = (amount: number) => `₱${Number(amount).toLocaleString("en-PH", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   })}`;
 
-  const amountText = formatPhpAmount(params.amount);
+  const amountText = formatPeso(params.amount);
   const payerName = params.payerName || "Student Name";
   const descriptionText = params.description || "Tuition";
   const pageWidth = doc.internal.pageSize.getWidth();
@@ -44,7 +44,11 @@ function buildOfficialReceiptPdf(doc: jsPDF, params: {
   const margin = 14;
   const contentWidth = pageWidth - margin * 2;
   const payerLines = doc.splitTextToSize(payerName, 90);
-  const descLines = doc.splitTextToSize(descriptionText, 90);
+  const descLines = doc.splitTextToSize(descriptionText, 82);
+  const qtyX = margin + 17;
+  const descX = margin + 58;
+  const unitPriceX = pageWidth - 105;
+  const amountX = pageWidth - 42;
 
   doc.setFillColor(245, 247, 249);
   doc.rect(0, 0, pageWidth, pageHeight, "F");
@@ -83,30 +87,27 @@ function buildOfficialReceiptPdf(doc: jsPDF, params: {
   doc.text("Receipt Date", pageWidth - 150, 74);
   doc.text(params.receiptDate, pageWidth - 30, 74, { align: "right" });
 
-  const rightValueX = pageWidth - 18;
-  const unitPriceX = pageWidth - 110;
-
   doc.setFillColor(15, 23, 42);
   doc.rect(margin + 10, 96, contentWidth - 20, 10, "F");
   doc.setTextColor(255, 255, 255);
   doc.setFont("helvetica", "bold");
   doc.setFontSize(9);
-  doc.text("QTY", margin + 18, 103);
-  doc.text("Description", margin + 60, 103);
+  doc.text("QTY", qtyX, 103);
+  doc.text("Description", descX, 103);
   doc.text("Unit Price", unitPriceX, 103, { align: "right" });
-  doc.text("Amount", rightValueX, 103, { align: "right" });
+  doc.text("Amount", amountX, 103, { align: "right" });
 
   doc.setFillColor(255, 255, 255);
   doc.rect(margin + 10, 106, contentWidth - 20, 24, "F");
   doc.setTextColor(15, 23, 42);
   doc.setFont("helvetica", "bold");
   doc.setFontSize(12);
-  doc.text("1", margin + 18, 118);
+  doc.text("1", qtyX, 118);
   doc.setFont("helvetica", "normal");
   doc.setFontSize(10);
-  doc.text(descLines, margin + 60, 118);
+  doc.text(descLines, descX, 118);
   doc.text(amountText, unitPriceX, 118, { align: "right" });
-  doc.text(amountText, rightValueX, 118, { align: "right" });
+  doc.text(amountText, amountX, 118, { align: "right" });
 
   doc.setFillColor(236, 240, 245);
   doc.roundedRect(margin + 10, 145, contentWidth - 20, 26, 4, 4, "F");
@@ -115,7 +116,7 @@ function buildOfficialReceiptPdf(doc: jsPDF, params: {
   doc.setFontSize(16);
   doc.text("Total", pageWidth / 2, 161, { align: "center" });
   doc.setFontSize(18);
-  doc.text(amountText, rightValueX, 161, { align: "right" });
+  doc.text(amountText, amountX, 161, { align: "right" });
 
   doc.setTextColor(71, 85, 105);
   doc.setFontSize(9);

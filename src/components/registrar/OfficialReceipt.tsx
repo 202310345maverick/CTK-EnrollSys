@@ -40,6 +40,7 @@ export default function OfficialReceipt({
   currency = "PHP",
 }: Props) {
   const subtotal = items.reduce((s, it) => s + it.qty * it.unitPrice, 0);
+  const peso = (amount: number) => `₱${Number(amount).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
   return (
     <div className="mx-auto w-full max-w-[1200px] rounded-[24px] bg-[#f3f5f7] p-3 print:p-0 sm:p-5">
@@ -93,8 +94,8 @@ export default function OfficialReceipt({
                 <tr className="bg-[#0f172a] text-white">
                   <th className="w-[12%] px-4 py-4 text-left text-[0.8rem] font-bold uppercase tracking-[0.18em]">Qty</th>
                   <th className="w-[42%] px-4 py-4 text-left text-[0.8rem] font-bold uppercase tracking-[0.18em]">Description</th>
-                  <th className="w-[20%] px-4 py-4 text-right text-[0.8rem] font-bold uppercase tracking-[0.18em]">Unit Price</th>
-                  <th className="w-[26%] px-4 py-4 text-right text-[0.8rem] font-bold uppercase tracking-[0.18em]">Amount</th>
+                  <th className="w-[18%] px-4 py-4 text-right text-[0.8rem] font-bold uppercase tracking-[0.18em]">Unit Price</th>
+                  <th className="w-[28%] px-4 py-4 text-right text-[0.8rem] font-bold uppercase tracking-[0.18em]">Amount</th>
                 </tr>
               </thead>
               <tbody>
@@ -107,8 +108,8 @@ export default function OfficialReceipt({
                     <tr key={i} className="border-b border-slate-200 last:border-b-0">
                       <td className="px-4 py-5 align-top font-bold text-slate-800">{it.qty}</td>
                       <td className="px-4 py-5 align-top text-slate-700">{it.description}</td>
-                      <td className="px-4 py-5 align-top text-right text-slate-700">{fmt(it.unitPrice, currency)}</td>
-                      <td className="px-4 py-5 align-top text-right font-bold whitespace-nowrap text-slate-900">{fmt(it.qty * it.unitPrice, currency)}</td>
+                      <td className="px-4 py-5 align-top text-right text-slate-700">{peso(it.unitPrice)}</td>
+                      <td className="px-4 py-5 align-top text-right font-bold whitespace-nowrap text-slate-900">{peso(it.qty * it.unitPrice)}</td>
                     </tr>
                   ))
                 )}
@@ -121,7 +122,7 @@ export default function OfficialReceipt({
           <div className="w-full max-w-[430px] rounded-[16px] bg-[#dfeaf5] px-5 py-4">
             <div className="flex items-center justify-between gap-4 text-[1.8rem] font-medium text-slate-700">
               <span className="font-semibold">Total</span>
-              <span className="font-black tracking-[-0.05em] text-slate-900">{fmt(subtotal, currency)}</span>
+              <span className="font-black tracking-[-0.05em] text-slate-900">{peso(subtotal)}</span>
             </div>
           </div>
         </div>
