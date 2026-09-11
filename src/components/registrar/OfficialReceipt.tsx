@@ -93,8 +93,8 @@ export default function OfficialReceipt({
                 <tr className="bg-[#0f172a] text-white">
                   <th className="w-[12%] px-4 py-4 text-left text-[0.8rem] font-bold uppercase tracking-[0.18em]">Qty</th>
                   <th className="w-[42%] px-4 py-4 text-left text-[0.8rem] font-bold uppercase tracking-[0.18em]">Description</th>
-                  <th className="w-[23%] px-4 py-4 text-right text-[0.8rem] font-bold uppercase tracking-[0.18em]">Unit Price</th>
-                  <th className="w-[23%] px-4 py-4 text-right text-[0.8rem] font-bold uppercase tracking-[0.18em]">Amount</th>
+                  <th className="w-[20%] px-4 py-4 text-right text-[0.8rem] font-bold uppercase tracking-[0.18em]">Unit Price</th>
+                  <th className="w-[26%] px-4 py-4 text-right text-[0.8rem] font-bold uppercase tracking-[0.18em]">Amount</th>
                 </tr>
               </thead>
               <tbody>
