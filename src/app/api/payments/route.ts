@@ -57,10 +57,6 @@ function buildOfficialReceiptPdf(doc: jsPDF, params: {
   doc.rect(0, 0, pageWidth, pageHeight, "F");
   doc.setTextColor(15, 23, 42);
 
-  doc.setDrawColor(184, 199, 214);
-  doc.setLineWidth(0.5);
-  doc.roundedRect(margin, 12, pageWidth - margin * 2, pageHeight - 24, 6, 6, "S");
-
   if (logo) {
     doc.addImage(logo, "PNG", margin + 12, 18, 24, 24);
   }
@@ -75,7 +71,7 @@ function buildOfficialReceiptPdf(doc: jsPDF, params: {
   doc.setTextColor(51, 65, 85);
   doc.setFont("helvetica", "bold");
   doc.setFontSize(28);
-  doc.text("RECEIPT", pageWidth - margin, 34, { align: "right" });
+  doc.text("RECEIPT", pageWidth - 30, 34, { align: "right" });
 
   doc.setFillColor(221, 232, 240);
   doc.roundedRect(margin + 10, 52, contentWidth - 20, 32, 4, 4, "F");
@@ -89,10 +85,10 @@ function buildOfficialReceiptPdf(doc: jsPDF, params: {
 
   doc.setFont("helvetica", "normal");
   doc.setFontSize(10);
-  doc.text("Receipt #", pageWidth - 96, 64);
-  doc.text(params.receiptNumber || "0001001", pageWidth - margin, 64, { align: "right" });
-  doc.text("Receipt Date", pageWidth - 96, 74);
-  doc.text(params.receiptDate, pageWidth - margin, 74, { align: "right" });
+  doc.text("Receipt #", pageWidth - 150, 64);
+  doc.text(params.receiptNumber || "0001001", pageWidth - 30, 64, { align: "right" });
+  doc.text("Receipt Date", pageWidth - 150, 74);
+  doc.text(params.receiptDate, pageWidth - 30, 74, { align: "right" });
 
   doc.setFillColor(15, 23, 42);
   doc.rect(margin + 10, 96, contentWidth - 20, 10, "F");

@@ -42,8 +42,8 @@ export default function OfficialReceipt({
   const subtotal = items.reduce((s, it) => s + it.qty * it.unitPrice, 0);
 
   return (
-    <div className="mx-auto w-full max-w-[1200px] rounded-[24px] border border-[#d4dfe9] bg-[#f3f5f7] p-3 shadow-[0_0_0_1px_rgba(148,163,184,0.25)] print:p-0 print:shadow-none sm:p-5">
-      <div className="rounded-[20px] border border-[#d4dfe9] bg-[#f6f8fb] px-4 py-4 md:px-7 md:py-6">
+    <div className="mx-auto w-full max-w-[1200px] rounded-[24px] bg-[#f3f5f7] p-3 print:p-0 sm:p-5">
+      <div className="rounded-[20px] bg-[#f6f8fb] px-4 py-4 md:px-7 md:py-6">
         <div className="mb-5 flex flex-col gap-4 border-b border-slate-200 pb-4 md:flex-row md:items-center md:justify-between">
           <div className="flex min-w-0 items-center gap-3 md:gap-4">
             <div className="flex h-[64px] w-[64px] items-center justify-center overflow-hidden rounded-full border-2 border-[#dfeaf5] bg-white shadow-sm md:h-[84px] md:w-[84px]">
@@ -58,8 +58,8 @@ export default function OfficialReceipt({
             </div>
           </div>
 
-          <div className="shrink-0 text-left md:text-right">
-            <div className="text-[2rem] font-black leading-none tracking-[-0.04em] text-slate-900 sm:text-[2.8rem] md:text-[4rem]">
+          <div className="shrink-0 text-left md:ml-auto md:text-right">
+            <div className="text-[2rem] font-black leading-none tracking-[-0.04em] text-slate-900 sm:text-[2.8rem] md:text-[3.6rem]">
               RECEIPT
             </div>
           </div>
