@@ -14,6 +14,7 @@ import "jspdf-autotable";
 import { createAuditLog } from "@/lib/audit";
 import { sanitizeObject } from "@/lib/sanitize";
 import { logger } from "@/lib/logger";
+import { getReceiptFont } from "@/lib/receipt-font";
 import fs from "fs";
 import path from "path";
 
@@ -38,11 +39,13 @@ function buildOfficialReceiptPdf(doc: jsPDF, params: {
   currency?: string;
 }) {
   const logo = getCtkLogoDataUrl();
+  const receiptFont = getReceiptFont(doc);
   const formatPeso = (amount: number) => `₱${Number(amount).toLocaleString("en-PH", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   })}`;
 
+  doc.setFont(receiptFont, "normal");
   const amountText = formatPeso(params.amount);
   const payerName = params.payerName || "Student Name";
   const descriptionText = params.description || "Tuition";

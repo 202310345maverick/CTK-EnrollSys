@@ -5,6 +5,7 @@ import dbConnect from "@/lib/db/connection";
 import Payment from "@/models/Payment";
 import { createAuditLog } from "@/lib/audit";
 import { formatCurrency } from "@/lib/utils";
+import { getReceiptFont } from "@/lib/receipt-font";
 import { jsPDF } from "jspdf";
 import "jspdf-autotable";
 import fs from "fs";
@@ -31,11 +32,13 @@ function buildOfficialReceiptPdf(doc: jsPDF, params: {
   currency?: string;
 }) {
   const logo = getCtkLogoDataUrl();
+  const receiptFont = getReceiptFont(doc);
   const formatPeso = (amount: number) => `₱${Number(amount).toLocaleString("en-PH", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   })}`;
 
+  doc.setFont(receiptFont, "normal");
   const amountText = formatPeso(params.amount);
   const payerName = params.payerName || "Student Name";
   const descriptionText = params.description || "Tuition";
