@@ -38,11 +38,13 @@ function buildOfficialReceiptPdf(doc: jsPDF, params: {
   currency?: string;
 }) {
   const logo = getCtkLogoDataUrl();
-  const formatTemplateAmount = (amount: number) => `± ${Number(amount).toLocaleString("en-PH", {
+  const currencyPrefix = "₱";
+  const formatPhpAmount = (value: number) => `${currencyPrefix}${Number(value).toLocaleString("en-PH", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   })}`;
-  const amountText = formatTemplateAmount(params.amount);
+
+  const amountText = formatPhpAmount(params.amount);
   const payerName = params.payerName || "Student Name";
   const descriptionText = params.description || "Tuition";
 
@@ -59,8 +61,8 @@ function buildOfficialReceiptPdf(doc: jsPDF, params: {
   }
 
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(20);
-  doc.text(params.schoolName || "Christ the King Catholic School", 58, 31);
+  doc.setFontSize(21);
+  doc.text((params.schoolName || "Christ the King Catholic School").trim(), 58, 30);
   doc.setTextColor(71, 85, 105);
   doc.setFontSize(10);
   doc.text("Official Receipt", 58, 39);
@@ -68,7 +70,7 @@ function buildOfficialReceiptPdf(doc: jsPDF, params: {
   doc.setTextColor(51, 65, 85);
   doc.setFont("helvetica", "bold");
   doc.setFontSize(30);
-  doc.text("RECEIPT", 190, 36, { align: "right" });
+  doc.text("RECEIPT", 190, 35, { align: "right" });
 
   doc.setFillColor(221, 232, 240);
   doc.roundedRect(24, 52, 162, 30, 4, 4, "F");
