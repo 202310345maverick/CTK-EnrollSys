@@ -16,6 +16,15 @@ import { useToast } from "@/components/ui/use-toast";
 import { FormSelect } from "@/components/ui/form-select";
 import { Badge } from "@/components/ui/badge";
 import { DatePicker } from "@/components/ui/date-picker";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 // ── Document types matching the API constants ─────────────────────────────────
 const DOCUMENT_TYPES = [
@@ -232,6 +241,11 @@ export default function NewEnrollmentPage() {
   const [isLoadingChildren, setIsLoadingChildren] = useState(false);
   const [selectedChild, setSelectedChild] = useState<ChildData | null>(null);
   const [existingStudentId, setExistingStudentId] = useState<string | null>(null);
+  const [duplicateAlertOpen, setDuplicateAlertOpen] = useState(false);
+  const [duplicateAlertMessage, setDuplicateAlertMessage] = useState({
+    title: "Possible Duplicate Student",
+    description: "There is already a student with that name. Please review the entry and contact the registrar or admin if this is the same student.",
+  });
 
   // Keep ref in sync with state
   useEffect(() => { draftIdRef.current = draftId; }, [draftId]);
@@ -385,23 +399,22 @@ export default function NewEnrollmentPage() {
       const result = await response.json();
       const duplicate = result?.duplicate ?? { severity: "none", matches: [] };
 
-      if (duplicate.severity === "block") {
-        toast({
+      if (duplicate.severity === "block" || duplicate.severity === "warning") {
+        const message = {
           title: "Possible Duplicate Student",
-          description: "A matching student record or pending enrollment already exists. Please review and contact admin if this is the same student.",
+          description: "There is already a student with that name. Please review the entry and contact the registrar or admin if this is the same student.",
+        };
+
+        setDuplicateAlertMessage(message);
+        setDuplicateAlertOpen(true);
+
+        toast({
+          title: message.title,
+          description: message.description,
           variant: "destructive",
         });
-        return { severity: "block", matches: duplicate.matches ?? [] };
-      }
 
-      if (duplicate.severity === "warning") {
-        const continueSubmission = window.confirm(
-          "Possible duplicate student detected. This may match an existing record or pending enrollment. Continue anyway?"
-        );
-
-        if (!continueSubmission) {
-          return { severity: "cancelled", matches: duplicate.matches ?? [] };
-        }
+        return { severity: "cancelled", matches: duplicate.matches ?? [] };
       }
 
       return { severity: duplicate.severity ?? "none", matches: duplicate.matches ?? [] };
@@ -670,6 +683,18 @@ export default function NewEnrollmentPage() {
           </Link>
         </div>
       </div>
+
+      <AlertDialog open={duplicateAlertOpen} onOpenChange={setDuplicateAlertOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{duplicateAlertMessage.title}</AlertDialogTitle>
+            <AlertDialogDescription>{duplicateAlertMessage.description}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction onClick={() => setDuplicateAlertOpen(false)}>OK</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <form onSubmit={handleSubmit(onSubmit, onInvalid)} autoComplete="off" className="space-y-4">
         {/* ── Student Information ───────────────────────────────── */}
