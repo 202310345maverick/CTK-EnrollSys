@@ -31,8 +31,7 @@ function buildOfficialReceiptPdf(doc: jsPDF, params: {
   currency?: string;
 }) {
   const logo = getCtkLogoDataUrl();
-  const currencyPrefix = "₱";
-  const formatPhpAmount = (value: number) => `${currencyPrefix}${Number(value).toLocaleString("en-PH", {
+  const formatPhpAmount = (amount: number) => `₱${Number(amount).toLocaleString("en-PH", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   })}`;
@@ -54,34 +53,32 @@ function buildOfficialReceiptPdf(doc: jsPDF, params: {
   }
 
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(21);
-  doc.text((params.schoolName || "Christ the King Catholic School").trim(), 58, 30);
+  doc.setFontSize(20);
+  doc.text((params.schoolName || "Christ the King Catholic School").trim(), 58, 31);
   doc.setTextColor(71, 85, 105);
   doc.setFontSize(10);
-  doc.text("Official Receipt", 58, 39);
+  doc.text("Official Receipt", 58, 40);
 
   doc.setTextColor(51, 65, 85);
   doc.setFont("helvetica", "bold");
   doc.setFontSize(30);
-  doc.text("RECEIPT", 190, 35, { align: "right" });
+  doc.text("RECEIPT", 190, 36, { align: "right" });
 
   doc.setFillColor(221, 232, 240);
   doc.roundedRect(24, 52, 162, 30, 4, 4, "F");
   doc.setTextColor(15, 23, 42);
-
   doc.setFont("helvetica", "normal");
   doc.setFontSize(11);
   doc.text("To", 30, 64);
-
   doc.setFont("helvetica", "bold");
   doc.setFontSize(20);
   doc.text(payerName, 30, 80);
 
   doc.setFont("helvetica", "normal");
   doc.setFontSize(11);
-  doc.text("Receipt #", 129, 64);
+  doc.text("Receipt #", 130, 64);
   doc.text(params.receiptNumber || "0001001", 190, 64, { align: "right" });
-  doc.text("Receipt Date", 129, 74);
+  doc.text("Receipt Date", 130, 74);
   doc.text(params.receiptDate, 190, 74, { align: "right" });
 
   doc.setFillColor(15, 23, 42);
