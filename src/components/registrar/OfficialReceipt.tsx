@@ -42,39 +42,39 @@ export default function OfficialReceipt({
   const subtotal = items.reduce((s, it) => s + it.qty * it.unitPrice, 0);
 
   return (
-    <div className="mx-auto w-full max-w-[1100px] rounded-[24px] border border-[#d4dfe9] bg-[#f3f5f7] p-5 shadow-[0_0_0_1px_rgba(148,163,184,0.25)] print:p-0 print:shadow-none">
-      <div className="rounded-[20px] border border-[#d4dfe9] bg-[#f6f8fb] px-5 py-4 md:px-7 md:py-6">
-        <div className="mb-5 flex items-center justify-between gap-4 border-b border-slate-200 pb-4">
-          <div className="flex min-w-0 items-center gap-4">
-            <div className="flex h-[84px] w-[84px] items-center justify-center overflow-hidden rounded-full border-2 border-[#dfeaf5] bg-white shadow-sm">
+    <div className="mx-auto w-full max-w-[1200px] rounded-[24px] border border-[#d4dfe9] bg-[#f3f5f7] p-3 shadow-[0_0_0_1px_rgba(148,163,184,0.25)] print:p-0 print:shadow-none sm:p-5">
+      <div className="rounded-[20px] border border-[#d4dfe9] bg-[#f6f8fb] px-4 py-4 md:px-7 md:py-6">
+        <div className="mb-5 flex flex-col gap-4 border-b border-slate-200 pb-4 md:flex-row md:items-center md:justify-between">
+          <div className="flex min-w-0 items-center gap-3 md:gap-4">
+            <div className="flex h-[64px] w-[64px] items-center justify-center overflow-hidden rounded-full border-2 border-[#dfeaf5] bg-white shadow-sm md:h-[84px] md:w-[84px]">
               <Image src={logoSrc} alt="CTK logo" width={74} height={74} className="object-contain" />
             </div>
 
             <div className="min-w-0">
-              <div className="truncate text-[2rem] font-black tracking-[-0.04em] text-slate-900 md:text-[2.5rem]">
+              <div className="truncate text-[1.4rem] font-black tracking-[-0.04em] text-slate-900 sm:text-[1.8rem] md:text-[2.5rem]">
                 {schoolName}
               </div>
-              <div className="text-xl font-medium text-slate-600">{schoolSubtitle}</div>
+              <div className="text-base font-medium text-slate-600 md:text-xl">{schoolSubtitle}</div>
             </div>
           </div>
 
-          <div className="shrink-0 text-right">
-            <div className="text-[3rem] font-black leading-none tracking-[-0.04em] text-slate-900 md:text-[4rem]">
+          <div className="shrink-0 text-left md:text-right">
+            <div className="text-[2rem] font-black leading-none tracking-[-0.04em] text-slate-900 sm:text-[2.8rem] md:text-[4rem]">
               RECEIPT
             </div>
           </div>
         </div>
 
-        <div className="mb-5 rounded-[16px] bg-[#dfeaf5] px-5 py-4">
-          <div className="grid gap-3 md:grid-cols-[1.5fr_0.8fr] md:items-end">
+        <div className="mb-5 rounded-[16px] bg-[#dfeaf5] px-4 py-4 sm:px-5">
+          <div className="grid gap-3 lg:grid-cols-[1.5fr_0.8fr] lg:items-end">
             <div className="min-w-0">
-              <div className="text-[0.8rem] font-medium uppercase tracking-[0.18em] text-slate-600">To</div>
-              <div className="mt-2 text-[2.2rem] font-black leading-none tracking-[-0.04em] text-slate-900 md:text-[3rem]">
+              <div className="text-[0.7rem] font-medium uppercase tracking-[0.18em] text-slate-600 sm:text-[0.8rem]">To</div>
+              <div className="mt-2 break-words text-[1.5rem] font-black leading-none tracking-[-0.04em] text-slate-900 sm:text-[2.2rem] md:text-[3rem]">
                 {payerName}
               </div>
             </div>
 
-            <div className="ml-auto w-full max-w-[390px] text-[1.05rem] text-slate-700">
+            <div className="w-full text-[0.9rem] text-slate-700 sm:text-[1.05rem] lg:ml-auto lg:max-w-[390px]">
               <div className="grid grid-cols-[auto_1fr] items-center gap-x-4 gap-y-3">
                 <span className="font-medium">Receipt #</span>
                 <span className="text-right font-bold text-slate-900">{receiptNumber}</span>
@@ -87,32 +87,34 @@ export default function OfficialReceipt({
         </div>
 
         <div className="overflow-hidden rounded-[12px] border border-slate-200 bg-white">
-          <table className="w-full table-fixed border-collapse text-left text-[1.1rem]">
-            <thead>
-              <tr className="bg-[#0f172a] text-white">
-                <th className="w-[12%] px-4 py-4 text-left text-[0.8rem] font-bold uppercase tracking-[0.18em]">Qty</th>
-                <th className="w-[42%] px-4 py-4 text-left text-[0.8rem] font-bold uppercase tracking-[0.18em]">Description</th>
-                <th className="w-[23%] px-4 py-4 text-right text-[0.8rem] font-bold uppercase tracking-[0.18em]">Unit Price</th>
-                <th className="w-[23%] px-4 py-4 text-right text-[0.8rem] font-bold uppercase tracking-[0.18em]">Amount</th>
-              </tr>
-            </thead>
-            <tbody>
-              {items.length === 0 ? (
-                <tr>
-                  <td colSpan={4} className="px-4 py-10 text-center text-slate-500">No items</td>
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[620px] table-fixed border-collapse text-left text-[1.1rem]">
+              <thead>
+                <tr className="bg-[#0f172a] text-white">
+                  <th className="w-[12%] px-4 py-4 text-left text-[0.8rem] font-bold uppercase tracking-[0.18em]">Qty</th>
+                  <th className="w-[42%] px-4 py-4 text-left text-[0.8rem] font-bold uppercase tracking-[0.18em]">Description</th>
+                  <th className="w-[23%] px-4 py-4 text-right text-[0.8rem] font-bold uppercase tracking-[0.18em]">Unit Price</th>
+                  <th className="w-[23%] px-4 py-4 text-right text-[0.8rem] font-bold uppercase tracking-[0.18em]">Amount</th>
                 </tr>
-              ) : (
-                items.map((it, i) => (
-                  <tr key={i} className="border-b border-slate-200 last:border-b-0">
-                    <td className="px-4 py-5 align-top font-bold text-slate-800">{it.qty}</td>
-                    <td className="px-4 py-5 align-top text-slate-700">{it.description}</td>
-                    <td className="px-4 py-5 align-top text-right text-slate-700">{fmt(it.unitPrice, currency)}</td>
-                    <td className="px-4 py-5 align-top text-right font-bold whitespace-nowrap text-slate-900">{fmt(it.qty * it.unitPrice, currency)}</td>
+              </thead>
+              <tbody>
+                {items.length === 0 ? (
+                  <tr>
+                    <td colSpan={4} className="px-4 py-10 text-center text-slate-500">No items</td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+                ) : (
+                  items.map((it, i) => (
+                    <tr key={i} className="border-b border-slate-200 last:border-b-0">
+                      <td className="px-4 py-5 align-top font-bold text-slate-800">{it.qty}</td>
+                      <td className="px-4 py-5 align-top text-slate-700">{it.description}</td>
+                      <td className="px-4 py-5 align-top text-right text-slate-700">{fmt(it.unitPrice, currency)}</td>
+                      <td className="px-4 py-5 align-top text-right font-bold whitespace-nowrap text-slate-900">{fmt(it.qty * it.unitPrice, currency)}</td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
 
         <div className="mt-5 flex justify-end">
