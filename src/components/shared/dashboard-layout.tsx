@@ -45,6 +45,7 @@ const registrarNavItems = [
   { href: "/registrar", label: "Dashboard", icon: LayoutDashboard },
   { href: "/registrar/enrollments", label: "Online Enrollment", icon: ClipboardList },
   { href: "/registrar/students", label: "Student Records", icon: Users },
+  { href: "/registrar/fee-structures", label: "Fee Structures", icon: CreditCard },
   { href: "/registrar/payments", label: "Fee & Payment", icon: Banknote },
   { href: "/registrar/reports", label: "Reports", icon: FileText },
 ];
